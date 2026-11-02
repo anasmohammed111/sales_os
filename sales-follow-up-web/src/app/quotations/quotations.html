@@ -1,0 +1,1296 @@
+<div class="quotations-wrapper">
+    <!--  VIEW 1: QUOTATION MANAGEMENT LISTING PAGE  -->
+    @if (activeView() === 'list') {
+    <section class="quotation-view-section listing-view-panel">
+
+        <!-- PAGE HEADER -->
+        <header class="quotations-header">
+            <div class="header-text-group">
+                <h1 class="header-title">Quotations</h1>
+                <p class="header-subtitle">Create, manage and track customer quotations.</p>
+            </div>
+
+            <div class="header-actions">
+
+                <button type="button" class="btn btn-primary" (click)="openCreateForm()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Create Quotation</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- 4 COMPACT OVERVIEW CARDS -->
+        <div class="overview-cards-grid" aria-label="Quotations Summary Overview">
+            <!-- Card 1: Total Quotations -->
+            <div class="overview-card">
+                <div class="card-header-row">
+                    <span class="card-label">Total Quotations</span>
+                    <div class="card-icon-box icon-neutral">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="card-value">
+                    {{ summary()?.total ?? summary()?.totalQuotations ?? 0 }}
+                </div>
+                <div class="card-caption">All generated proposals</div>
+            </div>
+
+            <!-- Card 2: Draft -->
+            <div class="overview-card">
+                <div class="card-header-row">
+                    <span class="card-label">Draft</span>
+                    <div class="card-icon-box icon-amber">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="card-value text-amber">
+                    {{ summary()?.draft ?? 0 }}
+                </div>
+                <div class="card-caption">Awaiting review or dispatch</div>
+            </div>
+
+            <!-- Card 3: Sent -->
+            <div class="overview-card">
+                <div class="card-header-row">
+                    <span class="card-label">Sent</span>
+                    <div class="card-icon-box icon-blue">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </div>
+                </div>
+                <div class="card-value text-blue">
+                    {{ summary()?.sent ?? 0 }}
+                </div>
+                <div class="card-caption">Delivered to client</div>
+            </div>
+
+            <!-- Card 4: Accepted -->
+            <div class="overview-card">
+                <div class="card-header-row">
+                    <span class="card-label">Accepted</span>
+                    <div class="card-icon-box icon-green">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                <div class="card-value text-green">
+                    {{ summary()?.accepted ?? 0 }}
+                </div>
+                <div class="card-caption">Approved & ready to bill</div>
+            </div>
+        </div>
+
+        <!-- HORIZONTAL STATUS FILTERS (Segmented tabs / chips) -->
+        <div class="status-filters-bar" aria-label="Quotation Status Filters">
+            <div class="filter-chips-list">
+                <button type="button" class="filter-chip" [class.active]="statusFilter() === 'ALL'"
+                    (click)="setStatusFilter('ALL')">
+                    <span>All</span>
+                </button>
+                <button type="button" class="filter-chip" [class.active]="statusFilter() === 'DRAFT'"
+                    (click)="setStatusFilter('DRAFT')">
+                    <span class="status-indicator status-draft"></span>
+                    <span>Draft</span>
+                </button>
+                <button type="button" class="filter-chip" [class.active]="statusFilter() === 'SENT'"
+                    (click)="setStatusFilter('SENT')">
+                    <span class="status-indicator status-sent"></span>
+                    <span>Sent</span>
+                </button>
+                <button type="button" class="filter-chip" [class.active]="statusFilter() === 'ACCEPTED'"
+                    (click)="setStatusFilter('ACCEPTED')">
+                    <span class="status-indicator status-accepted"></span>
+                    <span>Accepted</span>
+                </button>
+                <button type="button" class="filter-chip" [class.active]="statusFilter() === 'REJECTED'"
+                    (click)="setStatusFilter('REJECTED')">
+                    <span class="status-indicator status-rejected"></span>
+                    <span>Rejected</span>
+                </button>
+                <button type="button" class="filter-chip" [class.active]="statusFilter() === 'EXPIRED'"
+                    (click)="setStatusFilter('EXPIRED')">
+                    <span class="status-indicator status-expired"></span>
+                    <span>Expired</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SEARCH & FILTER TOOLBAR -->
+        <div class="quotations-toolbar">
+            <!-- Search input with search icon -->
+            <div class="toolbar-search-box">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" class="search-input" placeholder="Search by quote #, customer, company, email..."
+                    [value]="searchQuery()" (input)="onSearch($event)" aria-label="Search Quotations" />
+                @if (searchQuery()) {
+                <button type="button" class="btn-clear-search" (click)="searchQuery.set(''); applyFilters()"
+                    title="Clear search">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                }
+            </div>
+
+            <!-- Controls group -->
+            <div class="toolbar-controls-group">
+                <!-- Assigned To Dropdown (Visible to Owners & Managers) -->
+                @if (canManageTeam()) {
+                <div class="control-select-wrap">
+                    <svg class="control-prefix-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <select class="toolbar-select" [value]="assignedFilter()" (change)="onAssignedChange($event)"
+                        aria-label="Filter by Assigned Salesperson">
+                        <option value="ALL">Assigned: All Members</option>
+                        @for (member of teamMembers(); track member._id) {
+                        <option [value]="member._id">{{ member.name }} ({{ member.role === 'SALES_MANAGER' ? 'Manager' :
+                            'Rep' }})</option>
+                        }
+                    </select>
+                    <svg class="select-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                }
+
+                <!-- Date Range Filter -->
+                <div class="control-date-wrap">
+                    <input type="date" class="toolbar-date-input" title="Start Date" [ngModel]="startDateFilter()"
+                        (ngModelChange)="startDateFilter.set($event); onDateFilterChange()" />
+                    <span class="date-sep">&ndash;</span>
+                    <input type="date" class="toolbar-date-input" title="End Date" [ngModel]="endDateFilter()"
+                        (ngModelChange)="endDateFilter.set($event); onDateFilterChange()" />
+                </div>
+
+                <!-- Clear Filters Option -->
+                <button type="button" class="btn-clear-filters" (click)="clearFilters()"
+                    title="Reset all applied filters">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    <span>Clear Filters</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- QUOTATIONS TABLE -->
+        <div class="table-card-container">
+            <div class="table-responsive-wrapper">
+                <table class="quotations-table" aria-label="Quotations Table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="th-quote-num">Quotation Number</th>
+                            <th scope="col" class="th-customer">Customer / Company</th>
+                            <th scope="col" class="th-lead">Lead Reference</th>
+                            <th scope="col" class="th-date">Date</th>
+                            <th scope="col" class="th-valid">Valid Until</th>
+                            <th scope="col" class="th-amount text-right">Total Amount</th>
+                            <th scope="col" class="th-creator">Assigned To</th>
+                            <th scope="col" class="th-status text-center">Status</th>
+                            <th scope="col" class="th-actions text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (isLoading()) {
+                        <tr>
+                            <td colspan="9" class="table-loading-cell">
+                                <div class="table-spinner-wrap">
+                                    <div class="spinner"></div>
+                                    <span>Loading quotations...</span>
+                                </div>
+                            </td>
+                        </tr>
+                        } @else if (quotations().length === 0) {
+                        <!-- Empty state row spanning full width -->
+                        <tr class="empty-state-table-row">
+                            <td colspan="9" class="empty-state-table-cell">
+                                <div class="empty-state-container">
+                                    <div class="empty-state-illustration-box">
+                                        <div class="illustration-halo"></div>
+                                        <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <path d="M10 9H8"></path>
+                                        </svg>
+                                        <div class="illustration-badge">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2.5">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <h2 class="empty-state-heading">No quotations yet</h2>
+                                    <p class="empty-state-description">
+                                        Create your first quotation to start managing customer proposals, pricing
+                                        estimates, and formal deal agreements.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        } @else {
+                        @for (quote of quotations(); track quote._id) {
+                        <tr class="table-data-row">
+                            <!-- Quotation Number -->
+                            <td class="td-quote-num">
+                                <a (click)="viewQuotationDetails(quote)" class="quote-link" role="button" tabindex="0">
+                                    <span class="num-code">{{ quote.quotationNumber }}</span>
+                                </a>
+                            </td>
+
+                            <!-- Customer / Company -->
+                            <td class="td-customer">
+                                <div class="customer-info-cell">
+                                    <span class="cust-name">{{ quote.customer.name }}</span>
+                                    @if (quote.customer.companyName) {
+                                    <span class="cust-company">{{ quote.customer.companyName }}</span>
+                                    }
+                                </div>
+                            </td>
+
+                            <!-- Lead Reference -->
+                            <td class="td-lead">
+                                <span class="lead-tag" [title]="getLeadDisplay(quote.leadId)">
+                                    {{ getLeadDisplay(quote.leadId) }}
+                                </span>
+                            </td>
+
+                            <!-- Quotation Date -->
+                            <td class="td-date">
+                                <span>{{ quote.quotationDate | date:'mediumDate' }}</span>
+                            </td>
+
+                            <!-- Valid Until -->
+                            <td class="td-valid">
+                                <span class="valid-date">{{ quote.validUntil | date:'mediumDate' }}</span>
+                            </td>
+
+                            <!-- Total Amount -->
+                            <td class="td-amount text-right">
+                                <span class="amount-val">
+                                    {{ quote.grandTotal | currency:quote.currency:'symbol':'1.2-2' }}
+                                </span>
+                            </td>
+
+                            <!-- Assigned To -->
+                            <td class="td-creator">
+                                <span class="assigned-name">{{ getUserDisplay(quote.assignedTo) }}</span>
+                            </td>
+
+                            <!-- Status Badge -->
+                            <td class="td-status text-center">
+                                <span class="badge" [ngClass]="getStatusClass(quote.status)">
+                                    {{ quote.status }}
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="td-actions text-right">
+                                <div class="row-actions-group">
+                                    <button type="button" class="btn-action-icon" (click)="viewQuotationDetails(quote)"
+                                        title="View Details">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+
+                                    @if (quote.status === 'DRAFT') {
+                                    <button type="button" class="btn-action-icon" (click)="openEditForm(quote)"
+                                        title="Edit Draft">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+
+                                    <button type="button" class="btn-action-icon btn-action-send"
+                                        (click)="openStatusModal(quote, 'SENT')" title="Send to Customer">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                        </svg>
+                                    </button>
+
+                                    <button type="button" class="btn-action-icon btn-action-danger"
+                                        (click)="openDeleteModal(quote)" title="Delete Draft">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path
+                                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    }
+
+                                    @if (quote.status === 'SENT') {
+                                    <button type="button" class="btn-action-icon btn-action-success"
+                                        (click)="openStatusModal(quote, 'ACCEPTED')" title="Mark Accepted">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.2">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn-action-icon btn-action-danger"
+                                        (click)="openStatusModal(quote, 'REJECTED')" title="Mark Rejected">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table Footer Metadata / Pagination -->
+            <footer class="table-card-footer">
+                <div class="footer-count-text">
+                    <span>Showing <strong>{{ quotations().length }}</strong> of <strong>{{ pagination().total
+                            }}</strong> quotations</span>
+                </div>
+                <div class="footer-pagination">
+                    <button type="button" class="btn-page-nav" (click)="goToPage(currentPage() - 1)"
+                        [disabled]="!pagination().hasPreviousPage || isLoading()" aria-label="Previous page">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <span class="page-indicator">Page {{ pagination().page }} of {{ pagination().totalPages || 1
+                        }}</span>
+                    <button type="button" class="btn-page-nav" (click)="goToPage(currentPage() + 1)"
+                        [disabled]="!pagination().hasNextPage || isLoading()" aria-label="Next page">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </footer>
+        </div>
+    </section>
+    }
+
+    <!-- =========================================================================
+       VIEW 2: QUOTATION CREATION / EDIT FORM
+       ========================================================================= -->
+    @if (activeView() === 'form') {
+    <section class="quotation-view-section create-view-panel">
+
+        <!-- FORM NAVIGATION & HEADER -->
+        <header class="form-page-header">
+            <div class="header-breadcrumb-row">
+                <button type="button" class="btn-back-link" (click)="switchView('list')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Quotations</span>
+                </button>
+            </div>
+
+            <div class="form-header-content">
+                <div class="header-text-group">
+                    <div class="badge-title-group">
+                        <h1 class="header-title">{{ isEditMode() ? 'Edit Quotation' : 'Create Quotation' }}</h1>
+                        <span class="badge badge-draft">Draft Mode</span>
+                    </div>
+                    <p class="header-subtitle">
+                        {{ isEditMode() ? 'Update line items, pricing discounts, and customer details.' : 'Draft a
+                        detailed pricing proposal with itemized deliverables, discounts and terms.' }}
+                    </p>
+                </div>
+
+                <div class="form-header-actions">
+                    <button type="button" class="btn btn-secondary" (click)="switchView('list')">Cancel</button>
+                    <button type="button" class="btn btn-secondary" (click)="saveQuotation(false)"
+                        [disabled]="isSubmitting()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        <span>{{ isSubmitting() ? 'Saving...' : 'Save as Draft' }}</span>
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="saveQuotation(true)"
+                        [disabled]="isSubmitting()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                        <span>Save & Send</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <form [formGroup]="quotationForm" (ngSubmit)="saveQuotation(false)">
+            <div class="form-layout-body">
+                <!-- MAIN FORM CONTENT (Left column) -->
+                <div class="form-main-column">
+
+                    <!-- SECTION 1: CUSTOMER & LEAD DETAILS -->
+                    <section class="form-card-section">
+                        <div class="section-legend">
+                            <div class="legend-icon-wrap">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            <div class="legend-text">
+                                <h3 class="legend-title">Customer and Lead Details</h3>
+                                <p class="legend-desc">Select an active SalesOS lead to link this proposal. Lead
+                                    details populate automatically.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid grid-cols-2">
+                            <!-- Select Existing Lead -->
+                            <div class="form-field-group col-span-2">
+                                <label class="form-label" for="lead-select">
+                                    <span>Select Existing Lead</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <div class="input-select-wrap">
+                                    <select id="lead-select" formControlName="leadId" class="form-input form-select"
+                                        (change)="onLeadChange($event)">
+                                        <option value="">-- Choose lead from your CRM pipeline --</option>
+                                        @for (lead of leadsList(); track lead._id) {
+                                        <option [value]="lead._id">
+                                            {{ lead.customerName }} {{ lead.companyName ? '(' + lead.companyName + ')' :
+                                            '' }} &bull; Stage: {{ lead.status }}
+                                        </option>
+                                        }
+                                    </select>
+                                    <svg class="select-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Customer Name (Readonly preview) -->
+                            <div class="form-field-group">
+                                <label class="form-label">
+                                    <span>Customer Name</span>
+                                </label>
+                                <input type="text" formControlName="customerName" class="form-input input-readonly"
+                                    readonly placeholder="Auto-populated from lead" />
+                            </div>
+
+                            <!-- Company Name (Readonly preview) -->
+                            <div class="form-field-group">
+                                <label class="form-label">
+                                    <span>Company Name</span>
+                                </label>
+                                <input type="text" formControlName="companyName" class="form-input input-readonly"
+                                    readonly placeholder="Auto-populated from lead" />
+                            </div>
+
+                            <!-- Email (Readonly preview) -->
+                            <div class="form-field-group">
+                                <label class="form-label">
+                                    <span>Email Address</span>
+                                </label>
+                                <input type="email" formControlName="email" class="form-input input-readonly" readonly
+                                    placeholder="Auto-populated from lead" />
+                            </div>
+
+                            <!-- Phone (Readonly preview) -->
+                            <div class="form-field-group">
+                                <label class="form-label">
+                                    <span>Phone Number</span>
+                                </label>
+                                <input type="tel" formControlName="phone" class="form-input input-readonly" readonly
+                                    placeholder="Auto-populated from lead" />
+                            </div>
+
+                            <!-- Billing Address -->
+                            <div class="form-field-group col-span-2">
+                                <label class="form-label" for="billing-address">
+                                    <span>Billing Address</span>
+                                    <span class="label-optional">(Optional)</span>
+                                </label>
+                                <textarea id="billing-address" formControlName="billingAddress" class="form-textarea"
+                                    rows="2"
+                                    placeholder="Street address, City, State, Postal code, Country..."></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 2: QUOTATION DETAILS -->
+                    <section class="form-card-section">
+                        <div class="section-legend">
+                            <div class="legend-icon-wrap">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                            </div>
+                            <div class="legend-text">
+                                <h3 class="legend-title">Quotation Information</h3>
+                                <p class="legend-desc">Quotation validity timeline, currency selection and
+                                    subject.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid grid-cols-3">
+                            <!-- Quotation Date -->
+                            <div class="form-field-group">
+                                <label class="form-label" for="quote-date">
+                                    <span>Quotation Date</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <input type="date" id="quote-date" formControlName="quotationDate" class="form-input" />
+                            </div>
+
+                            <!-- Valid Until -->
+                            <div class="form-field-group">
+                                <label class="form-label" for="quote-valid">
+                                    <span>Valid Until</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <input type="date" id="quote-valid" formControlName="validUntil" class="form-input" />
+                            </div>
+
+                            <!-- Currency -->
+                            <div class="form-field-group">
+                                <label class="form-label" for="quote-currency">
+                                    <span>Currency</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <div class="input-select-wrap">
+                                    <select id="quote-currency" formControlName="currency"
+                                        class="form-input form-select">
+                                        @for (curr of supportedCurrencies; track curr) {
+                                        <option [value]="curr">{{ curr }}</option>
+                                        }
+                                    </select>
+                                    <svg class="select-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Reference / Subject (Spans full width) -->
+                            <div class="form-field-group col-span-3">
+                                <label class="form-label" for="quote-subject">
+                                    <span>Subject / Reference</span>
+                                </label>
+                                <input type="text" id="quote-subject" formControlName="subject" class="form-input"
+                                    placeholder="e.g. Annual Enterprise SaaS Subscription & Onboarding Package" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 3: ITEMS AND SERVICES (DYNAMIC ARRAY) -->
+                    <section class="form-card-section">
+                        <div class="section-legend">
+                            <div class="legend-icon-wrap">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                                    </path>
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                </svg>
+                            </div>
+                            <div class="legend-text">
+                                <h3 class="legend-title">Items and Services</h3>
+                                <p class="legend-desc">Add line items, products, hourly consulting or service
+                                    deliverables.</p>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Items Table -->
+                        <div class="items-table-wrapper" formArrayName="items">
+                            <table class="items-table" aria-label="Items Table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="col-item-desc">Item & Description</th>
+                                        <th scope="col" class="col-qty">Qty</th>
+                                        <th scope="col" class="col-unit">Unit</th>
+                                        <th scope="col" class="col-price">Unit Price</th>
+                                        <th scope="col" class="col-discount">Discount</th>
+                                        <th scope="col" class="col-tax">Tax (%)</th>
+                                        <th scope="col" class="col-amount text-right">Amount</th>
+                                        <th scope="col" class="col-action text-center"><span
+                                                class="sr-only">Actions</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (itemCtrl of itemsFormArray.controls; track $index) {
+                                    <tr [formGroupName]="$index" class="item-form-row">
+                                        <!-- Item Name & Description -->
+                                        <td class="col-item-desc">
+                                            <div class="item-desc-stack">
+                                                <input type="text" formControlName="itemName"
+                                                    class="form-input item-input-title"
+                                                    placeholder="Item or service name *" />
+                                                <input type="text" formControlName="description"
+                                                    class="form-input item-input-sub"
+                                                    placeholder="Description (optional)" />
+                                            </div>
+                                        </td>
+
+                                        <!-- Quantity -->
+                                        <td class="col-qty">
+                                            <input type="number" formControlName="quantity"
+                                                class="form-input item-input-qty" min="0.001" step="any"
+                                                placeholder="1" />
+                                        </td>
+
+                                        <!-- Unit -->
+                                        <td class="col-unit">
+                                            <input type="text" formControlName="unit" class="form-input item-input-unit"
+                                                placeholder="PCS" />
+                                        </td>
+
+                                        <!-- Unit Price -->
+                                        <td class="col-price">
+                                            <input type="number" formControlName="unitPrice"
+                                                class="form-input item-input-price" min="0" step="any"
+                                                placeholder="0.00" />
+                                        </td>
+
+                                        <!-- Discount -->
+                                        <td class="col-discount">
+                                            <input type="number" formControlName="discount"
+                                                class="form-input item-input-discount" min="0" step="any"
+                                                placeholder="0" />
+                                        </td>
+
+                                        <!-- Tax Rate -->
+                                        <td class="col-tax">
+                                            <input type="number" formControlName="taxRate"
+                                                class="form-input item-input-tax" min="0" max="100" step="any"
+                                                placeholder="0" />
+                                        </td>
+
+                                        <!-- Calculated Amount -->
+                                        <td class="col-amount text-right">
+                                            <span class="live-item-total">
+                                                {{ getItemCalculations($any(itemCtrl)).amount |
+                                                currency:(quotationForm.get('currency')?.value || 'INR'):'symbol':'1.2-2' }}
+                                            </span>
+                                        </td>
+
+                                        <!-- Remove Action -->
+                                        <td class="col-action text-center">
+                                            <button type="button" class="btn-remove-item" (click)="removeItem($index)"
+                                                title="Remove this item">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Add Item Action Bar -->
+                        <div class="items-action-bar">
+                            <button type="button" class="btn btn-secondary btn-add-item" (click)="addItem()">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Add Item</span>
+                            </button>
+                            <span class="items-helper-text">You can add up to 100 line items. Totals recalculate
+                                live.</span>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 4: ADDITIONAL DETAILS -->
+                    <section class="form-card-section">
+                        <div class="section-legend">
+                            <div class="legend-icon-wrap">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                            </div>
+                            <div class="legend-text">
+                                <h3 class="legend-title">Additional Details</h3>
+                                <p class="legend-desc">Customer contract clauses, special instructions and private
+                                    team notes.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid grid-cols-1">
+                            <!-- Terms and Conditions -->
+                            <div class="form-field-group">
+                                <label class="form-label" for="terms-conditions">
+                                    <span>Terms and Conditions</span>
+                                </label>
+                                <textarea id="terms-conditions" formControlName="termsAndConditions"
+                                    class="form-textarea" rows="3"
+                                    placeholder="Specify payment terms, delivery schedules, warranty and validity conditions..."></textarea>
+                            </div>
+
+                            <!-- Customer Notes -->
+                            <div class="form-field-group">
+                                <label class="form-label" for="customer-notes">
+                                    <span>Customer Notes</span>
+                                    <span class="label-hint">(Visible on customer proposal)</span>
+                                </label>
+                                <textarea id="customer-notes" formControlName="customerNotes" class="form-textarea"
+                                    rows="2"
+                                    placeholder="e.g. Thank you for your inquiry. Special onboarding discount included."></textarea>
+                            </div>
+
+                            <!-- Internal Notes -->
+                            <div class="form-field-group">
+                                <label class="form-label" for="internal-notes">
+                                    <span>Internal Notes</span>
+                                    <span class="label-hint-private">(Internal only &bull; never displayed to
+                                        customer)</span>
+                                </label>
+                                <textarea id="internal-notes" formControlName="internalNotes"
+                                    class="form-textarea textarea-private" rows="2"
+                                    placeholder="Private notes for team members regarding this quotation..."></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+
+                <!-- SIDEBAR SUMMARY COLUMN (Right column) -->
+                <aside class="form-summary-sidebar">
+                    <div class="summary-sticky-card">
+                        <div class="summary-card-header">
+                            <h2 class="summary-title">Price Summary</h2>
+                            <span class="summary-currency-tag">{{ quotationForm.get('currency')?.value || 'INR'
+                                }}</span>
+                        </div>
+
+                        <div class="summary-breakdown-list">
+                            <div class="summary-row">
+                                <span class="summary-label">Subtotal</span>
+                                <span class="summary-val">{{ formSubtotal |
+                                    currency:(quotationForm.get('currency')?.value || 'INR'):'symbol':'1.2-2' }}</span>
+                            </div>
+
+                            <div class="summary-row">
+                                <span class="summary-label">Item Discounts</span>
+                                <span class="summary-val text-muted">- {{ formTotalItemDiscount |
+                                    currency:(quotationForm.get('currency')?.value || 'INR'):'symbol':'1.2-2' }}</span>
+                            </div>
+
+                            <!-- Overall Discount Field -->
+                            <div class="overall-discount-box">
+                                <label class="summary-label" for="overall-discount">Overall Discount</label>
+                                <div class="input-with-symbol">
+                                    <span class="curr-symbol">{{ quotationForm.get('currency')?.value || 'INR' }}</span>
+                                    <input type="number" id="overall-discount" formControlName="discount"
+                                        class="form-input input-compact" min="0" step="any" placeholder="0" />
+                                </div>
+                            </div>
+
+                            <div class="summary-row">
+                                <span class="summary-label">Total Tax</span>
+                                <span class="summary-val">+ {{ formTotalTax |
+                                    currency:(quotationForm.get('currency')?.value || 'INR'):'symbol':'1.2-2' }}</span>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-row grand-total-row">
+                                <span class="grand-label">Grand Total</span>
+                                <span class="grand-val">{{ formGrandTotal |
+                                    currency:(quotationForm.get('currency')?.value || 'INR'):'symbol':'1.2-2' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="summary-notice">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>Totals calculated on frontend for preview. Backend verifies and stores official
+                                values.</span>
+                        </div>
+
+                        <!-- Actions Stack -->
+                        <div class="sidebar-actions-stack">
+                            <button type="button" class="btn btn-primary btn-block" (click)="saveQuotation(true)"
+                                [disabled]="isSubmitting()">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                                <span>Save & Send Quotation</span>
+                            </button>
+
+                            <button type="button" class="btn btn-secondary btn-block" (click)="saveQuotation(false)"
+                                [disabled]="isSubmitting()">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                <span>{{ isSubmitting() ? 'Saving...' : 'Save as Draft' }}</span>
+                            </button>
+
+                            <button type="button" class="btn btn-ghost btn-block" (click)="switchView('list')">
+                                <span>Cancel</span>
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </form>
+    </section>
+    }
+
+    <!-- =========================================================================
+       VIEW 3: QUOTATION DETAILS VIEW
+       ========================================================================= -->
+    @if (activeView() === 'detail' && selectedQuotation()) {
+    <section class="quotation-view-section detail-view-panel">
+
+        <!-- DETAIL PAGE TOP NAVIGATION & ACTIONS -->
+        <header class="detail-page-header">
+            <div class="detail-nav-row">
+                <button type="button" class="btn-back-link" (click)="switchView('list')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Quotations</span>
+                </button>
+
+                <div class="breadcrumb-trail">
+                    <span class="crumb-dim">Quotations</span>
+                    <span class="crumb-separator">/</span>
+                    <span class="crumb-active">{{ selectedQuotation()?.quotationNumber }}</span>
+                </div>
+            </div>
+
+            <div class="detail-header-main">
+                <div class="detail-title-block">
+                    <div class="title-with-badge">
+                        <h1 class="detail-number">Quotation #{{ selectedQuotation()?.quotationNumber }}</h1>
+                        <span class="badge" [ngClass]="getStatusClass(selectedQuotation()!.status)">
+                            {{ selectedQuotation()?.status }}
+                        </span>
+                    </div>
+                    <div class="detail-meta-pills">
+                        <span class="meta-pill">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span>Date: {{ selectedQuotation()?.quotationDate | date:'mediumDate' }}</span>
+                        </span>
+                        <span class="meta-pill">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>Valid Until: {{ selectedQuotation()?.validUntil | date:'mediumDate' }}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- ACTION CONTROLS -->
+                <div class="detail-actions-cluster">
+                    @if (canEdit(selectedQuotation()!)) {
+                    <button type="button" class="btn btn-secondary" (click)="openEditForm(selectedQuotation()!)"
+                        title="Edit draft quotation">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>Edit</span>
+                    </button>
+
+                    <button type="button" class="btn btn-primary"
+                        (click)="openStatusModal(selectedQuotation()!, 'SENT')" title="Send to client">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                        <span>Send Quotation</span>
+                    </button>
+
+                    <button type="button" class="btn btn-secondary btn-danger-hover"
+                        (click)="openDeleteModal(selectedQuotation()!)" title="Delete draft">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
+                        </svg>
+                        <span>Delete</span>
+                    </button>
+                    }
+
+                    @if (canAcceptOrReject(selectedQuotation()!)) {
+                    <button type="button" class="btn btn-secondary btn-success-hover"
+                        (click)="openStatusModal(selectedQuotation()!, 'ACCEPTED')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>Accept</span>
+                    </button>
+
+                    <button type="button" class="btn btn-secondary btn-danger-hover"
+                        (click)="openStatusModal(selectedQuotation()!, 'REJECTED')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        <span>Reject</span>
+                    </button>
+                    }
+
+                    <button type="button" class="btn btn-secondary" onclick="window.print()" title="Print Quotation">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        <span>Print</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- DETAIL CARD CONTAINER -->
+        <div class="detail-document-card">
+
+            <!-- TOP METADATA & CUSTOMER ROW -->
+            <div class="document-section-grid">
+                <!-- Customer Info Box -->
+                <div class="document-box">
+                    <div class="box-header">
+                        <div class="box-icon-tag">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <span class="box-heading">Customer Information</span>
+                    </div>
+
+                    <div class="data-pairs-list">
+                        <div class="data-pair">
+                            <span class="data-label">Customer Name</span>
+                            <span class="data-value">{{ selectedQuotation()?.customer?.name || '—' }}</span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Company</span>
+                            <span class="data-value">{{ selectedQuotation()?.customer?.companyName || '—' }}</span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Email</span>
+                            <span class="data-value">{{ selectedQuotation()?.customer?.email || '—' }}</span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Phone</span>
+                            <span class="data-value">{{ selectedQuotation()?.customer?.phone || '—' }}</span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Billing Address</span>
+                            <span class="data-value">{{ selectedQuotation()?.customer?.billingAddress || '—' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quotation Metadata Box -->
+                <div class="document-box">
+                    <div class="box-header">
+                        <div class="box-icon-tag">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </div>
+                        <span class="box-heading">Quotation Metadata</span>
+                    </div>
+
+                    <div class="data-pairs-list">
+                        <div class="data-pair">
+                            <span class="data-label">Status</span>
+                            <span class="data-value">
+                                <span class="badge" [ngClass]="getStatusClass(selectedQuotation()!.status)">
+                                    {{ selectedQuotation()?.status }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Lead Reference</span>
+                            <span class="data-value">{{ getLeadDisplay(selectedQuotation()?.leadId) }}</span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Assigned Rep</span>
+                            <span class="data-value">{{ getUserDisplay(selectedQuotation()?.assignedTo) }}</span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Subject</span>
+                            <span class="data-value">{{ selectedQuotation()?.subject || '—' }}</span>
+                        </div>
+                        <div class="data-pair">
+                            <span class="data-label">Currency</span>
+                            <span class="data-value font-mono">{{ selectedQuotation()?.currency }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEMS AND SERVICES DETAIL TABLE -->
+            <div class="document-items-block">
+                <h2 class="block-section-title">Items and Services</h2>
+
+                <div class="table-responsive-wrapper">
+                    <table class="detail-items-table" aria-label="Quotation Items Breakdown">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="th-desc">Item / Description</th>
+                                <th scope="col" class="th-qty text-center">Qty</th>
+                                <th scope="col" class="th-unit text-center">Unit</th>
+                                <th scope="col" class="th-price text-right">Unit Price</th>
+                                <th scope="col" class="th-discount text-right">Discount</th>
+                                <th scope="col" class="th-tax text-right">Tax Rate</th>
+                                <th scope="col" class="th-amount text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (item of selectedQuotation()?.items; track $index) {
+                            <tr class="detail-item-row">
+                                <td class="td-desc">
+                                    <div class="item-name-bold">{{ item.itemName }}</div>
+                                    @if (item.description) {
+                                    <div class="item-desc-dim">{{ item.description }}</div>
+                                    }
+                                </td>
+                                <td class="td-qty text-center">{{ item.quantity }}</td>
+                                <td class="td-unit text-center">{{ item.unit || 'PCS' }}</td>
+                                <td class="td-price text-right">{{ item.unitPrice |
+                                    currency:selectedQuotation()?.currency:'symbol':'1.2-2' }}</td>
+                                <td class="td-discount text-right">{{ item.discount ? (item.discount |
+                                    currency:selectedQuotation()?.currency:'symbol':'1.2-2') : '—' }}</td>
+                                <td class="td-tax text-right">{{ item.taxRate ? (item.taxRate + '%') : '—' }}</td>
+                                <td class="td-amount text-right font-semibold">{{ item.amount |
+                                    currency:selectedQuotation()?.currency:'symbol':'1.2-2' }}</td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BOTTOM ROW: TERMS & CONDITIONS + PRICE SUMMARY -->
+            <div class="document-footer-grid">
+                <!-- Terms and Notes -->
+                <div class="footer-terms-box">
+                    <div class="terms-segment">
+                        <h3 class="terms-title">Terms & Conditions</h3>
+                        <p class="terms-text">{{ selectedQuotation()?.termsAndConditions || 'Standard payment terms
+                            apply.' }}</p>
+                    </div>
+
+                    @if (selectedQuotation()?.customerNotes) {
+                    <div class="terms-segment">
+                        <h3 class="terms-title">Customer Notes</h3>
+                        <p class="terms-text">{{ selectedQuotation()?.customerNotes }}</p>
+                    </div>
+                    }
+
+                    @if (selectedQuotation()?.internalNotes) {
+                    <div class="terms-segment internal-notes-segment">
+                        <h3 class="terms-title text-amber">Internal Notes (Team Only)</h3>
+                        <p class="terms-text">{{ selectedQuotation()?.internalNotes }}</p>
+                    </div>
+                    }
+                </div>
+
+                <!-- Price Summary Breakdown -->
+                <div class="footer-summary-card">
+                    <div class="summary-breakdown-list">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal</span>
+                            <span class="summary-val">{{ selectedQuotation()?.subtotal |
+                                currency:selectedQuotation()?.currency:'symbol':'1.2-2' }}</span>
+                        </div>
+                        @if (selectedQuotation()?.discount) {
+                        <div class="summary-row">
+                            <span class="summary-label">Discount</span>
+                            <span class="summary-val text-muted">- {{ selectedQuotation()?.discount |
+                                currency:selectedQuotation()?.currency:'symbol':'1.2-2' }}</span>
+                        </div>
+                        }
+                        <div class="summary-row">
+                            <span class="summary-label">Tax</span>
+                            <span class="summary-val">+ {{ selectedQuotation()?.taxAmount |
+                                currency:selectedQuotation()?.currency:'symbol':'1.2-2' }}</span>
+                        </div>
+                        <div class="summary-divider"></div>
+                        <div class="summary-row grand-total-row">
+                            <span class="grand-label">Grand Total</span>
+                            <span class="grand-val">{{ selectedQuotation()?.grandTotal |
+                                currency:selectedQuotation()?.currency:'symbol':'1.2-2' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+    }
+
+    <!-- =========================================================================
+       STATUS TRANSITION CONFIRMATION MODAL
+       ========================================================================= -->
+    @if (isStatusModalOpen()) {
+    <div class="modal-backdrop" (click)="closeStatusModal()">
+        <div class="modal-dialog" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Status Change</h3>
+                <button type="button" class="btn-close-modal" (click)="closeStatusModal()" aria-label="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <p class="modal-text">
+                    Are you sure you want to mark quotation <strong>#{{ quotationForStatus()?.quotationNumber
+                        }}</strong> as
+                    <span class="status-highlight font-bold">{{ targetStatus() }}</span>?
+                </p>
+                @if (targetStatus() === 'SENT') {
+                <p class="modal-subtext">This confirms the proposal has been dispatched to the client.</p>
+                } @else if (targetStatus() === 'ACCEPTED') {
+                <p class="modal-subtext">The quotation will be marked as accepted and locked for conversion.</p>
+                } @else if (targetStatus() === 'REJECTED') {
+                <p class="modal-subtext">The quotation will be marked as rejected by the client.</p>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeStatusModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" (click)="confirmStatusChange()" [disabled]="isLoading()">
+                    <span>Confirm Status</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- =========================================================================
+       DELETE CONFIRMATION MODAL
+       ========================================================================= -->
+    @if (isDeleteModalOpen()) {
+    <div class="modal-backdrop" (click)="closeDeleteModal()">
+        <div class="modal-dialog" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title text-danger">Delete Draft Quotation</h3>
+                <button type="button" class="btn-close-modal" (click)="closeDeleteModal()" aria-label="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <p class="modal-text">
+                    Are you sure you want to permanently delete quotation <strong>#{{
+                        quotationToDelete()?.quotationNumber }}</strong>?
+                </p>
+                <p class="modal-subtext text-danger">This action cannot be undone.</p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="isLoading()">
+                    <span>Delete Quotation</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+</div>

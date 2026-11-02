@@ -1,0 +1,551 @@
+<div class="pipeline-page" (click)="closeCardMenu()">
+  <!-- =========================================================================
+       1. PAGE HEADER
+       ========================================================================= -->
+  <header class="pipeline-header">
+    <div class="header-titles">
+      <div class="title-row">
+        <h1 class="page-title">Sales Pipeline</h1>
+      </div>
+      <p class="page-subtitle">Track deals and move opportunities forward.</p>
+    </div>
+
+    <div class="header-actions">
+      <!-- Subtle Link / Action to Lead Management -->
+      <button type="button" class="btn btn-secondary btn-nav-leads" (click)="goToLeadManagement()"
+        title="Go to Lead Management to create or edit leads">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>Go to Lead Management</span>
+        <svg class="chevron-nav-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- PIPELINE SUMMARY CARDS -->
+  <section class="summary-cards-strip" aria-label="Pipeline Summary Overview">
+    <!-- Card 1: Total Leads -->
+    <div class="summary-card">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val">{{ summary()?.totalLeads ?? 0 }}</div>
+          <div class="summary-label">Total Leads</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Pipeline Value -->
+    <div class="summary-card">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val">{{ (summary()?.pipelineValue ?? 0) | currency:'USD':'symbol':'1.0-0' }}</div>
+          <div class="summary-label">Pipeline Value</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Won Deals -->
+    <div class="summary-card">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-emerald">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="16 10 11 15 8 12"></polyline>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val val-emerald">{{ summary()?.wonDeals ?? summary()?.wonDealsCount ?? 0 }}</div>
+          <div class="summary-label">Won Deals</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Lost Deals -->
+    <div class="summary-card">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-rose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val val-rose">{{ summary()?.lostDeals ?? summary()?.lostDealsCount ?? 0 }}</div>
+          <div class="summary-label">Lost Deals</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       3. FILTERS AND SEARCH TOOLBAR
+       ========================================================================= -->
+  <section class="filters-toolbar" aria-label="Filter pipeline leads">
+    <div class="filter-row">
+      <!-- Search input -->
+      <div class="search-box">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="search" class="filter-search-input" [ngModel]="searchQuery()"
+          (ngModelChange)="onSearchInput($event)"
+          placeholder="Search by customer name, company, email, phone, or product..." autocomplete="off"
+          aria-label="Search leads" />
+        @if (searchQuery()) {
+        <button type="button" class="btn-clear-search" (click)="clearSearch()" aria-label="Clear search input">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        }
+      </div>
+
+      <!-- Controls group (Assigned To, Priority, Clear) -->
+      <div class="filter-controls-group">
+        @if (canManageTeam() && teamMembers().length > 0) {
+        <div class="filter-select-wrap">
+          <label class="filter-select-label" for="assigneeFilter">Assigned:</label>
+          <select id="assigneeFilter" class="filter-select" [ngModel]="assignedFilter()"
+            (ngModelChange)="onAssigneeChange($event)">
+            <option value="ALL">All Assignees</option>
+            @for (member of teamMembers(); track member._id) {
+            <option [value]="member._id">{{ member.name }} ({{ member.role }})</option>
+            }
+          </select>
+        </div>
+        }
+
+        <!-- Priority Dropdown -->
+        <div class="filter-select-wrap">
+          <label class="filter-select-label" for="priorityFilter">Priority:</label>
+          <select id="priorityFilter" class="filter-select" [ngModel]="priorityFilter()"
+            (ngModelChange)="onPriorityChange($event)">
+            <option value="ALL">All Priorities</option>
+            <option value="HIGH">High Priority</option>
+            <option value="MEDIUM">Medium Priority</option>
+            <option value="LOW">Low Priority</option>
+          </select>
+        </div>
+
+        <!-- Clear filters button -->
+        @if (hasActiveFilters()) {
+        <button type="button" class="btn-clear-filters" (click)="clearFilters()" title="Reset all filters">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span>Clear Filters</span>
+        </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       4. KANBAN PIPELINE BOARD (7 STAGES)
+       ========================================================================= -->
+  @if (hasNoLeads() && hasActiveFilters()) {
+  <!-- Global Filter Empty State -->
+  <div class="global-empty-state">
+    <div class="empty-icon-wrap">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        <line x1="8" y1="11" x2="14" y2="11"></line>
+      </svg>
+    </div>
+    <h3 class="empty-title">No matching leads found</h3>
+    <p class="empty-desc">There are no leads matching your search criteria and filters. Try adjusting your search
+      keywords or clearing active filters.</p>
+    <button type="button" class="btn btn-secondary" (click)="clearFilters()">
+      Clear All Filters
+    </button>
+  </div>
+  } @else {
+  <div class="pipeline-board-container">
+    <div class="pipeline-kanban-board">
+      @for (stage of stages(); track stage.id) {
+      <!-- Individual Kanban Column -->
+      <div class="kanban-column stage-{{ stage.id }}" [class.drag-over]="dragOverStageId() === stage.id"
+        (dragover)="onDragOver($event, stage.id)" (dragleave)="onDragLeave($event, stage.id)"
+        (drop)="onDrop($event, stage.id)">
+
+        <!-- Column Header -->
+        <div class="column-header">
+          <div class="header-left">
+            <span class="stage-dot" [style.background-color]="stage.color"></span>
+            <h3 class="stage-name">{{ stage.name }}</h3>
+            <span class="stage-count-badge" [class.won-badge]="stage.id === 'WON'"
+              [class.lost-badge]="stage.id === 'LOST'">
+              {{ stage.totalLeads }}
+            </span>
+          </div>
+
+          <div class="stage-total-val" [class.won-val]="stage.id === 'WON'" [class.lost-val]="stage.id === 'LOST'">
+            {{ stage.totalEstimatedValue | currency:'USD':'symbol':'1.0-0' }}
+          </div>
+        </div>
+
+        <!-- Vertical Stack of Lead Cards with Independent Scrolling -->
+        <div class="column-cards-scroll">
+          @if (stage.leads.length === 0) {
+          <!-- Empty Column State -->
+          <div class="column-empty-state">
+            <div class="empty-stage-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="12" x2="15" y2="12"></line>
+              </svg>
+            </div>
+            <span class="empty-stage-text">No leads in this stage.</span>
+            <span class="empty-stage-hint">Drag leads here</span>
+          </div>
+          } @else {
+          <!-- Lead Cards List -->
+          @for (lead of stage.leads; track lead._id) {
+          <div class="lead-card" [class.lead-card-won]="stage.id === 'WON'" [class.lead-card-lost]="stage.id === 'LOST'"
+            draggable="true" (dragstart)="onDragStart($event, lead)" (click)="openLeadDetails(lead)" role="button"
+            tabindex="0">
+
+            <!-- Card Header: Company, Priority, Three-dot Menu -->
+            <div class="card-header-row">
+              <span class="company-name" title="{{ lead.companyName || 'Individual' }}">
+                {{ lead.companyName || 'Individual' }}
+              </span>
+
+              <div class="card-header-right">
+                <span class="priority-pill priority-{{ lead.priority?.toLowerCase() }}">
+                  {{ lead.priority }}
+                </span>
+
+                <!-- Three-dot Menu Trigger -->
+                <div class="menu-container" (click)="$event.stopPropagation()">
+                  <button type="button" class="btn-card-menu" (click)="toggleCardMenu($event, lead._id)"
+                    aria-label="Lead Actions" title="More Options">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="12" cy="5" r="2"></circle>
+                      <circle cx="12" cy="12" r="2"></circle>
+                      <circle cx="12" cy="19" r="2"></circle>
+                    </svg>
+                  </button>
+
+                  <!-- Dropdown Popover Menu -->
+                  @if (activeMenuLeadId() === lead._id) {
+                  <div class="card-dropdown-menu" role="menu">
+                    <button type="button" class="menu-item" (click)="openLeadDetails(lead)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="3" r="3"></circle>
+                      </svg>
+                      <span>View Lead</span>
+                    </button>
+                    <button type="button" class="menu-item" (click)="openLeadDetails(lead)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      <span>Edit Lead</span>
+                    </button>
+                    <button type="button" class="menu-item" (click)="openLeadDetails(lead)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>View Follow-ups</span>
+                    </button>
+                  </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer Name & Product -->
+            <div class="card-customer-row">
+              <h4 class="customer-name">{{ lead.customerName }}</h4>
+              @if (lead.interestedIn) {
+              <span class="product-tag">{{ lead.interestedIn }}</span>
+              }
+            </div>
+
+            <!-- Deal Value -->
+            <div class="card-value-row">
+              <span class="deal-value-amount" [class.val-won]="stage.id === 'WON'"
+                [class.val-lost]="stage.id === 'LOST'">
+                {{ (lead.estimatedValue || 0) | currency:'USD':'symbol':'1.0-0' }}
+              </span>
+            </div>
+
+            <!-- Footer: Next Follow-up & Salesperson Avatar -->
+            <div class="card-footer-row">
+              <!-- Follow-up date / Overdue Indicator -->
+              <div class="followup-info" [class.overdue]="isFollowUpOverdue(lead.nextFollowUpAt)">
+                @if (isFollowUpOverdue(lead.nextFollowUpAt)) {
+                <span class="overdue-dot" title="Follow-up overdue"></span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span class="followup-text overdue-text">
+                  {{ lead.nextFollowUpAt | date:'MMM d, h:mm a' }}
+                </span>
+                } @else if (lead.nextFollowUpAt) {
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span class="followup-text">
+                  {{ lead.nextFollowUpAt | date:'MMM d, h:mm a' }}
+                </span>
+                } @else {
+                <span class="followup-text text-muted">No follow-up set</span>
+                }
+              </div>
+
+              <!-- Assigned Salesperson Initials & Name -->
+              <div class="salesperson-chip" title="Assigned to {{ lead.assignedTo?.name || 'Unassigned' }}">
+                <div class="sp-avatar">
+                  {{ getInitials(lead.assignedTo?.name) }}
+                </div>
+                <span class="sp-name">{{ lead.assignedTo?.name ? (lead.assignedTo?.name?.split(' ') || ['User'])[0] :
+                  'Unassigned' }}</span>
+              </div>
+            </div>
+          </div>
+          }
+          }
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- =========================================================================
+       6. CONFIRMATION DIALOG: WON DEAL
+       ========================================================================= -->
+  @if (isWonConfirmOpen()) {
+  <div class="modal-backdrop" (click)="cancelWonMove()" role="presentation">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="wonTitle">
+      <div class="confirm-icon icon-won-trophy">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="7"></circle>
+          <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+        </svg>
+      </div>
+
+      <div class="confirm-header">
+        <h3 id="wonTitle" class="confirm-title">Mark Deal as Won?</h3>
+        <p class="confirm-subtitle">
+          Celebrate the win! Moving <strong>{{ pendingStageChange()?.lead?.customerName }}</strong>
+          ({{ pendingStageChange()?.lead?.companyName || 'Individual' }}) to <strong>Won</strong> records
+          <strong class="text-emerald">{{ (pendingStageChange()?.lead?.estimatedValue || 0) |
+            currency:'USD':'symbol':'1.0-0' }}</strong>
+          in closed revenue.
+        </p>
+      </div>
+
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelWonMove()">Cancel</button>
+        <button type="button" class="btn btn-emerald" (click)="confirmWonMove()">
+          Confirm Deal Won
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- =========================================================================
+       6. CONFIRMATION DIALOG: LOST DEAL (With Lost Reason)
+       ========================================================================= -->
+  @if (isLostConfirmOpen()) {
+  <div class="modal-backdrop" (click)="cancelLostMove()" role="presentation">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="lostTitle">
+      <div class="confirm-icon icon-lost-flag">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+
+      <div class="confirm-header">
+        <h3 id="lostTitle" class="confirm-title">Mark Deal as Lost</h3>
+        <p class="confirm-subtitle">
+          Please record why <strong>{{ pendingStageChange()?.lead?.companyName ||
+            pendingStageChange()?.lead?.customerName }}</strong> was lost to help improve sales forecasting and
+          strategy.
+        </p>
+      </div>
+
+      <div class="lost-form">
+        <div class="form-group">
+          <label class="form-label" for="lostReasonSelect">Primary Loss Reason <span class="required">*</span></label>
+          <select id="lostReasonSelect" class="form-select" [ngModel]="lostReason()"
+            (ngModelChange)="lostReason.set($event)">
+            <option value="Price / Budget Constraint">Price / Budget Constraint</option>
+            <option value="Competitor Selected">Competitor Selected</option>
+            <option value="Project Cancelled / Postponed">Project Cancelled / Postponed</option>
+            <option value="Lack of Required Features">Lack of Required Features</option>
+            <option value="No Decision / Unresponsive">No Decision / Unresponsive</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="lostNotesText">Additional Context (Optional)</label>
+          <textarea id="lostNotesText" rows="2" class="form-textarea" [ngModel]="lostNotes()"
+            (ngModelChange)="lostNotes.set($event)" placeholder="Feedback provided by prospect..."></textarea>
+        </div>
+      </div>
+
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelLostMove()">Cancel</button>
+        <button type="button" class="btn btn-rose" (click)="confirmLostMove()">
+          Mark as Lost
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- =========================================================================
+       7. SLIDE-OVER DRAWER: LEAD DETAILS
+       ========================================================================= -->
+  @if (isDetailsDrawerOpen() && selectedLead()) {
+  <div class="drawer-backdrop" (click)="closeLeadDetails()" role="presentation">
+    <div class="lead-drawer" (click)="$event.stopPropagation()" role="dialog" aria-label="Lead Details">
+      <!-- Drawer Header -->
+      <div class="drawer-header">
+        <div class="drawer-header-info">
+          <span class="drawer-badge-stage stage-bg-{{ selectedLead()?.status }}">
+            {{ selectedLead()?.status }}
+          </span>
+          <h2 class="drawer-title">{{ selectedLead()?.customerName }}</h2>
+          <span class="drawer-company">{{ selectedLead()?.companyName || 'Individual Prospect' }}</span>
+        </div>
+
+        <button type="button" class="btn-drawer-close" (click)="closeLeadDetails()" aria-label="Close drawer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Drawer Body -->
+      <div class="drawer-body">
+        <!-- Value Highlight Card -->
+        <div class="drawer-deal-highlight">
+          <div class="highlight-item">
+            <span class="hl-label">DEAL VALUE</span>
+            <span class="hl-val" [class.text-emerald]="selectedLead()?.status === 'WON'">
+              {{ (selectedLead()?.estimatedValue || 0) | currency:'USD':'symbol':'1.0-0' }}
+            </span>
+          </div>
+          <div class="highlight-item">
+            <span class="hl-label">PRIORITY</span>
+            <span class="priority-pill priority-{{ selectedLead()?.priority?.toLowerCase() }}">
+              {{ selectedLead()?.priority }}
+            </span>
+          </div>
+          <div class="highlight-item">
+            <span class="hl-label">NEXT FOLLOW-UP</span>
+            <span class="hl-val-sub" [class.text-rose]="isFollowUpOverdue(selectedLead()?.nextFollowUpAt)">
+              {{ selectedLead()?.nextFollowUpAt ? (selectedLead()?.nextFollowUpAt | date:'MMM d, h:mm a') : 'None
+              scheduled' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Contact & Lead Information -->
+        <div class="drawer-section">
+          <h4 class="section-title">Lead Information</h4>
+          <div class="info-grid">
+            <div class="info-row">
+              <span class="info-label">Email:</span>
+              <a href="mailto:{{ selectedLead()?.email }}" class="info-link">{{ selectedLead()?.email || 'N/A' }}</a>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Phone:</span>
+              <a href="tel:{{ selectedLead()?.phone }}" class="info-link">{{ selectedLead()?.phone || 'N/A' }}</a>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Product / Scope:</span>
+              <span class="info-text">{{ selectedLead()?.interestedIn || 'General Inquiry' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Assigned Rep:</span>
+              <div class="sp-inline">
+                <div class="sp-avatar">
+                  {{ getInitials(selectedLead()?.assignedTo?.name) }}
+                </div>
+                <span>{{ selectedLead()?.assignedTo?.name || 'Unassigned' }}</span>
+              </div>
+            </div>
+            @if (selectedLead()?.lostReason) {
+            <div class="info-row lost-reason-row">
+              <span class="info-label">Loss Reason:</span>
+              <span class="loss-reason-text">{{ selectedLead()?.lostReason }}</span>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="drawer-section">
+          <h4 class="section-title">Interaction Notes</h4>
+          <div class="notes-box">
+            <p>{{ selectedLead()?.notes || 'No specific notes recorded for this lead yet.' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer Footer Actions -->
+      <div class="drawer-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeLeadDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+  }
+</div>

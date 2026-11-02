@@ -1,0 +1,1107 @@
+<div class="leads-container">
+  <!-- =========================================================================
+       SECTION 1: LEADS LISTING PAGE (Main View)
+       ========================================================================= -->
+  <main class="view-panel view-panel-listing">
+    <!-- Top Header -->
+    <header class="leads-header">
+      <div class="leads-header-text">
+        <div class="title-with-badge">
+          <h1 class="page-title">Leads</h1>
+        </div>
+        <p class="page-subtitle">Track, qualify and convert prospects throughout your sales and follow-up lifecycle.
+        </p>
+      </div>
+
+      <div class="leads-header-actions">
+        <button type="button" class="btn btn-secondary" title="Import leads from CSV or Excel">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Import Leads</span>
+        </button>
+
+        <button type="button" class="btn btn-secondary" title="Export leads to CSV or spreadsheet">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Export</span>
+        </button>
+
+        <button type="button" class="btn btn-primary" (click)="openAddModal()" title="Create a new lead record">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Add Lead</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Search & Filter Controls (All filtering performed by Backend API) -->
+    <section class="leads-filter-card" aria-label="Lead Filters and Search">
+      <div class="filter-toolbar">
+        <!-- Search Filter Left -->
+        <div class="filter-left">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="search" class="search-input" [value]="searchQuery()" (input)="onSearch($event)"
+              placeholder="Search by customer name, company, email, phone, or product/service interest..."
+              autocomplete="off" aria-label="Search leads" />
+            @if (searchQuery()) {
+            <button type="button" class="search-clear-btn" (click)="clearSearch()" title="Clear search query"
+              aria-label="Clear search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            }
+          </div>
+        </div>
+
+        <!-- Filter Dropdown Trigger & Popover Menu Right -->
+        <div class="filter-right">
+          <div class="filter-dropdown-container">
+            <button type="button" class="btn-filter-trigger" [class.active]="hasActiveFilters()"
+              [class.open]="isFilterDropdownOpen()" (click)="toggleFilterDropdown($event)" aria-haspopup="true"
+              [attr.aria-expanded]="isFilterDropdownOpen()" title="Open filter menu">
+              <svg class="filter-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              <span class="filter-btn-text">Filter</span>
+              @if (activeFilterCount() > 0) {
+              <span class="filter-badge">{{ activeFilterCount() }}</span>
+              }
+              <svg class="chevron-arrow" [class.rotated]="isFilterDropdownOpen()" width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            @if (isFilterDropdownOpen()) {
+            <div class="filter-dropdown-menu" (click)="$event.stopPropagation()" role="dialog" aria-label="Filters">
+              <!-- Dropdown Header -->
+              <div class="filter-dropdown-header">
+                <div class="dropdown-header-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                  </svg>
+                  <span>Filter Leads</span>
+                  @if (activeFilterCount() > 0) {
+                  <span class="dropdown-active-pill">{{ activeFilterCount() }} active</span>
+                  }
+                </div>
+                <button type="button" class="btn-close-dropdown" (click)="closeFilterDropdown()"
+                  aria-label="Close filters menu" title="Close">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Dropdown Form Fields -->
+              <div class="filter-dropdown-body">
+                <!-- Status Filter -->
+                <div class="dropdown-field">
+                  <label class="dropdown-label" for="dropdown-filter-status">Status</label>
+                  <div class="select-wrapper">
+                    <select id="dropdown-filter-status" class="filter-select" [value]="statusFilter()"
+                      (change)="onStatusChange($event)">
+                      <option value="ALL">All Statuses</option>
+                      <option value="NEW">New</option>
+                      <option value="CONTACTED">Contacted</option>
+                      <option value="QUALIFIED">Qualified</option>
+                      <option value="QUOTATION_SENT">Quotation Sent</option>
+                      <option value="NEGOTIATION">Negotiation</option>
+                      <option value="WON">Won</option>
+                      <option value="LOST">Lost</option>
+                    </select>
+                    <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="dropdown-field">
+                  <label class="dropdown-label" for="dropdown-filter-priority">Priority</label>
+                  <div class="select-wrapper">
+                    <select id="dropdown-filter-priority" class="filter-select" [value]="priorityFilter()"
+                      (change)="onPriorityChange($event)">
+                      <option value="ALL">All Priorities</option>
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                    </select>
+                    <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Due Filter -->
+                <div class="dropdown-field">
+                  <label class="dropdown-label" for="dropdown-filter-due">Due Status</label>
+                  <div class="select-wrapper">
+                    <select id="dropdown-filter-due" class="filter-select" [value]="dueOnlyFilter() ? 'DUE' : 'ALL'"
+                      (change)="onDueChange($event)">
+                      <option value="ALL">All Follow-ups</option>
+                      <option value="DUE">Due / Overdue Only</option>
+                    </select>
+                    <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Assigned Filter -->
+                <div class="dropdown-field">
+                  <label class="dropdown-label" for="dropdown-filter-assigned">Assigned To</label>
+                  <div class="select-wrapper">
+                    <select id="dropdown-filter-assigned" class="filter-select" [value]="assignedFilter()"
+                      (change)="onAssignedChange($event)">
+                      <option value="ALL">All Assignees</option>
+                      @for (member of teamMembers(); track member._id) {
+                      <option [value]="member._id">{{ member.name }}</option>
+                      }
+                    </select>
+                    <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                  @if (!canManageTeam()) {
+                  <span class="dropdown-hint">Viewing leads assigned to your account</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Dropdown Footer -->
+              <div class="filter-dropdown-footer">
+                <button type="button" class="btn-clear-dropdown" (click)="clearFilters()"
+                  [disabled]="!hasActiveFilters()" title="Reset all applied filters to default">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                  </svg>
+                  <span>Clear Filters</span>
+                </button>
+
+                <button type="button" class="btn-apply-dropdown" (click)="closeFilterDropdown()">
+                  Apply
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Filters Summary Chips Bar -->
+      @if (hasActiveFilters()) {
+      <div class="active-filter-chips-bar">
+        <span class="chips-label">Active:</span>
+        <div class="chips-list">
+          @if (statusFilter() !== 'ALL') {
+          <span class="active-chip">
+            <span class="chip-key">Status:</span>
+            <span class="chip-val">{{ statusFilter() }}</span>
+            <button type="button" class="chip-close-btn" (click)="clearStatusFilter()"
+              aria-label="Remove status filter">
+              &times;
+            </button>
+          </span>
+          }
+          @if (priorityFilter() !== 'ALL') {
+          <span class="active-chip">
+            <span class="chip-key">Priority:</span>
+            <span class="chip-val">{{ priorityFilter() }}</span>
+            <button type="button" class="chip-close-btn" (click)="clearPriorityFilter()"
+              aria-label="Remove priority filter">
+              &times;
+            </button>
+          </span>
+          }
+          @if (dueOnlyFilter()) {
+          <span class="active-chip chip-due">
+            <span class="chip-dot"></span>
+            <span class="chip-val">Due / Overdue</span>
+            <button type="button" class="chip-close-btn" (click)="clearDueFilter()" aria-label="Remove due filter">
+              &times;
+            </button>
+          </span>
+          }
+          @if (assignedFilter() !== 'ALL') {
+          <span class="active-chip">
+            <span class="chip-key">Assigned:</span>
+            <span class="chip-val">{{ getAssigneeFilterLabel() }}</span>
+            <button type="button" class="chip-close-btn" (click)="clearAssignedFilter()"
+              aria-label="Remove assigned filter">
+              &times;
+            </button>
+          </span>
+          }
+          <button type="button" class="btn-reset-all-chips" (click)="clearFilters()">
+            Clear all
+          </button>
+        </div>
+      </div>
+      }
+    </section>
+
+    <!-- Leads Table Section -->
+    <section class="leads-table-card" aria-label="Leads Data Table">
+      <div class="table-scroll-container">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th scope="col" class="th-sortable th-customer" [class.is-sorted]="sortBy() === 'customerName'"
+                (click)="sortByField('customerName')" title="Sort by Customer Name">
+                <div class="th-content">
+                  <span>Customer / Contact</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'customerName' && sortOrder() === 'asc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'customerName' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-sortable th-source" [class.is-sorted]="sortBy() === 'source'"
+                (click)="sortByField('source')" title="Sort by Source">
+                <div class="th-content">
+                  <span>Source</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'source' && sortOrder() === 'asc'" width="7"
+                      height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'source' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-sortable th-interest" [class.is-sorted]="sortBy() === 'interestedIn'"
+                (click)="sortByField('interestedIn')" title="Sort by Interested In">
+                <div class="th-content">
+                  <span>Interested In</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'interestedIn' && sortOrder() === 'asc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'interestedIn' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-sortable th-value" [class.is-sorted]="sortBy() === 'estimatedValue'"
+                (click)="sortByField('estimatedValue')" title="Sort by Estimated Value">
+                <div class="th-content">
+                  <span>Estimated Value</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'estimatedValue' && sortOrder() === 'asc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'estimatedValue' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-sortable th-status" [class.is-sorted]="sortBy() === 'status'"
+                (click)="sortByField('status')" title="Sort by Status">
+                <div class="th-content">
+                  <span>Status</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'status' && sortOrder() === 'asc'" width="7"
+                      height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'status' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-sortable th-priority" [class.is-sorted]="sortBy() === 'priority'"
+                (click)="sortByField('priority')" title="Sort by Priority">
+                <div class="th-content">
+                  <span>Priority</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'priority' && sortOrder() === 'asc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'priority' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-assigned">Assigned To</th>
+              <th scope="col" class="th-sortable th-followup" [class.is-sorted]="sortBy() === 'nextFollowUpAt'"
+                (click)="sortByField('nextFollowUpAt')" title="Sort by Next Follow-up">
+                <div class="th-content">
+                  <span>Next Follow-up</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'nextFollowUpAt' && sortOrder() === 'asc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'nextFollowUpAt' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-sortable th-created" [class.is-sorted]="sortBy() === 'createdAt'"
+                (click)="sortByField('createdAt')" title="Sort by Created At">
+                <div class="th-content">
+                  <span>Created At</span>
+                  <span class="sort-icon-box">
+                    <svg class="sort-icon-up" [class.active]="sortBy() === 'createdAt' && sortOrder() === 'asc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,0 7,4.5 0,4.5" />
+                    </svg>
+                    <svg class="sort-icon-down" [class.active]="sortBy() === 'createdAt' && sortOrder() === 'desc'"
+                      width="7" height="4.5" viewBox="0 0 7 4.5" fill="currentColor">
+                      <polygon points="3.5,4.5 0,0 7,0" />
+                    </svg>
+                  </span>
+                </div>
+              </th>
+              <th scope="col" class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (isLoading()) {
+            <tr>
+              <td colspan="11" class="table-empty-cell" style="padding: 40px; text-align: center; color: #64748b;">
+                <span>Loading leads from server...</span>
+              </td>
+            </tr>
+            } @else if (leads().length === 0) {
+            <!-- Empty state row spanning all columns -->
+            <tr class="table-empty-row">
+              <td colspan="11" class="table-empty-cell">
+                <div class="leads-empty-state">
+                  <div class="empty-state-icon-circle">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                  </div>
+                  <h3 class="empty-state-title">No leads in your pipeline yet</h3>
+                  <p class="empty-state-description">
+                    Start by creating your first lead record. You can set follow-up schedules, log inquiries, and track
+                    deal stages in one place.
+                  </p>
+                  <div class="empty-state-actions">
+                    <button type="button" class="btn btn-primary" (click)="openAddModal()">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      <span>Add First Lead</span>
+                    </button>
+                    @if (searchQuery() || statusFilter() !== 'ALL' || priorityFilter() !== 'ALL' || dueOnlyFilter()) {
+                    <button type="button" class="btn btn-secondary" (click)="clearFilters()">
+                      <span>Reset Filters</span>
+                    </button>
+                    }
+                  </div>
+                </div>
+              </td>
+            </tr>
+            } @else {
+            @for (lead of leads(); track lead._id) {
+            <tr>
+              <td class="th-customer">
+                <div class="lead-contact-stack">
+                  <!-- 1. Customer Name -->
+                  <div class="lead-customer-name" (click)="openDetails(lead)" title="View lead details">
+                    {{ lead.customerName }}
+                  </div>
+
+                  <!-- 2. Company Name (its bottom) -->
+                  @if (lead.companyName) {
+                  <div class="lead-company-name">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                    <span>{{ lead.companyName }}</span>
+                  </div>
+                  }
+
+                  <!-- 3. Email (its bottom) -->
+                  @if (lead.email) {
+                  <div class="lead-contact-email">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <a [href]="'mailto:' + lead.email" (click)="$event.stopPropagation()">{{ lead.email }}</a>
+                  </div>
+                  }
+
+                  <!-- 4. Contact No (then its bottom) -->
+                  @if (lead.phone) {
+                  <div class="lead-contact-phone">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path
+                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                      </path>
+                    </svg>
+                    <a [href]="'tel:' + lead.phone" (click)="$event.stopPropagation()">{{ lead.phone }}</a>
+                  </div>
+                  }
+                </div>
+              </td>
+              <td class="th-source">
+                <span class="badge-source">{{ lead.source }}</span>
+              </td>
+              <td class="th-interest">{{ lead.interestedIn || '—' }}</td>
+              <td class="th-value">
+                @if (lead.estimatedValue !== undefined && lead.estimatedValue !== null) {
+                <strong>{{ lead.estimatedValue | currency:'USD':'symbol':'1.0-0' }}</strong>
+                } @else {
+                <span class="text-muted">—</span>
+                }
+              </td>
+              <td class="th-status">
+                <span class="badge-status" [ngClass]="getStatusClass(lead.status)">
+                  {{ lead.status }}
+                </span>
+              </td>
+              <td class="th-priority">
+                <span class="badge-priority" [ngClass]="getPriorityClass(lead.priority)">
+                  <span class="priority-dot"></span>
+                  {{ lead.priority }}
+                </span>
+              </td>
+              <td class="th-assigned">{{ lead.assignedTo?.name || 'Unassigned' }}</td>
+              <td class="th-followup">
+                @if (lead.nextFollowUpAt) {
+                <span>{{ lead.nextFollowUpAt | date:'MMM d, y, h:mm a' }}</span>
+                } @else {
+                <span class="text-muted">—</span>
+                }
+              </td>
+              <td class="th-created">{{ lead.createdAt | date:'MMM d, y' }}</td>
+              <td class="th-actions">
+                <div class="table-actions-cell">
+                  <button type="button" class="btn-table-action" (click)="openDetails(lead)" title="View lead details">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-table-action" (click)="openEditModal(lead)" title="Edit lead">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-table-action delete" (click)="openArchiveModal(lead)"
+                    title="Archive lead">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Layout -->
+      <footer class="table-pagination-footer" aria-label="Table pagination">
+        <div class="pagination-info-group">
+          <span class="pagination-count-label">
+            Showing <strong>{{ (currentPage() - 1) * pageSize() + (leads().length ? 1 : 0) }}</strong> to
+            <strong>{{ (currentPage() - 1) * pageSize() + leads().length }}</strong> of
+            <strong>{{ pagination().total }}</strong> leads
+          </span>
+          <div class="rows-per-page-selector">
+            <label for="rows-per-page" class="rows-label">Rows per page:</label>
+            <div class="select-wrapper mini-select">
+              <select id="rows-per-page" class="filter-select" [value]="pageSize()" (change)="onPageSizeChange($event)">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <svg class="select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <nav class="pagination-controls" aria-label="Pagination Navigation">
+          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() <= 1" (click)="changePage(1)"
+            title="First page" aria-label="First page">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="11 17 6 12 11 7"></polyline>
+              <polyline points="18 17 13 12 18 7"></polyline>
+            </svg>
+          </button>
+          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() <= 1"
+            (click)="changePage(currentPage() - 1)" title="Previous page" aria-label="Previous page">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <span class="pagination-page-indicator">Page <strong>{{ currentPage() }}</strong> of <strong>{{
+              pagination().totalPages || 1 }}</strong></span>
+
+          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() >= pagination().totalPages"
+            (click)="changePage(currentPage() + 1)" title="Next page" aria-label="Next page">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() >= pagination().totalPages"
+            (click)="changePage(pagination().totalPages)" title="Last page" aria-label="Last page">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="13 17 18 12 13 7"></polyline>
+              <polyline points="6 17 11 12 6 7"></polyline>
+            </svg>
+          </button>
+        </nav>
+      </footer>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       SECTION 2: LEAD FORM MODAL (Add / Edit Unified Modal)
+       ========================================================================= -->
+  @if (isFormModalOpen()) {
+  <div class="modal-backdrop" (click)="closeModal()" role="presentation">
+    <div class="modal-dialog form-modal-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      [attr.aria-labelledby]="'lead-modal-title'">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h2 id="lead-modal-title" class="modal-title">{{ isEditMode() ? 'Edit Lead' : 'Add New Lead' }}</h2>
+          <p class="modal-subtitle">
+            {{ isEditMode() ? 'Update lead credentials, deal progress, and follow-up timeline.' : 'Capture prospective client credentials, deal interests, and schedule initial follow-up.' }}
+          </p>
+        </div>
+        <button type="button" class="modal-close-icon-btn" (click)="closeModal()" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form [formGroup]="leadForm" (ngSubmit)="saveLead()" class="modal-form">
+        <div class="modal-body-content">
+          @if (errorMessage()) {
+          <div class="form-alert error-alert"
+            style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+            {{ errorMessage() }}
+          </div>
+          }
+
+          <div class="form-grid">
+            <!-- Customer Name -->
+            <div class="form-group">
+              <label for="lead-customer-name" class="form-label required">Customer Name</label>
+              <input type="text" id="lead-customer-name" class="form-control" formControlName="customerName"
+                placeholder="e.g. Full name" autocomplete="name" />
+            </div>
+
+            <!-- Company Name -->
+            <div class="form-group">
+              <label for="lead-company-name" class="form-label">Company Name</label>
+              <input type="text" id="lead-company-name" class="form-control" formControlName="companyName"
+                placeholder="e.g. Organization or business" autocomplete="organization" />
+            </div>
+
+            <!-- Email Address -->
+            <div class="form-group">
+              <label for="lead-email" class="form-label">Email Address</label>
+              <input type="email" id="lead-email" class="form-control" formControlName="email"
+                placeholder="client@company.com" autocomplete="email" />
+            </div>
+
+            <!-- Phone Number -->
+            <div class="form-group">
+              <label for="lead-phone" class="form-label">Phone Number</label>
+              <input type="tel" id="lead-phone" class="form-control" formControlName="phone"
+                placeholder="+1 (555) 000-0000" autocomplete="tel" />
+            </div>
+
+            <!-- Lead Source -->
+            <div class="form-group">
+              <label for="lead-source" class="form-label required">Lead Source</label>
+              <div class="select-wrapper">
+                <select id="lead-source" class="form-control select-control" formControlName="source">
+                  <option value="WEBSITE">Website</option>
+                  <option value="WHATSAPP">WhatsApp</option>
+                  <option value="PHONE">Phone</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="WALK_IN">Walk-in</option>
+                  <option value="REFERRAL">Referral</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Estimated Value -->
+            <div class="form-group">
+              <label for="lead-estimated-value" class="form-label">Estimated Value</label>
+              <div class="input-prefix-wrapper">
+                <span class="input-prefix">$</span>
+                <input type="number" id="lead-estimated-value" class="form-control prefix-input"
+                  formControlName="estimatedValue" placeholder="0.00" min="0" step="100" />
+              </div>
+            </div>
+
+            <!-- Interested In -->
+            <div class="form-group full-width">
+              <label for="lead-interested-in" class="form-label">Interested In</label>
+              <input type="text" id="lead-interested-in" class="form-control" formControlName="interestedIn"
+                placeholder="Product, service, or solution package" />
+            </div>
+
+            <!-- Status (in Edit Mode) -->
+            @if (isEditMode()) {
+            <div class="form-group">
+              <label for="lead-status" class="form-label required">Status</label>
+              <div class="select-wrapper">
+                <select id="lead-status" class="form-control select-control" formControlName="status">
+                  <option value="NEW">New</option>
+                  <option value="CONTACTED">Contacted</option>
+                  <option value="QUALIFIED">Qualified</option>
+                  <option value="QUOTATION_SENT">Quotation Sent</option>
+                  <option value="NEGOTIATION">Negotiation</option>
+                  <option value="WON">Won</option>
+                  <option value="LOST">Lost</option>
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+            }
+
+            <!-- Priority -->
+            <div class="form-group">
+              <label for="lead-priority" class="form-label required">Priority</label>
+              <div class="select-wrapper">
+                <select id="lead-priority" class="form-control select-control" formControlName="priority">
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Assignee -->
+            <div class="form-group">
+              <label for="lead-assignee" class="form-label">Assignee</label>
+              <div class="select-wrapper">
+                <select id="lead-assignee" class="form-control select-control" formControlName="assignedTo">
+                  <option value="">Unassigned</option>
+                  @for (member of teamMembers(); track member._id) {
+                  <option [value]="member._id">{{ member.name }}</option>
+                  }
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Next Follow-up Date & Time -->
+            <div class="form-group" [class.full-width]="!isEditMode()">
+              <label for="lead-follow-up-time" class="form-label">Next Follow-up Date & Time</label>
+              <input type="datetime-local" id="lead-follow-up-time" class="form-control datetime-control"
+                formControlName="nextFollowUpAt" />
+            </div>
+
+            <!-- Notes -->
+            <div class="form-group full-width">
+              <label for="lead-notes" class="form-label">Notes & Context</label>
+              <textarea id="lead-notes" class="form-control textarea-control" rows="3" formControlName="notes"
+                placeholder="Key client requirements, conversation takeaways, or specific follow-up goals..."></textarea>
+            </div>
+
+            @if (leadForm.get('status')?.value === 'LOST') {
+            <div class="form-group full-width lost-reason-group">
+              <div class="lost-reason-header">
+                <label for="lead-lost-reason" class="form-label">Lost Reason</label>
+                <span class="lost-reason-hint">Applicable when status is Lost</span>
+              </div>
+              <input type="text" id="lead-lost-reason" class="form-control lost-reason-input"
+                formControlName="lostReason" placeholder="State reason if lost..." />
+            </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSubmitting()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting() || leadForm.invalid">
+            @if (isSubmitting()) {
+            <span class="btn-spinner"></span>
+            <span>Saving...</span>
+            } @else {
+            <span>{{ isEditMode() ? 'Save Changes' : 'Create Lead' }}</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  }
+
+  <!-- =========================================================================
+       SECTION 4: LEAD DETAILS VIEW (Side Panel / Drawer)
+       ========================================================================= -->
+  @if (isDetailsOpen() && selectedLead()) {
+  <aside class="view-panel view-panel-details side-drawer-backdrop" role="dialog" aria-modal="true"
+    aria-label="Lead Details Panel" (click)="closeModal()">
+    <div class="side-drawer" (click)="$event.stopPropagation()">
+      <!-- Drawer Header -->
+      <header class="drawer-header">
+        <div class="drawer-lead-identity">
+          <div class="drawer-identity-text">
+            <h2 class="drawer-lead-name">{{ selectedLead()?.customerName || 'Lead Details' }}</h2>
+            @if (selectedLead()?.companyName) {
+            <span class="drawer-company-name">
+              <span>{{ selectedLead()?.companyName }}</span>
+            </span>
+            }
+          </div>
+        </div>
+
+        <div class="drawer-header-actions">
+          @if (selectedLead()) {
+          <button type="button" class="btn btn-secondary btn-sm" (click)="openEditModal(selectedLead()!)"
+            title="Edit lead details">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>Edit</span>
+          </button>
+
+          <button type="button" class="btn btn-archive-outline btn-sm" (click)="openArchiveModal(selectedLead()!)"
+            title="Archive this lead">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+            <span>Archive</span>
+          </button>
+          }
+
+          <button type="button" class="drawer-close-btn" (click)="closeModal()" title="Close details panel"
+            aria-label="Close details">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Drawer Content Scroll -->
+      <div class="drawer-body">
+        <!-- Status & Value Snapshot Strip -->
+        <div class="drawer-snapshot-strip">
+          <div class="snapshot-col">
+            <span class="snapshot-label">Status</span>
+            <div class="snapshot-badge-wrapper">
+              <span class="badge-status" [ngClass]="selectedLead() ? getStatusClass(selectedLead()!.status) : ''">
+                {{ selectedLead()?.status || '—' }}
+              </span>
+            </div>
+          </div>
+          <div class="snapshot-col">
+            <span class="snapshot-label">Priority</span>
+            <div class="snapshot-badge-wrapper">
+              <span class="badge-priority" [ngClass]="selectedLead() ? getPriorityClass(selectedLead()!.priority) : ''">
+                <span class="priority-dot"></span>
+                {{ selectedLead()?.priority || '—' }}
+              </span>
+            </div>
+          </div>
+          <div class="snapshot-col">
+            <span class="snapshot-label">Est. Value</span>
+            <span class="snapshot-value">
+              {{ (selectedLead()?.estimatedValue | currency:'USD':'symbol':'1.0-0') || '—' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Section 1: Customer Details Card -->
+        <div class="drawer-panel-card">
+          <div class="drawer-panel-header">
+            <div class="panel-icon-box icon-customer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <h3>Customer Details</h3>
+          </div>
+          <div class="details-data-grid">
+            <div class="detail-data-item">
+              <span class="data-key">Customer Name</span>
+              <span class="data-val font-semibold">{{ selectedLead()?.customerName || '—' }}</span>
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Company Name</span>
+              <span class="data-val">{{ selectedLead()?.companyName || '—' }}</span>
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Email Address</span>
+              @if (selectedLead()?.email) {
+              <a [href]="'mailto:' + selectedLead()?.email" class="data-link" title="Send email">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <span>{{ selectedLead()?.email }}</span>
+              </a>
+              } @else {
+              <span class="data-val text-muted">—</span>
+              }
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Phone Number</span>
+              @if (selectedLead()?.phone) {
+              <a [href]="'tel:' + selectedLead()?.phone" class="data-link" title="Call phone">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                  </path>
+                </svg>
+                <span>{{ selectedLead()?.phone }}</span>
+              </a>
+              } @else {
+              <span class="data-val text-muted">—</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Enquiry Information Card -->
+        <div class="drawer-panel-card">
+          <div class="drawer-panel-header">
+            <div class="panel-icon-box icon-enquiry">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                </polygon>
+              </svg>
+            </div>
+            <h3>Enquiry Information</h3>
+          </div>
+          <div class="details-data-grid">
+            <div class="detail-data-item">
+              <span class="data-key">Lead Source</span>
+              <span class="source-tag">{{ selectedLead()?.source || '—' }}</span>
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Interested In</span>
+              <span class="data-val">{{ selectedLead()?.interestedIn || '—' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Lead Management Card -->
+        <div class="drawer-panel-card">
+          <div class="drawer-panel-header">
+            <div class="panel-icon-box icon-management">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h3>Lead Management</h3>
+          </div>
+          <div class="details-data-grid">
+            <div class="detail-data-item">
+              <span class="data-key">Assigned Salesperson</span>
+              <div class="assignee-val">
+                <span>{{ selectedLead()?.assignedTo?.name || 'Unassigned' }}</span>
+              </div>
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Next Follow-up</span>
+              <div class="followup-time-val">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>{{ (selectedLead()?.nextFollowUpAt | date:'MMM d, y, h:mm a') || 'None scheduled' }}</span>
+              </div>
+            </div>
+            <div class="detail-data-item full-span">
+              <span class="data-key">Notes & History</span>
+              <div class="notes-display-box">
+                @if (selectedLead()?.notes) {
+                <p>{{ selectedLead()?.notes }}</p>
+                } @else {
+                <div class="empty-notes-hint">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>No notes recorded for this lead yet.</span>
+                </div>
+                }
+              </div>
+            </div>
+            @if (selectedLead()?.lostReason) {
+            <div class="detail-data-item full-span">
+              <span class="data-key">Lost Reason</span>
+              <div class="lost-reason-display-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{{ selectedLead()?.lostReason }}</span>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer Footer -->
+      <footer class="drawer-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          Close
+        </button>
+      </footer>
+    </div>
+  </aside>
+  }
+
+  <!-- SECTION 5: ARCHIVE CONFIRMATION MODAL -->
+  @if (isArchiveModalOpen() && selectedLead()) {
+  <section class="view-panel view-panel-archive modal-backdrop" role="dialog" aria-modal="true"
+    aria-labelledby="archive-lead-title" (click)="closeModal()">
+    <div class="modal-card modal-card-sm" (click)="$event.stopPropagation()">
+      <div class="archive-modal-body">
+        <div class="archive-icon-circle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </div>
+
+        <div class="archive-text-content">
+          <h2 id="archive-lead-title" class="archive-modal-title">Archive Lead</h2>
+          <p class="archive-modal-description">
+            Are you sure you want to archive <strong>{{ selectedLead()?.customerName }}</strong>? Archiving hides the
+            lead from active pipelines, task queues, and
+            listing tables while preserving all recorded history, interaction notes, and quotations for compliance.
+          </p>
+        </div>
+
+        <div class="archive-notice-callout">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Archived leads can be restored at any time from System Settings.</span>
+        </div>
+      </div>
+
+      <footer class="modal-footer archive-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          <span>Cancel</span>
+        </button>
+        <button type="button" class="btn btn-archive-solid" (click)="archiveLead()" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+          <span>Archiving...</span>
+          } @else {
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          <span>Archive Lead</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </section>
+  }
+</div>

@@ -1,0 +1,1073 @@
+<div class="follow-ups-container">
+  <!-- =========================================================================
+       PAGE ALERT BANNERS (Success & Error Feedback)
+       ========================================================================= -->
+  @if (successMessage()) {
+  <div class="page-alert alert-success" role="alert" aria-live="polite">
+    <div class="alert-content">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+    <button type="button" class="alert-close" (click)="dismissAlert()" aria-label="Dismiss alert">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+  }
+
+  @if (errorMessage()) {
+  <div class="page-alert alert-error" role="alert" aria-live="assertive">
+    <div class="alert-content">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+    <button type="button" class="alert-close" (click)="dismissAlert()" aria-label="Dismiss alert">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+  }
+
+  <!-- =========================================================================
+       PAGE HEADER
+       ========================================================================= -->
+  <header class="page-header">
+    <div class="header-text-group">
+      <div class="title-with-badge">
+        <h1 class="page-title">Follow-ups</h1>
+      </div>
+      <p class="page-subtitle">
+        Manage customer interactions, scheduled activities, and pending follow-up tasks.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <!-- Active vs Archived Toggle Group -->
+      <div class="view-toggle-group">
+        <button type="button" class="view-toggle-btn" [class.active]="!showArchived()"
+          (click)="toggleArchivedView(false)" title="View active follow-up queue">
+          Active
+        </button>
+        <button type="button" class="view-toggle-btn" [class.active]="showArchived()" (click)="toggleArchivedView(true)"
+          title="View archived follow-ups">
+          Archived
+        </button>
+      </div>
+
+      <button type="button" class="btn btn-primary" (click)="openScheduleModal()"
+        title="Schedule a new follow-up interaction">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <line x1="12" y1="14" x2="12" y2="18"></line>
+          <line x1="10" y1="16" x2="14" y2="16"></line>
+        </svg>
+        <span>Schedule Follow-up</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       SUMMARY CARDS (KPI METRICS)
+       ========================================================================= -->
+  <section class="summary-grid" aria-label="Follow-up Statistics">
+    <!-- Card 1: Today's Follow-ups -->
+    <div class="summary-card">
+      <div class="card-header-row">
+        <div class="card-icon-box today-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
+        <span class="card-badge neutral">Today</span>
+      </div>
+      <div class="card-body">
+        <span class="card-label">Today's Follow-ups</span>
+        <div class="card-value-row">
+          <span class="card-value">{{ summary().today }}</span>
+        </div>
+        <span class="card-hint">Scheduled for today</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Overdue Follow-ups -->
+    <div class="summary-card overdue-card">
+      <div class="card-header-row">
+        <div class="card-icon-box overdue-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <span class="card-badge warning">Action Required</span>
+      </div>
+      <div class="card-body">
+        <span class="card-label">Overdue Follow-ups</span>
+        <div class="card-value-row">
+          <span class="card-value">{{ summary().overdue }}</span>
+        </div>
+        <span class="card-hint">Deadline passed, pending action</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Upcoming Follow-ups -->
+    <div class="summary-card">
+      <div class="card-header-row">
+        <div class="card-icon-box upcoming-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <span class="card-badge neutral">Upcoming</span>
+      </div>
+      <div class="card-body">
+        <span class="card-label">Upcoming Follow-ups</span>
+        <div class="card-value-row">
+          <span class="card-value">{{ summary().upcoming }}</span>
+        </div>
+        <span class="card-hint">Scheduled for upcoming dates</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Completed Follow-ups -->
+    <div class="summary-card">
+      <div class="card-header-row">
+        <div class="card-icon-box completed-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <span class="card-badge success">Completed</span>
+      </div>
+      <div class="card-body">
+        <span class="card-label">Completed Follow-ups</span>
+        <div class="card-value-row">
+          <span class="card-value">{{ summary().completed }}</span>
+        </div>
+        <span class="card-hint">Resolved and logged interactions</span>
+      </div>
+    </div>
+  </section>
+
+  <!--  SEARCH & FILTER BAR (Search Left, Filter Menu Right)  -->
+  <section class="leads-filter-card" aria-label="Follow-up Filters and Search">
+    <div class="filter-toolbar">
+      <!-- Search Filter Left -->
+      <div class="filter-left">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="search-input" [value]="searchQuery()" (input)="onSearch($event)"
+            placeholder="Search by customer name or company..." autocomplete="off" aria-label="Search follow-ups" />
+          @if (searchQuery()) {
+          <button type="button" class="search-clear-btn" (click)="onSearch('')" title="Clear search query"
+            aria-label="Clear search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          }
+        </div>
+      </div>
+
+      <!-- Filter Dropdown Trigger & Popover Menu Right -->
+      <div class="filter-right">
+        <div class="filter-dropdown-container">
+          <button type="button" class="btn-filter-trigger" [class.open]="isFilterDropdownOpen()"
+            (click)="toggleFilterDropdown($event)" aria-haspopup="true" [attr.aria-expanded]="isFilterDropdownOpen()"
+            title="Open filter menu">
+            <svg class="filter-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            <span class="filter-btn-text">Filter</span>
+            @if (hasActiveFilters()) {
+            <span class="header-count-badge" style="padding: 1px 6px; font-size: 10px;">
+              {{ activeFilterCount() }}
+            </span>
+            }
+            <svg class="chevron-arrow" [class.rotated]="isFilterDropdownOpen()" width="12" height="12"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          @if (isFilterDropdownOpen()) {
+          <div class="filter-dropdown-menu" (click)="$event.stopPropagation()" role="dialog" aria-label="Filters">
+            <!-- Dropdown Header -->
+            <div class="filter-dropdown-header">
+              <div class="dropdown-header-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <span>Filter Follow-ups</span>
+              </div>
+              <button type="button" class="btn-close-dropdown" (click)="closeFilterDropdown()"
+                aria-label="Close filters menu" title="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Dropdown Form Fields -->
+            <div class="filter-dropdown-body">
+              <!-- Status Filter -->
+              <div class="dropdown-field">
+                <label class="dropdown-label" for="filter-status">Status</label>
+                <div class="select-wrapper">
+                  <select id="filter-status" class="filter-select" [value]="statusFilter()"
+                    (change)="onStatusFilterChange($event)">
+                    <option value="ALL">All Statuses</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                  <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Channel Type Filter -->
+              <div class="dropdown-field">
+                <label class="dropdown-label" for="filter-type">Interaction Type</label>
+                <div class="select-wrapper">
+                  <select id="filter-type" class="filter-select" [value]="typeFilter()"
+                    (change)="onTypeFilterChange($event)">
+                    <option value="ALL">All Types</option>
+                    <option value="CALL">Phone Call</option>
+                    <option value="WHATSAPP">WhatsApp</option>
+                    <option value="EMAIL">Email</option>
+                    <option value="MEETING">Meeting</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                  <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Filter by Lead -->
+              <div class="dropdown-field">
+                <label class="dropdown-label" for="filter-lead">Associated Lead</label>
+                <div class="select-wrapper">
+                  <select id="filter-lead" class="filter-select" [value]="leadFilter()"
+                    (change)="onLeadFilterChange($event)">
+                    <option value="ALL">All Leads</option>
+                    @for (lead of leadsList(); track lead._id) {
+                    <option [value]="lead._id">
+                      {{ lead.customerName }} {{ lead.companyName ? '(' + lead.companyName + ')' : '' }}
+                    </option>
+                    }
+                  </select>
+                  <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dropdown Footer -->
+            <div class="filter-dropdown-footer">
+              <button type="button" class="btn-clear-dropdown" (click)="clearFilters()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>Reset</span>
+              </button>
+              <button type="button" class="btn-apply-dropdown" (click)="closeFilterDropdown()">
+                <span>Apply</span>
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOLLOW-UP LIST / TABLE SECTION  -->
+  <section class="table-container-card" aria-label="Follow-up List">
+    <div class="table-responsive-wrapper">
+      <table class="followup-table">
+        <thead>
+          <tr>
+            <th scope="col" class="th-customer">Lead</th>
+            <th scope="col" class="th-type">Follow up Type</th>
+            <th scope="col" class="th-datetime">Scheduled Date & Time</th>
+            <th scope="col" class="th-assigned">Assigned To</th>
+            <th scope="col" class="th-status">Status</th>
+            <th scope="col" class="th-notes">Notes</th>
+            <th scope="col" class="th-actions text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Loading State Row -->
+          @if (isLoading()) {
+          <tr>
+            <td colspan="7" class="empty-state-cell">
+              <div class="empty-state-box">
+                <h3 class="empty-state-title" style="color: #64748b;">Loading follow-ups...</h3>
+              </div>
+            </td>
+          </tr>
+          }
+          <!-- Empty State Row -->
+          @else if (followUps().length === 0) {
+          <tr>
+            <td colspan="7" class="empty-state-cell">
+              <div class="empty-state-box">
+                <div class="empty-state-icon">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <h3 class="empty-state-title">
+                  {{ showArchived() ? 'No archived follow-ups' : 'No follow-ups found' }}
+                </h3>
+                <p class="empty-state-desc">
+                  {{ showArchived()
+                  ? 'There are no archived follow-up interactions in this business workspace.'
+                  : 'There are no scheduled follow-up interactions matching your active filter criteria.' }}
+                </p>
+              </div>
+            </td>
+          </tr>
+          }
+          <!-- Data Rows -->
+          @else {
+          @for (item of followUps(); track item._id) {
+          <tr>
+            <!-- 1. Customer / Lead -->
+            <td class="th-customer">
+              <div class="lead-contact-stack">
+                <span class="lead-customer-name" (click)="openDetailsDrawer(item)" title="View interaction details">
+                  {{ getLeadName(item) }}
+                </span>
+                @if (getLeadCompany(item)) {
+                <span class="lead-company-name">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                  </svg>
+                  <span>{{ getLeadCompany(item) }}</span>
+                </span>
+                }
+              </div>
+            </td>
+
+            <!-- 2. Type Badge -->
+            <td class="th-type">
+              <span class="type-badge" [class.type-call]="item.type === 'CALL'"
+                [class.type-whatsapp]="item.type === 'WHATSAPP'" [class.type-email]="item.type === 'EMAIL'"
+                [class.type-meeting]="item.type === 'MEETING'" [class.type-other]="item.type === 'OTHER'">
+                <!-- Call Icon -->
+                @if (item.type === 'CALL') {
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                  </path>
+                </svg>
+                }
+                <!-- WhatsApp Icon -->
+                @else if (item.type === 'WHATSAPP') {
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path
+                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                  </path>
+                </svg>
+                }
+                <!-- Email Icon -->
+                @else if (item.type === 'EMAIL') {
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                }
+                <!-- Meeting Icon -->
+                @else if (item.type === 'MEETING') {
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                }
+                <!-- Other Icon -->
+                @else {
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                }
+                <span>{{ getTypeLabel(item.type) }}</span>
+              </span>
+            </td>
+
+            <!-- 3. Scheduled Date & Time -->
+            <td class="th-datetime">
+              <div>
+                <span class="font-semibold">{{ item.scheduledAt | date:'mediumDate' }}</span>
+                <div style="font-size: 11.5px; color: #64748b;">{{ item.scheduledAt | date:'shortTime' }}</div>
+                @if (isOverdue(item) && !showArchived()) {
+                <span class="overdue-pill">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                  </svg>
+                  <span>Overdue</span>
+                </span>
+                }
+              </div>
+            </td>
+
+            <!-- 4. Assigned Salesperson -->
+            <td class="th-assigned">
+              <div class="user-assigned-cell">
+                <span class="user-avatar-mini">
+                  {{ getAssigneeName(item).charAt(0) }}
+                </span>
+                <span>{{ getAssigneeName(item) }}</span>
+              </div>
+            </td>
+
+            <!-- 5. Status -->
+            <td class="th-status">
+              <span class="badge-status" [ngClass]="getStatusBadgeClass(item)">
+                {{ getStatusLabel(item) }}
+              </span>
+            </td>
+
+            <!-- 6. Notes / Purpose -->
+            <td class="th-notes">
+              <div class="notes-cell-preview" [title]="item.notes || 'No notes'">
+                {{ item.notes || '—' }}
+              </div>
+            </td>
+
+            <!-- 7. Actions -->
+            <td class="th-actions text-right">
+              <div class="row-actions">
+                <!-- Quick Complete button (if pending) -->
+                @if (item.status === 'PENDING' && !showArchived()) {
+                <button type="button" class="btn-table-action complete" (click)="markAsCompleted(item, $event)"
+                  title="Mark follow-up as completed" aria-label="Mark completed">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </button>
+                }
+
+                <!-- View Details Drawer -->
+                <button type="button" class="btn-table-action" (click)="openDetailsDrawer(item)"
+                  title="View follow-up details" aria-label="View details">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+                <!-- Edit Follow-up -->
+                <button type="button" class="btn-table-action" (click)="openEditModal(item, $event)"
+                  title="Edit follow-up" aria-label="Edit follow-up">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+
+
+                <!-- Archive button (if not archived) -->
+                @if (!showArchived()) {
+                <button type="button" class="btn-table-action delete" (click)="openArchiveConfirmation(item, $event)"
+                  title="Archive follow-up" aria-label="Archive">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                    <rect x="1" y="3" width="22" height="5"></rect>
+                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                  </svg>
+                </button>
+                }
+
+                <!-- Permanent Delete button (Only for archived records AND Owner role) -->
+                @if (showArchived() && isOwner()) {
+                <button type="button" class="btn-table-action delete" (click)="openDeleteConfirmation(item, $event)"
+                  title="Permanently delete follow-up" aria-label="Permanently delete">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination & Count Footer -->
+    <footer class="table-footer">
+      <div class="footer-count">
+        Showing
+        <strong>
+          {{ (currentPage() - 1) * pageSize() + (followUps().length ? 1 : 0) }}
+        </strong>
+        to
+        <strong>
+          {{ (currentPage() - 1) * pageSize() + followUps().length }}
+        </strong>
+        of
+        <strong>{{ pagination().total }}</strong> follow-ups
+      </div>
+
+      <div class="footer-pagination">
+        <label for="page-size-select" style="font-size: 11.5px; color: #64748b; margin-right: 4px;">Rows:</label>
+        <div class="select-wrapper" style="width: 70px; margin-right: 12px;">
+          <select id="page-size-select" class="filter-select"
+            style="height: 28px; padding: 0 18px 0 8px; font-size: 11.5px;" [value]="pageSize()"
+            (change)="onPageSizeChange($event)">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+          <svg class="select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+
+        <button type="button" class="btn-pagination-nav" [disabled]="currentPage() <= 1"
+          (click)="changePage(currentPage() - 1)" aria-label="Previous page" title="Previous page">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <span class="pagination-page-indicator">
+          Page {{ currentPage() }} of {{ pagination().totalPages || 1 }}
+        </span>
+
+        <button type="button" class="btn-pagination-nav" [disabled]="currentPage() >= (pagination().totalPages || 1)"
+          (click)="changePage(currentPage() + 1)" aria-label="Next page" title="Next page">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- =========================================================================
+       SCHEDULE / EDIT FOLLOW-UP MODAL
+       ========================================================================= -->
+  @if (isScheduleModalOpen()) {
+  <div class="modal-backdrop" (click)="closeScheduleModal()" role="dialog" aria-modal="true"
+    aria-labelledby="schedule-modal-title">
+    <div class="modal-dialog form-modal-dialog" (click)="$event.stopPropagation()">
+      <!-- Modal Header -->
+      <header class="modal-header">
+        <div class="modal-header-text">
+          <h2 id="schedule-modal-title" class="modal-title">
+            {{ isEditMode() ? 'Edit Follow-up' : 'Schedule Follow-up' }}
+          </h2>
+          <p class="modal-subtitle">
+            {{ isEditMode() ? 'Update scheduled timing, channel, status, or conversation notes.' : 'Plan a prospective
+            client touchpoint, assign responsibility, and choose communication channel.' }}
+          </p>
+        </div>
+        <button type="button" class="modal-close-icon-btn" (click)="closeScheduleModal()" title="Close dialog"
+          aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <!-- Modal Body Form -->
+      <form [formGroup]="scheduleForm" (ngSubmit)="submitScheduleFollowUp()" class="modal-form" novalidate>
+        <div class="modal-body-content">
+          @if (errorMessage()) {
+          <div class="form-alert error-alert"
+            style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ errorMessage() }}</span>
+          </div>
+          }
+
+          <div class="form-grid">
+            <!-- Customer / Lead Selection -->
+            <div class="form-group full-width">
+              <label for="sched-lead-select" class="form-label required">Customer / Lead</label>
+              <div class="select-wrapper">
+                <select id="sched-lead-select" formControlName="leadId" class="form-control select-control">
+                  <option value="" disabled>Select prospective lead or client...</option>
+                  @for (lead of leadsList(); track lead._id) {
+                  <option [value]="lead._id">
+                    {{ lead.customerName }} {{ lead.companyName ? '(' + lead.companyName + ')' : '' }}
+                  </option>
+                  }
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Follow-up Type -->
+            <div class="form-group">
+              <label for="sched-type-select" class="form-label required">Follow-up Type</label>
+              <div class="select-wrapper">
+                <select id="sched-type-select" formControlName="type" class="form-control select-control">
+                  <option value="CALL">Phone Call</option>
+                  <option value="WHATSAPP">WhatsApp Message</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="MEETING">In-Person Meeting</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Assigned Salesperson -->
+            <div class="form-group">
+              <label for="sched-assigned-select" class="form-label">Assigned Salesperson (Optional)</label>
+              <div class="select-wrapper">
+                <select id="sched-assigned-select" formControlName="assignedTo" class="form-control select-control">
+                  <option value="">Leave unassigned</option>
+                  @for (member of teamMembers(); track member._id) {
+                  <option [value]="member._id">
+                    {{ member.name }} ({{ member.role === 'SALES_MANAGER' ? 'Sales Manager' : 'Salesperson' }})
+                  </option>
+                  }
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Status (in Edit Mode) -->
+            @if (isEditMode()) {
+            <div class="form-group">
+              <label for="sched-status-select" class="form-label required">Status</label>
+              <div class="select-wrapper">
+                <select id="sched-status-select" formControlName="status" class="form-control select-control">
+                  <option value="PENDING">Pending</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+            }
+
+            <!-- Scheduled Date -->
+            <div class="form-group">
+              <label for="sched-date" class="form-label required">Scheduled Date</label>
+              <input type="date" id="sched-date" formControlName="scheduledDate" class="form-control" />
+            </div>
+
+            <!-- Scheduled Time -->
+            <div class="form-group">
+              <label for="sched-time" class="form-label required">Scheduled Time</label>
+              <input type="time" id="sched-time" formControlName="scheduledTime" class="form-control" />
+            </div>
+
+            <!-- Notes -->
+            <div class="form-group full-width">
+              <label for="sched-notes" class="form-label">Purpose / Notes</label>
+              <textarea id="sched-notes" formControlName="notes" class="form-control textarea-control" rows="3"
+                placeholder="Specify interaction goal, questions to ask, key agenda items, or deal context..."></textarea>
+            </div>
+
+            <!-- Outcome (in Edit Mode) -->
+            @if (isEditMode()) {
+            <div class="form-group full-width">
+              <label for="sched-outcome" class="form-label">Outcome & Client Feedback</label>
+              <textarea id="sched-outcome" formControlName="outcome" class="form-control textarea-control" rows="3"
+                placeholder="Record call summary, client response, agreement points, or next steps..."></textarea>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <footer class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeScheduleModal()" [disabled]="isSubmitting()">
+            <span>Cancel</span>
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+            <span class="btn-spinner"></span>
+            <span>Saving...</span>
+            } @else {
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>{{ isEditMode() ? 'Save Changes' : 'Save Follow-up' }}</span>
+            }
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+  }
+
+  <!-- =========================================================================
+       FOLLOW-UP DETAILS & HISTORY DRAWER (READ-ONLY VIEW)
+       ========================================================================= -->
+  @if (isDetailsDrawerOpen() && selectedFollowUp()) {
+  <div class="side-drawer-backdrop" (click)="closeDetailsDrawer()" role="dialog" aria-modal="true"
+    aria-label="Follow-up Details and History Drawer">
+    <aside class="side-drawer" (click)="$event.stopPropagation()">
+      <!-- Drawer Header -->
+      <header class="drawer-header">
+        <div class="drawer-lead-identity">
+          <div class="drawer-avatar">
+            {{ getLeadName(selectedFollowUp()!).charAt(0) }}
+          </div>
+          <div class="drawer-identity-text">
+            <h2 class="drawer-lead-name">{{ getLeadName(selectedFollowUp()!) }}</h2>
+            <span class="drawer-company-name">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+              <span>{{ getLeadCompany(selectedFollowUp()!) || 'Lead Overview & Details' }}</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="drawer-header-actions">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="openEditModal(selectedFollowUp()!)"
+            title="Edit follow-up">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>Edit</span>
+          </button>
+
+          @if (!selectedFollowUp()!.isArchived) {
+          <button type="button" class="btn btn-archive-outline btn-sm"
+            (click)="openArchiveConfirmation(selectedFollowUp()!)" title="Move follow-up to archive">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+            <span>Archive</span>
+          </button>
+          } @else if (isOwner()) {
+          <button type="button" class="btn btn-danger btn-sm" (click)="openDeleteConfirmation(selectedFollowUp()!)"
+            title="Permanently delete this archived follow-up">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Delete</span>
+          </button>
+          }
+
+          <button type="button" class="drawer-close-btn" (click)="closeDetailsDrawer()" title="Close details panel"
+            aria-label="Close drawer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Drawer Body Content (Read-Only) -->
+      <div class="drawer-body">
+        <!-- Status & Schedule Snapshot Strip -->
+        <div class="drawer-snapshot-strip">
+          <div class="snapshot-col">
+            <span class="snapshot-label">Status</span>
+            <div class="snapshot-badge-wrapper">
+              <span class="badge-status" [ngClass]="getStatusBadgeClass(selectedFollowUp()!)">
+                {{ getStatusLabel(selectedFollowUp()!) }}
+              </span>
+            </div>
+          </div>
+          <div class="snapshot-col">
+            <span class="snapshot-label">Channel</span>
+            <div class="snapshot-badge-wrapper">
+              <span class="type-badge" [ngClass]="'type-' + selectedFollowUp()!.type.toLowerCase()">
+                {{ getTypeLabel(selectedFollowUp()!.type) }}
+              </span>
+            </div>
+          </div>
+          <div class="snapshot-col">
+            <span class="snapshot-label">Scheduled Time</span>
+            <span class="snapshot-value">
+              {{ selectedFollowUp()!.scheduledAt | date:'h:mm a' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Section 1: Customer Details Card -->
+        <div class="drawer-panel-card">
+          <div class="drawer-panel-header">
+            <div class="panel-icon-box icon-customer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <h3>Linked Customer & Lead Information</h3>
+          </div>
+          <div class="details-data-grid">
+            <div class="detail-data-item">
+              <span class="data-key">Customer / Contact</span>
+              <span class="data-val font-semibold">{{ getLeadName(selectedFollowUp()!) }}</span>
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Company</span>
+              <span class="data-val">{{ getLeadCompany(selectedFollowUp()!) || '—' }}</span>
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Email Address</span>
+              @if (getLeadEmail(selectedFollowUp()!) !== '—') {
+              <a [href]="'mailto:' + getLeadEmail(selectedFollowUp()!)" class="data-link" title="Send email">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <span>{{ getLeadEmail(selectedFollowUp()!) }}</span>
+              </a>
+              } @else {
+              <span class="data-val text-muted">—</span>
+              }
+            </div>
+            <div class="detail-data-item">
+              <span class="data-key">Phone Number</span>
+              @if (getLeadPhone(selectedFollowUp()!) !== '—') {
+              <a [href]="'tel:' + getLeadPhone(selectedFollowUp()!)" class="data-link" title="Call phone">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                  </path>
+                </svg>
+                <span>{{ getLeadPhone(selectedFollowUp()!) }}</span>
+              </a>
+              } @else {
+              <span class="data-val text-muted">—</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Notes & Objectives Card -->
+        <div class="drawer-panel-card">
+          <div class="drawer-panel-header">
+            <div class="panel-icon-box icon-management">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+            </div>
+            <h3>Preparation Notes / Agenda</h3>
+          </div>
+          <div style="padding: 16px;">
+            <div class="notes-display-box">
+              @if (selectedFollowUp()!.notes) {
+              <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">{{ selectedFollowUp()!.notes }}</p>
+              } @else {
+              <span class="text-muted" style="font-size: 13px;">No preparation notes recorded for this follow-up.</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Outcome & Client Feedback Card -->
+        <div class="drawer-panel-card">
+          <div class="drawer-panel-header">
+            <div class="panel-icon-box icon-management">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <h3>Outcome & Client Feedback</h3>
+          </div>
+          <div style="padding: 16px;">
+            <div class="notes-display-box">
+              @if (selectedFollowUp()!.outcome) {
+              <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">{{ selectedFollowUp()!.outcome }}</p>
+              } @else {
+              <span class="text-muted" style="font-size: 13px;">No interaction outcome recorded yet. Click Edit to
+                record client response or agreement points.</span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer Action Controls Footer -->
+      <footer class="drawer-footer">
+        <div class="drawer-action-buttons">
+          @if (selectedFollowUp()!.status === 'PENDING' && !selectedFollowUp()!.isArchived) {
+          <button type="button" class="btn btn-secondary btn-sm" (click)="markAsCompleted(selectedFollowUp()!)"
+            title="Mark this follow-up as complete">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Mark Completed</span>
+          </button>
+
+          <button type="button" class="btn btn-secondary btn-sm" (click)="markAsCancelled(selectedFollowUp()!)"
+            title="Cancel this interaction task">
+            <span>Cancel Task</span>
+          </button>
+          }
+
+          <button type="button" class="btn btn-secondary btn-sm" (click)="closeDetailsDrawer()"
+            title="Close details panel">
+            <span>Close</span>
+          </button>
+        </div>
+      </footer>
+    </aside>
+  </div>
+  }
+
+  <!-- =========================================================================
+       ARCHIVE CONFIRMATION MODAL
+       ========================================================================= -->
+  @if (isArchiveModalOpen() && followUpToArchive()) {
+  <div class="modal-backdrop" (click)="closeArchiveModal()" role="dialog" aria-modal="true"
+    aria-labelledby="archive-modal-title">
+    <div class="modal-dialog modal-card-sm" (click)="$event.stopPropagation()">
+      <div class="confirm-modal-body">
+        <div class="confirm-icon-box warning">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </div>
+
+        <h3 id="archive-modal-title" class="confirm-title">Archive Follow-up</h3>
+        <p class="confirm-description">
+          Are you sure you want to archive the scheduled follow-up for
+          <strong>{{ getLeadName(followUpToArchive()!) }}</strong>?
+          Archived records disappear from the active task queue while remaining accessible under the Archived view.
+        </p>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeArchiveModal()" [disabled]="isSubmitting()">
+          <span>Cancel</span>
+        </button>
+        <button type="button" class="btn btn-primary" (click)="confirmArchive()" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+          <span class="btn-spinner"></span>
+          <span>Archiving...</span>
+          } @else {
+          <span>Confirm Archive</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+  }
+
+  <!-- =========================================================================
+       PERMANENT DELETE CONFIRMATION MODAL (OWNER ONLY)
+       ========================================================================= -->
+  @if (isDeleteModalOpen() && followUpToDelete()) {
+  <div class="modal-backdrop" (click)="closeDeleteModal()" role="dialog" aria-modal="true"
+    aria-labelledby="delete-modal-title">
+    <div class="modal-dialog modal-card-sm" (click)="$event.stopPropagation()">
+      <div class="confirm-modal-body">
+        <div class="confirm-icon-box danger">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </div>
+
+        <h3 id="delete-modal-title" class="confirm-title">Permanently Delete Follow-up</h3>
+        <p class="confirm-description">
+          This action <strong>cannot be undone</strong>. You are about to permanently remove the archived follow-up
+          record for <strong>{{ getLeadName(followUpToDelete()!) }}</strong> from the database.
+        </p>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="isSubmitting()">
+          <span>Cancel</span>
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+          <span class="btn-spinner"></span>
+          <span>Deleting...</span>
+          } @else {
+          <span>Permanently Delete</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+  }
+</div>
