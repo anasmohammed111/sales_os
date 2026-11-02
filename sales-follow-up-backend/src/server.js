@@ -15,14 +15,29 @@ const app = express();
 
 app.disable('x-powered-by');
 
-const allowedOrigins = process.env.CLIENT_URL
-    ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
-    : ['http://localhost:4200'];
+const defaultOrigins = [
+    'http://localhost:4200',
+    'http://127.0.0.1:4200',
+    'https://sales-os-web-1.vercel.app',
+];
+
+const configuredOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
+    : [];
+
+const allowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
 
 app.use(
     cors({
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
+            if (!origin) return callback(null, true);
+            const normalizedOrigin = origin.replace(/\/$/, '');
+            if (
+                allowedOrigins.has(normalizedOrigin) ||
+                /^http:\/\/localhost(:\d+)?$/.test(normalizedOrigin) ||
+                /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(normalizedOrigin) ||
+                /^https:\/\/.*\.vercel\.app$/.test(normalizedOrigin)
+            ) {
                 return callback(null, true);
             }
             return callback(new Error('Not allowed by CORS'));
