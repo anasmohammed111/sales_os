@@ -7,6 +7,7 @@ const followUpRoutes = require('./routes/followUpRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const pipelineRoutes = require('./routes/pipelineRoutes');
 const quotationRoutes = require('./routes/quotationRoutes');
+const admissionRoutes = require('./routes/admissionRoutes');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/follow-ups', followUpRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/pipeline', pipelineRoutes);
 app.use('/api/quotation', quotationRoutes);
+app.use('/api/admissions', admissionRoutes);
 
 // Catch-all for undefined API routes
 app.use('/api', (req, res) => {
