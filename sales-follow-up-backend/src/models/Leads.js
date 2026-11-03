@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizePhone } = require('../services/admissions/phone');
 
 const leadSchema = new mongoose.Schema(
     {
@@ -38,10 +39,31 @@ const leadSchema = new mongoose.Schema(
             default: '',
         },
 
+        // Digits-only phone for duplicate detection (maintained by hooks below)
+        phoneDigits: {
+            type: String,
+            default: '',
+        },
+
+        whatsapp: {
+            type: String,
+            trim: true,
+            default: '',
+            maxlength: 30,
+        },
+
+        city: {
+            type: String,
+            trim: true,
+            default: '',
+            maxlength: 100,
+        },
+
         // Where did the enquiry come from?
         source: {
             type: String,
             enum: [
+                'INSTAGRAM',
                 'WHATSAPP',
                 'PHONE',
                 'EMAIL',
@@ -177,6 +199,27 @@ leadSchema.index({
 leadSchema.index({
     businessId: 1,
     nextFollowUpAt: 1,
+});
+
+// Duplicate-student warnings match on normalised email and phone
+leadSchema.index({ businessId: 1, email: 1 });
+leadSchema.index({ businessId: 1, phoneDigits: 1 });
+
+leadSchema.pre('save', function () {
+    if (this.isNew || this.isModified('phone')) {
+        this.phoneDigits = normalizePhone(this.phone);
+    }
+});
+
+leadSchema.pre('findOneAndUpdate', function () {
+    const update = this.getUpdate() || {};
+    const phone = update.$set?.phone ?? update.phone;
+    if (phone !== undefined) {
+        this.setUpdate({
+            ...update,
+            $set: { ...(update.$set || {}), phoneDigits: normalizePhone(phone) },
+        });
+    }
 });
 
 module.exports = mongoose.model('Lead', leadSchema);

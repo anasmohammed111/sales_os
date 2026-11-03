@@ -15,6 +15,26 @@ const followUpSchema = new mongoose.Schema(
             required: true,
         },
 
+        // Set when the follow-up belongs to an admissions application
+        applicationId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'AdmissionApplication',
+            default: null,
+        },
+
+        title: {
+            type: String,
+            trim: true,
+            default: '',
+            maxlength: 200,
+        },
+
+        priority: {
+            type: String,
+            enum: ['LOW', 'MEDIUM', 'HIGH'],
+            default: 'MEDIUM',
+        },
+
         assignedTo: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
@@ -35,6 +55,13 @@ const followUpSchema = new mongoose.Schema(
                 'EMAIL',
                 'MEETING',
                 'OTHER',
+                // Admissions task types
+                'TASK',
+                'DOCUMENT',
+                'PAYMENT',
+                'EXAM',
+                'INTERVIEW',
+                'VISA',
             ],
             default: 'OTHER',
         },
@@ -94,5 +121,9 @@ followUpSchema.index({
     leadId: 1,
     scheduledAt: -1,
 });
+
+// Admissions task lists per assignee and per application
+followUpSchema.index({ businessId: 1, assignedTo: 1, status: 1, scheduledAt: 1 });
+followUpSchema.index({ businessId: 1, applicationId: 1, status: 1, scheduledAt: 1 });
 
 module.exports = mongoose.model('FollowUp', followUpSchema);

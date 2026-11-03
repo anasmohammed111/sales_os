@@ -45,6 +45,14 @@ const businessSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+
+        // Optional modules switched on per business (see scripts/admissions-enable.js)
+        features: {
+            admissions: {
+                type: Boolean,
+                default: false,
+            },
+        },
     },
     {
         timestamps: true,
