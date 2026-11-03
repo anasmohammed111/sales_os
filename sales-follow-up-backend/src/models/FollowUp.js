@@ -127,7 +127,9 @@ followUpSchema.index({
 const refreshApplication = async (doc) => {
     if (!doc?.applicationId) return;
     const { refreshNextFollowUp } = require('../services/admissions/tasks');
+    const { syncRemindersForApplication } = require('../services/admissions/reminders');
     await refreshNextFollowUp(doc.applicationId);
+    await syncRemindersForApplication(doc.applicationId);
 };
 
 followUpSchema.post('save', refreshApplication);

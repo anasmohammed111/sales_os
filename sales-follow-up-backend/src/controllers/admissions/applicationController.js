@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Lead = require('../../models/Leads');
+const FollowUp = require('../../models/FollowUp');
 const User = require('../../models/User');
 const University = require('../../models/University');
 const AdmissionApplication = require('../../models/AdmissionApplication');
@@ -436,8 +437,15 @@ const assignApplication = async (req, res, next) => {
         application.counsellorId = result.counsellorId;
         await application.save();
 
-        // Keep the student's lead with the same owner so the Leads screen agrees
+        // Keep the student's lead with the same owner so the Leads screen agrees,
+        // and hand the previous counsellor's open tasks to the new one
         await Lead.updateOne({ _id: application.studentId }, { $set: { assignedTo: result.counsellorId } });
+        if (previousId && result.counsellorId) {
+            await FollowUp.updateMany(
+                { applicationId: application._id, status: 'PENDING', assignedTo: previousId },
+                { $set: { assignedTo: result.counsellorId } }
+            );
+        }
         await reminders.syncRemindersForApplication(application._id);
 
         const people = await User.find({ _id: { $in: [previousId, result.counsellorId].filter(Boolean) } }).select('name');
