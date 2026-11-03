@@ -10,6 +10,7 @@ const documents = require('../controllers/admissions/documentController');
 const payments = require('../controllers/admissions/paymentController');
 const exportsController = require('../controllers/admissions/exportController');
 const { getDashboard } = require('../controllers/admissions/dashboardController');
+const settings = require('../controllers/admissions/settingsController');
 const { serveFile } = require('../controllers/admissions/fileController');
 const { uploadSingle } = require('../services/storage/uploads');
 
@@ -24,6 +25,11 @@ router.use(authMiddleware, requireAdmissions);
 
 router.get('/context', getContext);
 router.get('/dashboard', getDashboard);
+router.get('/settings', settings.getSettings);
+router.put('/settings', settings.updateSettings);
+router.get('/universities', settings.listUniversities);
+router.post('/universities', settings.createUniversity);
+router.patch('/universities/:id', settings.updateUniversity);
 
 router.post('/applications/check-duplicates', applications.checkDuplicates);
 router.get('/applications', applications.listApplications);
