@@ -8,6 +8,8 @@ const workflow = require('../controllers/admissions/workflowController');
 const tasks = require('../controllers/admissions/taskController');
 const documents = require('../controllers/admissions/documentController');
 const payments = require('../controllers/admissions/paymentController');
+const exportsController = require('../controllers/admissions/exportController');
+const { getDashboard } = require('../controllers/admissions/dashboardController');
 const { serveFile } = require('../controllers/admissions/fileController');
 const { uploadSingle } = require('../services/storage/uploads');
 
@@ -21,9 +23,11 @@ router.get('/files/:token', serveFile);
 router.use(authMiddleware, requireAdmissions);
 
 router.get('/context', getContext);
+router.get('/dashboard', getDashboard);
 
 router.post('/applications/check-duplicates', applications.checkDuplicates);
 router.get('/applications', applications.listApplications);
+router.get('/applications/export', exportsController.exportApplications);
 router.post('/applications', applications.createApplication);
 router.get('/applications/:id', applications.getApplication);
 router.patch('/applications/:id', applications.updateApplication);
@@ -51,6 +55,7 @@ router.post('/fees/:feeId/transactions', uploadSingle, payments.recordPayment);
 router.patch('/fees/:feeId/transactions/:txId/void', payments.voidPayment);
 router.get('/fees/:feeId/transactions/:txId/receipt-url', payments.getReceiptUrl);
 router.get('/payments', payments.listPayments);
+router.get('/payments/export', exportsController.exportPayments);
 
 router.get('/tasks', tasks.listTasks);
 router.patch('/tasks/:id', tasks.updateTask);
