@@ -46,6 +46,12 @@ export class FollowUps implements OnInit {
     EMAIL: 'Email',
     MEETING: 'Meeting',
     OTHER: 'Other',
+    TASK: 'To-do',
+    DOCUMENT: 'Documents',
+    PAYMENT: 'Payment',
+    EXAM: 'Entrance exam',
+    INTERVIEW: 'Interview',
+    VISA: 'Visa',
   };
 
   // Data State & Pagination

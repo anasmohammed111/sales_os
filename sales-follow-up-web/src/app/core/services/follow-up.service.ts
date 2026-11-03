@@ -3,7 +3,19 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
-export type FollowUpType = 'CALL' | 'WHATSAPP' | 'EMAIL' | 'MEETING' | 'OTHER';
+export type FollowUpType =
+  | 'CALL'
+  | 'WHATSAPP'
+  | 'EMAIL'
+  | 'MEETING'
+  | 'OTHER'
+  // Created from the admissions module
+  | 'TASK'
+  | 'DOCUMENT'
+  | 'PAYMENT'
+  | 'EXAM'
+  | 'INTERVIEW'
+  | 'VISA';
 
 export type FollowUpStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 
