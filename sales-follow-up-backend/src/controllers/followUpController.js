@@ -9,6 +9,13 @@ const VALID_TYPES = [
     'EMAIL',
     'MEETING',
     'OTHER',
+    // Admissions task types
+    'TASK',
+    'DOCUMENT',
+    'PAYMENT',
+    'EXAM',
+    'INTERVIEW',
+    'VISA',
 ];
 
 const VALID_STATUSES = [

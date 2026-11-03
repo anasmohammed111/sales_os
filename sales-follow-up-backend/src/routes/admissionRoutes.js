@@ -5,6 +5,7 @@ const { requireAdmissions } = require('../services/admissions/access');
 const { getContext } = require('../controllers/admissions/contextController');
 const applications = require('../controllers/admissions/applicationController');
 const workflow = require('../controllers/admissions/workflowController');
+const tasks = require('../controllers/admissions/taskController');
 
 const router = express.Router();
 
@@ -25,5 +26,10 @@ router.post('/applications/:id/stage', workflow.changeStage);
 router.post('/applications/:id/visa-outcome', workflow.recordVisaOutcome);
 router.get('/applications/:id/activity', workflow.listActivity);
 router.post('/applications/:id/notes', workflow.addNote);
+router.get('/applications/:id/tasks', tasks.listApplicationTasks);
+router.post('/applications/:id/tasks', tasks.createTask);
+
+router.get('/tasks', tasks.listTasks);
+router.patch('/tasks/:id', tasks.updateTask);
 
 module.exports = router;

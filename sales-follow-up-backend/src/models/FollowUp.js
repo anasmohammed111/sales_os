@@ -122,6 +122,18 @@ followUpSchema.index({
     scheduledAt: -1,
 });
 
+// Keep the application's "next follow-up" right however a follow-up changes,
+// including edits from the general Follow-ups screen
+const refreshApplication = async (doc) => {
+    if (!doc?.applicationId) return;
+    const { refreshNextFollowUp } = require('../services/admissions/tasks');
+    await refreshNextFollowUp(doc.applicationId);
+};
+
+followUpSchema.post('save', refreshApplication);
+followUpSchema.post('findOneAndUpdate', refreshApplication);
+followUpSchema.post('findOneAndDelete', refreshApplication);
+
 // Admissions task lists per assignee and per application
 followUpSchema.index({ businessId: 1, assignedTo: 1, status: 1, scheduledAt: 1 });
 followUpSchema.index({ businessId: 1, applicationId: 1, status: 1, scheduledAt: 1 });
