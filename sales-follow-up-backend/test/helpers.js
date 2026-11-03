@@ -78,3 +78,33 @@ module.exports = {
     makeUser,
     auth,
 };
+
+// A business with the admissions module and a typical team:
+// counsellorA reports to the manager; counsellorB has no manager.
+const makeAdmissionsTeam = async () => {
+    const business = await makeBusiness();
+    const owner = await makeUser(business, { role: 'OWNER', name: 'Owner' });
+    const manager = await makeUser(business, { role: 'SALES_MANAGER', name: 'Manager' });
+    const counsellorA = await makeUser(business, { role: 'SALESPERSON', managerId: manager._id, name: 'Counsellor A' });
+    const counsellorB = await makeUser(business, { role: 'SALESPERSON', name: 'Counsellor B' });
+    return { business, owner, manager, counsellorA, counsellorB };
+};
+
+const studentPayload = ({ student = {}, ...rest } = {}) => ({
+    student: {
+        name: 'Asha Nair',
+        email: 'asha@example.com',
+        phone: '+91 98765 43210',
+        whatsapp: '+91 98765 43210',
+        city: 'Kochi',
+        ...student,
+    },
+    studyLevel: 'MASTER',
+    intakeMonth: 9,
+    intakeYear: 2027,
+    leadSource: 'instagram',
+    ...rest,
+});
+
+module.exports.makeAdmissionsTeam = makeAdmissionsTeam;
+module.exports.studentPayload = studentPayload;

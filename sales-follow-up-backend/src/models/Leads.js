@@ -211,6 +211,42 @@ leadSchema.pre('save', function () {
     }
 });
 
+// Admissions applications keep a searchable copy of the student's contact details
+const syncAdmissionSnapshots = async (lead) => {
+    const AdmissionApplication = mongoose.models.AdmissionApplication;
+    if (!lead?._id || !AdmissionApplication) return;
+
+    await AdmissionApplication.updateMany(
+        { studentId: lead._id },
+        {
+            $set: {
+                student: {
+                    name: lead.customerName || '',
+                    email: lead.email || '',
+                    phone: lead.phone || '',
+                    phoneDigits: lead.phoneDigits || normalizePhone(lead.phone),
+                    whatsapp: lead.whatsapp || '',
+                    city: lead.city || '',
+                },
+            },
+        }
+    );
+};
+
+leadSchema.post('save', async function (doc) {
+    if (!doc.wasNew) await syncAdmissionSnapshots(doc);
+});
+
+leadSchema.post('findOneAndUpdate', async function (doc) {
+    if (!doc) return;
+    // Callers may not ask for the updated document, so read it fresh
+    await syncAdmissionSnapshots(await this.model.findById(doc._id));
+});
+
+leadSchema.pre('save', function () {
+    this.wasNew = this.isNew;
+});
+
 leadSchema.pre('findOneAndUpdate', function () {
     const update = this.getUpdate() || {};
     const phone = update.$set?.phone ?? update.phone;
