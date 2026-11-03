@@ -1,3 +1,4 @@
 node_modules/
 .env
-storage/
+# Uploaded files from the local storage driver (not the src/services/storage code)
+/storage/

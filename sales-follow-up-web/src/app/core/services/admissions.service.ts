@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AuthService } from './auth.service';
 import {
   Activity,
   AdmissionDocument,
@@ -31,14 +32,22 @@ const toParams = (query: Query = {}) =>
 @Injectable({ providedIn: 'root' })
 export class AdmissionsService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
   private readonly base = `${environment.apiUrl}/admissions`;
 
   /** Loaded once per session; null when the module is off for this business. */
   readonly context = signal<AdmissionsContext | null>(null);
   readonly contextState = signal<'idle' | 'loading' | 'ready' | 'disabled' | 'error'>('idle');
   private context$: Observable<AdmissionsContext | null> | null = null;
+  /** Who the cached context belongs to; a different sign-in must never see it. */
+  private contextUserId: string | null = null;
 
   loadContext(force = false): Observable<AdmissionsContext | null> {
+    const userId = this.auth.getUser()?.id ?? null;
+    if (userId !== this.contextUserId) {
+      this.resetContext();
+      this.contextUserId = userId;
+    }
     if (force || !this.context$) {
       this.contextState.set('loading');
       this.context$ = this.http.get<ApiResponse<AdmissionsContext>>(`${this.base}/context`).pipe(

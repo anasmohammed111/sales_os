@@ -164,3 +164,16 @@ test('a document with an expiry date schedules an expiry reminder', async () => 
     assert.ok(reminder);
     assert.strictEqual(reminder.remindAt.getTime(), expiresAt.getTime() - 30 * 24 * 60 * 60 * 1000);
 });
+
+test('files named in non-Latin scripts download with an encoded filename', async () => {
+    const { counsellorA, documentId } = await setup();
+    await api(counsellorA).upload(`/documents/${documentId}/file`, PDF, 'പാസ്പോർട്ട് scan.pdf');
+
+    const link = await api(counsellorA).get(`/documents/${documentId}/download-url`);
+    const file = await request(app).get(link.body.data.url);
+
+    assert.strictEqual(file.status, 200);
+    const disposition = file.headers['content-disposition'];
+    assert.match(disposition, /^inline; filename="[\x20-\x7e]+"; filename\*=UTF-8''/);
+    assert.ok(disposition.includes(encodeURIComponent('പാസ്പോർട്ട്')));
+});

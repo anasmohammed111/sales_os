@@ -3,6 +3,7 @@ const AdmissionDocument = require('../../models/AdmissionDocument');
 const AdmissionFee = require('../../models/AdmissionFee');
 const { getStorage } = require('../../services/storage');
 const { readFileToken } = require('../../services/storage/uploads');
+const { contentDisposition } = require('../../services/storage/fileValidation');
 
 const expired = (res) =>
     res.status(401).json({ success: false, message: 'This download link has expired. Open the document again.' });
@@ -42,7 +43,7 @@ const serveFile = async (req, res, next) => {
 
         res.set({
             'Content-Type': file.mimeType,
-            'Content-Disposition': `inline; filename="${file.originalName}"`,
+            'Content-Disposition': contentDisposition(file.originalName),
             'Cache-Control': 'private, no-store',
             'X-Content-Type-Options': 'nosniff',
             'Content-Security-Policy': "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox",
