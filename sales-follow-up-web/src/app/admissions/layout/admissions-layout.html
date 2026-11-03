@@ -1,0 +1,36 @@
+<div class="adm-shell">
+  @switch (state()) {
+    @case ('ready') {
+      <nav class="subnav" aria-label="Admissions">
+        <span class="module-name">Admissions</span>
+        <div class="subnav-links">
+          @for (link of links(); track link.path) {
+            <a [routerLink]="link.path" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: false }"
+              ariaCurrentWhenActive="page">{{ link.label }}</a>
+          }
+        </div>
+      </nav>
+      <router-outlet />
+    }
+    @case ('disabled') {
+      <div class="adm-panel adm-state">
+        <strong>Admissions is not switched on for your business</strong>
+        <span>Ask your administrator to enable the admissions module for this account.</span>
+      </div>
+    }
+    @case ('error') {
+      <div class="adm-panel adm-state">
+        <strong>Admissions could not load</strong>
+        <span>Check your connection, then try again.</span>
+        <button type="button" class="adm-btn" (click)="retry()">Try again</button>
+      </div>
+    }
+    @default {
+      <div class="loading" aria-busy="true" aria-label="Loading admissions">
+        <div class="adm-skeleton" style="height: 40px; width: 60%"></div>
+        <div class="adm-skeleton" style="height: 120px"></div>
+        <div class="adm-skeleton" style="height: 320px"></div>
+      </div>
+    }
+  }
+</div>

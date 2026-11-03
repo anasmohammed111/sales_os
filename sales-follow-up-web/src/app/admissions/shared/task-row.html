@@ -1,0 +1,63 @@
+@let t = task();
+<div class="row" [class.is-overdue]="overdue()" [class.is-done]="t.status !== 'PENDING'">
+  <span class="type">{{ typeLabels[t.type] }}</span>
+
+  <div class="main">
+    <span class="title">{{ t.title || typeLabels[t.type] }}</span>
+    <span class="meta">
+      @if (showStudent() && t.student) {
+        <a [routerLink]="['/admissions/students', t.applicationId]" [queryParams]="{ tab: 'tasks' }">{{ t.student.name }}</a>
+      }
+      <span [title]="fullWhen()" [class.when-overdue]="overdue()">{{ overdue() ? 'Overdue: ' : '' }}{{ when() }}</span>
+      @if (t.priority === 'HIGH') {
+        <span class="adm-chip adm-chip--bad">High priority</span>
+      } @else if (t.priority === 'LOW') {
+        <span class="adm-chip adm-chip--muted">Low priority</span>
+      }
+      @if (showAssignee() && t.assignedTo?.name) {
+        <span>{{ t.assignedTo?.name }}</span>
+      }
+      @if (t.status === 'COMPLETED') {
+        <span class="adm-chip adm-chip--ok">Done</span>
+      } @else if (t.status === 'CANCELLED') {
+        <span class="adm-chip adm-chip--muted">Cancelled</span>
+      }
+    </span>
+    @if (t.notes) {
+      <span class="notes">{{ t.notes }}</span>
+    }
+    @if (t.outcome) {
+      <span class="notes">Outcome: {{ t.outcome }}</span>
+    }
+
+    @if (rescheduling()) {
+      <form class="inline" (ngSubmit)="reschedule()">
+        <input type="datetime-local" name="newTime" [(ngModel)]="newTime" aria-label="New date and time" />
+        <button type="submit" class="adm-btn adm-btn--sm" [disabled]="busy() || !newTime">Save</button>
+        <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="rescheduling.set(false)">Cancel</button>
+      </form>
+    }
+    @if (completing()) {
+      <form class="inline" (ngSubmit)="complete()">
+        <input name="outcome" [(ngModel)]="outcome" placeholder="What happened? (optional)" aria-label="Outcome" />
+        <button type="submit" class="adm-btn adm-btn--sm adm-btn--primary" [disabled]="busy()">Mark done</button>
+        <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="completing.set(false)">Cancel</button>
+      </form>
+    }
+  </div>
+
+  @if (!rescheduling() && !completing()) {
+    <div class="actions">
+      @if (t.status === 'PENDING') {
+        <button type="button" class="adm-btn adm-btn--sm" [disabled]="busy()" (click)="completing.set(true)">Done</button>
+        <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busy()" (click)="startReschedule()">Reschedule</button>
+        <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busy()" (click)="cancel()" aria-label="Cancel task">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+            stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
+      } @else {
+        <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busy()" (click)="reopen()">Reopen</button>
+      }
+    </div>
+  }
+</div>

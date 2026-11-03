@@ -1,0 +1,45 @@
+<ol class="rail" [class.rail--counts]="mode() === 'counts'" [class.rail--compact]="compact()">
+  @for (stage of stages(); track stage.key; let i = $index) {
+    @let state = stateOf(stage);
+    <li class="stop" [class]="'stop stop--' + state" [class.stop--archived]="stage.isArchived">
+      @if (mode() === 'counts') {
+        <button type="button" class="station" (click)="select.emit(stage.key)" [attr.aria-label]="label(stage, i)">
+          <span class="dot adm-num">{{ stage.count ?? 0 }}</span>
+          <span class="name">{{ stage.name }}</span>
+          @if (stage.stuck) {
+            <span class="note note--warn adm-num">{{ stage.stuck }} stuck</span>
+          } @else {
+            <span class="note">&nbsp;</span>
+          }
+        </button>
+      } @else {
+        <div class="station" [attr.aria-label]="label(stage, i)" role="img">
+          <span class="dot adm-num">
+            @if (state === 'passed') {
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            } @else {
+              {{ i + 1 }}
+            }
+          </span>
+          <span class="name">{{ stage.name }}</span>
+          @if (state === 'current' && stage.required) {
+            <span class="note adm-num">{{ stage.done }} of {{ stage.required }} done</span>
+          } @else if (!compact()) {
+            <span class="note">&nbsp;</span>
+          }
+        </div>
+      }
+    </li>
+  }
+
+  @if (mode() === 'progress' && (outcome() === 'APPROVED' || outcome() === 'REJECTED')) {
+    <li class="stop stop--terminus" [class.is-rejected]="outcome() === 'REJECTED'">
+      <div class="station">
+        <span class="flag">{{ outcome() === 'APPROVED' ? 'Visa approved' : 'Visa rejected' }}</span>
+      </div>
+    </li>
+  }
+</ol>

@@ -1,0 +1,172 @@
+<div class="adm-page">
+  <header class="adm-head">
+    <div>
+      <h1 class="adm-title">Pipeline</h1>
+      <p class="adm-sub">Active applications by stage. Drag a card, or use Move, to change its stage.</p>
+    </div>
+  </header>
+
+  <section class="adm-filters" aria-label="Filters">
+    <label class="adm-search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <span class="adm-visually-hidden">Search students</span>
+      <input type="search" placeholder="Name, phone or email" (input)="onSearch($any($event.target).value)" />
+    </label>
+    <select aria-label="Level" (change)="setFilter('studyLevel', $any($event.target).value)">
+      <option value="">Any level</option>
+      <option value="BACHELOR">Bachelor's</option>
+      <option value="MASTER">Master's</option>
+    </select>
+    @if (showCounsellor()) {
+      <select aria-label="Counsellor" (change)="setFilter('counsellorId', $any($event.target).value)">
+        <option value="">All counsellors</option>
+        @for (c of ctx()?.counsellors; track c._id) {
+          <option [value]="c._id">{{ c.name }}</option>
+        }
+      </select>
+    }
+    <button type="button" class="adm-toggle-chip" [attr.aria-pressed]="!!filters()['stuck']"
+      (click)="setFilter('stuck', filters()['stuck'] ? '' : '1')">Stuck only</button>
+    <button type="button" class="adm-toggle-chip" [attr.aria-pressed]="!!filters()['overdue']"
+      (click)="setFilter('overdue', filters()['overdue'] ? '' : '1')">Follow-up overdue</button>
+  </section>
+
+  @if (error(); as message) {
+    <div class="adm-panel adm-state">
+      <strong>{{ message }}</strong>
+      <button type="button" class="adm-btn" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading() && !applications().length) {
+    <div class="board" aria-busy="true">
+      @for (n of [1, 2, 3, 4]; track n) {
+        <div class="column"><div class="adm-skeleton" style="height: 220px"></div></div>
+      }
+    </div>
+  } @else {
+    <!-- Desktop: columns -->
+    <div class="board desktop-only" [class.is-dragging]="!!dragId()">
+      @for (col of columns(); track col.key) {
+        <section class="column" [class.is-drop]="dropKey() === col.key" [class.is-archived]="col.isArchived"
+          (dragover)="onDragOver($event, col)" (dragleave)="dropKey.set(null)" (drop)="onDrop($event, col)"
+          [attr.aria-label]="col.name + ', ' + col.items.length + ' students'">
+          <header class="column-head">
+            <span class="station adm-num">{{ col.order }}</span>
+            <h2>{{ col.name }}</h2>
+            <span class="count adm-num">{{ col.items.length }}</span>
+          </header>
+          @if (col.isArchived) {
+            <p class="archived-note">Archived stage. Move these students on.</p>
+          }
+
+          <div class="cards">
+            @for (app of col.items; track app.id) {
+              <article class="card" draggable="true" [class.is-moving]="movingId() === app.id"
+                (dragstart)="onDragStart($event, app)" (dragend)="onDragEnd()">
+                <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: app }" />
+                <div class="card-foot">
+                                    <button type="button" class="adm-btn adm-btn--sm" (click)="pickerFor.set(app)">Move</button>
+                </div>
+              </article>
+            } @empty {
+              <p class="empty">No students here.</p>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    <!-- Mobile: stage tabs and a list -->
+    <div class="mobile-only">
+      <div class="stage-tabs" role="tablist" aria-label="Stages">
+        @for (col of columns(); track col.key) {
+          <button type="button" role="tab" [attr.aria-selected]="selectedColumn()?.key === col.key" (click)="mobileStage.set(col.key)">
+            <span class="station adm-num">{{ col.order }}</span>
+            {{ col.name }}
+            <span class="count adm-num">{{ col.items.length }}</span>
+          </button>
+        }
+      </div>
+
+      @if (selectedColumn(); as col) {
+        <div class="cards mobile-list">
+          @for (app of col.items; track app.id) {
+            <article class="card" [class.is-moving]="movingId() === app.id">
+              <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: app }" />
+              <div class="card-foot">
+                                <button type="button" class="adm-btn adm-btn--sm" (click)="pickerFor.set(app)">Move</button>
+              </div>
+            </article>
+          } @empty {
+            <div class="adm-panel adm-state"><strong>No students in {{ col.name }}</strong></div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<ng-template #cardBody let-app>
+  <button type="button" class="card-main" (click)="open(app)">
+    <span class="card-name">{{ app.student.name }}</span>
+    @if (universityOf(app); as uni) {
+      <span class="card-uni">{{ uni }}</span>
+    }
+    <span class="card-meta">
+      <span>{{ intakeLabel(app.intakeMonth, app.intakeYear) }}</span>
+      <span class="adm-num" [class.is-warn]="app.isStuck">{{ app.daysInStage }}d in stage</span>
+      <span [class.is-warn]="app.isFollowUpOverdue">Follow-up {{ followUp(app) }}</span>
+    </span>
+  </button>
+  <div class="card-tags">
+    @if (showCounsellor()) {
+      <span class="adm-avatar" [title]="app.counsellor?.name || 'Unassigned'">{{ initials(app.counsellor?.name) }}</span>
+    }
+    @for (w of app.warnings.slice(0, 2); track w) {
+      @if (w !== 'NO_FOLLOW_UP') {
+        <span class="adm-chip" [class]="'adm-chip adm-chip--' + toneOf(w)">{{ labelOf(w) }}</span>
+      }
+    }
+    @if (app.warnings.length > 2) {
+      <span class="adm-chip adm-chip--muted">+{{ app.warnings.length - 2 }}</span>
+    }
+  </div>
+</ng-template>
+
+<!-- Stage picker for Move (keyboard and touch friendly) -->
+@if (pickerFor(); as app) {
+  <div class="adm-dialog-backdrop" (click)="pickerFor.set(null)" role="presentation">
+    <div class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="picker-title" (click)="$event.stopPropagation()">
+      <div class="adm-dialog__head">
+        <div>
+          <h2 id="picker-title">Move {{ app.student.name }}</h2>
+          <p>Now in {{ app.currentStage.name }}. Requirements are checked when you choose.</p>
+        </div>
+      </div>
+      <div class="adm-dialog__body">
+        <ul class="picker">
+          @for (stage of activeStages(); track stage.key) {
+            <li>
+              <button type="button" class="picker-item" [disabled]="stage.key === app.currentStage.key"
+                [class.is-next]="stage.key === app.nextStage?.key" (click)="requestMove(app, stage)">
+                <span class="station adm-num">{{ stage.order }}</span>
+                <span>{{ stage.name }}</span>
+                @if (stage.key === app.currentStage.key) {
+                  <span class="adm-chip">Current</span>
+                } @else if (stage.key === app.nextStage?.key) {
+                  <span class="adm-chip adm-chip--route">Next</span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+      <div class="adm-dialog__foot">
+        <button type="button" class="adm-btn" (click)="pickerFor.set(null)">Cancel</button>
+      </div>
+    </div>
+  </div>
+}
+
+<adm-stage-move-dialog [request]="moveRequest()" [isAdmin]="!!ctx()?.isAdmin" (moved)="onMoved($event)"
+  (closed)="closeMove()" (stale)="onStale()" />

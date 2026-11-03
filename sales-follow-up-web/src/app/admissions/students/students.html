@@ -1,0 +1,240 @@
+<div class="adm-page">
+  <header class="adm-head">
+    <div>
+      <h1 class="adm-title">Students</h1>
+      <p class="adm-sub">
+        @if (loading() && !items().length) {
+          Loading students…
+        } @else {
+          <span class="adm-num">{{ total() }}</span> {{ total() === 1 ? 'student matches' : 'students match' }} these filters.
+        }
+      </p>
+    </div>
+    <div class="adm-actions">
+      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('csv')">Export CSV</button>
+      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('xlsx')">Export Excel</button>
+      <button type="button" class="adm-btn adm-btn--primary" (click)="adding.set(true)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+          stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        Add student
+      </button>
+    </div>
+  </header>
+
+  <section class="adm-filters" aria-label="Filters">
+    <label class="adm-search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <span class="adm-visually-hidden">Search students</span>
+      <input type="search" placeholder="Name, phone or email" [value]="filters()['search'] || ''"
+        (input)="onSearch($any($event.target).value)" />
+    </label>
+
+    <select aria-label="Stage" [value]="filters()['stage'] || ''" (change)="setFilter('stage', $any($event.target).value)">
+      <option value="">All stages</option>
+      @for (s of stages(); track s.key) {
+        <option [value]="s.key">{{ s.order }}. {{ s.name }}</option>
+      }
+    </select>
+
+    <select aria-label="Level" [value]="filters()['studyLevel'] || ''" (change)="setFilter('studyLevel', $any($event.target).value)">
+      <option value="">Any level</option>
+      <option value="BACHELOR">Bachelor's</option>
+      <option value="MASTER">Master's</option>
+    </select>
+
+    <select aria-label="Intake month" [value]="filters()['intakeMonth'] || ''" (change)="setFilter('intakeMonth', $any($event.target).value)">
+      <option value="">Any intake month</option>
+      @for (m of months; track m.value) {
+        <option [value]="m.value">{{ m.label }}</option>
+      }
+    </select>
+
+    <select aria-label="Intake year" [value]="filters()['intakeYear'] || ''" (change)="setFilter('intakeYear', $any($event.target).value)">
+      <option value="">Any year</option>
+      @for (y of years; track y) {
+        <option [value]="y">{{ y }}</option>
+      }
+    </select>
+
+    @if (showCounsellor()) {
+      <select aria-label="Counsellor" [value]="filters()['counsellorId'] || ''" (change)="setFilter('counsellorId', $any($event.target).value)">
+        <option value="">All counsellors</option>
+        @for (c of ctx()?.counsellors; track c._id) {
+          <option [value]="c._id">{{ c.name }}</option>
+        }
+        @if (ctx()?.isAdmin) {
+          <option value="UNASSIGNED">Unassigned</option>
+        }
+      </select>
+    }
+
+    @if (ctx()?.universities?.length) {
+      <select aria-label="University" [value]="filters()['universityId'] || ''" (change)="setFilter('universityId', $any($event.target).value)">
+        <option value="">Any university</option>
+        @for (u of ctx()?.universities; track u._id) {
+          <option [value]="u._id">{{ u.name }}</option>
+        }
+      </select>
+    }
+
+    <select aria-label="Status" [value]="filters()['status'] || ''" (change)="setFilter('status', $any($event.target).value)">
+      <option value="">Active</option>
+      <option value="CLOSED">Closed (visa result)</option>
+      <option value="WITHDRAWN">Withdrawn</option>
+      <option value="ALL">All statuses</option>
+    </select>
+
+    <select aria-label="Payments" [value]="filters()['paymentStatus'] || ''" (change)="setFilter('paymentStatus', $any($event.target).value)">
+      <option value="">Any payment status</option>
+      <option value="OUTSTANDING">Money outstanding</option>
+      <option value="OVERDUE">Payment overdue</option>
+      <option value="UNPAID">Unpaid</option>
+      <option value="PARTIALLY_PAID">Partly paid</option>
+      <option value="PAID">Fully paid</option>
+      <option value="NONE">No fees yet</option>
+    </select>
+
+    <select aria-label="Visa outcome" [value]="filters()['visaOutcome'] || ''" (change)="setFilter('visaOutcome', $any($event.target).value)">
+      <option value="">Any visa outcome</option>
+      <option value="PENDING">Visa pending</option>
+      <option value="APPROVED">Visa approved</option>
+      <option value="REJECTED">Visa rejected</option>
+    </select>
+
+    <button type="button" class="adm-toggle-chip" [attr.aria-pressed]="!!filters()['overdue']" (click)="toggle('overdue')">Follow-up overdue</button>
+    <button type="button" class="adm-toggle-chip" [attr.aria-pressed]="!!filters()['stuck']" (click)="toggle('stuck')">Stuck</button>
+    <button type="button" class="adm-toggle-chip" [attr.aria-pressed]="!!filters()['needsReview']" (click)="toggle('needsReview')">Needs review</button>
+
+    @if (activeFilterCount() || filters()['search']) {
+      <button type="button" class="adm-link" (click)="clearFilters()">Clear filters</button>
+    }
+  </section>
+
+  @if (hasPeriodFilter()) {
+    <div class="adm-alert adm-alert--route">Showing a reporting period from the overview. Clear filters to see everyone.</div>
+  }
+
+  @if (error(); as message) {
+    <div class="adm-panel adm-state">
+      <strong>{{ message }}</strong>
+      <button type="button" class="adm-btn" (click)="load(1)">Try again</button>
+    </div>
+  } @else if (!loading() && !items().length) {
+    <div class="adm-panel adm-state">
+      @if (activeFilterCount() || filters()['search']) {
+        <strong>No students match these filters</strong>
+        <button type="button" class="adm-btn" (click)="clearFilters()">Clear filters</button>
+      } @else {
+        <strong>No students yet</strong>
+        <span>Add your first enquiry to start tracking their admission.</span>
+        <button type="button" class="adm-btn adm-btn--primary" (click)="adding.set(true)">Add student</button>
+      }
+    </div>
+  } @else {
+    <div class="adm-panel list">
+      <div class="adm-table-wrap desktop-only">
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th scope="col">Student</th>
+              <th scope="col">Stage</th>
+              <th scope="col">Intake</th>
+              @if (showCounsellor()) {
+                <th scope="col">Counsellor</th>
+              }
+              <th scope="col">Next follow-up</th>
+              <th scope="col">Needs attention</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (app of items(); track app.id) {
+              <tr class="is-link" (click)="open(app)">
+                <td>
+                  <a class="student" [href]="'/admissions/students/' + app.id" (click)="$event.preventDefault()">
+                    <span class="adm-avatar">{{ initials(app.student.name) }}</span>
+                    <span>
+                      <strong>{{ app.student.name }}</strong>
+                      <small>{{ app.student.phone || app.student.email }}</small>
+                    </span>
+                  </a>
+                </td>
+                <td>
+                  <span class="stage">
+                    <span class="stage-no adm-num">{{ app.currentStage.order }}</span>
+                    {{ app.currentStage.name }}
+                  </span>
+                  <small class="sub adm-num">
+                    @if (app.status === 'ACTIVE') {
+                      {{ app.daysInStage }} {{ app.daysInStage === 1 ? 'day' : 'days' }} here
+                    } @else if (app.status === 'CLOSED') {
+                      {{ app.visa.outcome === 'APPROVED' ? 'Visa approved' : 'Visa rejected' }}
+                    } @else {
+                      Withdrawn
+                    }
+                  </small>
+                </td>
+                <td>
+                  {{ intakeLabel(app.intakeMonth, app.intakeYear) }}
+                  <small class="sub">{{ levelLabels[app.studyLevel] }}</small>
+                </td>
+                @if (showCounsellor()) {
+                  <td>{{ app.counsellor?.name || 'Unassigned' }}</td>
+                }
+                <td [class.is-overdue]="app.isFollowUpOverdue">{{ followUpText(app) }}</td>
+                <td>
+                  <span class="chips">
+                    @for (w of app.warnings; track w) {
+                      @if (w !== 'NO_FOLLOW_UP' || app.status === 'ACTIVE') {
+                        <span class="adm-chip" [class]="'adm-chip adm-chip--' + warningTone[w]">{{ warningLabels[w] }}</span>
+                      }
+                    }
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <ul class="cards mobile-only">
+        @for (app of items(); track app.id) {
+          <li>
+            <button type="button" class="card" (click)="open(app)">
+              <span class="card-top">
+                <strong>{{ app.student.name }}</strong>
+                <span class="stage">
+                  <span class="stage-no adm-num">{{ app.currentStage.order }}</span>
+                  {{ app.currentStage.name }}
+                </span>
+              </span>
+              <span class="card-meta">
+                <span>{{ intakeLabel(app.intakeMonth, app.intakeYear) }}, {{ levelLabels[app.studyLevel] }}</span>
+                <span [class.is-overdue]="app.isFollowUpOverdue">Follow-up: {{ followUpText(app) }}</span>
+              </span>
+              @if (app.warnings.length) {
+                <span class="chips">
+                  @for (w of app.warnings; track w) {
+                    <span class="adm-chip" [class]="'adm-chip adm-chip--' + warningTone[w]">{{ warningLabels[w] }}</span>
+                  }
+                </span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+
+      @if (items().length < total()) {
+        <div class="more">
+          <button type="button" class="adm-btn" [disabled]="loading()" (click)="load(page() + 1)">
+            {{ loading() ? 'Loading…' : 'Show more' }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (adding()) {
+  <adm-add-student (created)="onCreated($event)" (closed)="adding.set(false)" />
+}

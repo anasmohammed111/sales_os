@@ -1,0 +1,159 @@
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+
+  div {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 10px 14px;
+    border: 1px solid var(--adm-line);
+    border-radius: 12px;
+    background: var(--adm-surface);
+  }
+
+  dt {
+    color: var(--adm-muted);
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  dd {
+    margin: 0;
+    display: grid;
+    color: var(--adm-ink-2);
+    font-size: 13px;
+
+    strong {
+      color: var(--adm-ink);
+      font-size: 16px;
+    }
+
+    small {
+      color: var(--adm-muted);
+      font-size: 12px;
+    }
+  }
+}
+
+.fees {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fee {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  align-content: start;
+}
+
+.fee-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+
+  h3 {
+    margin: 0;
+    color: var(--adm-ink);
+    font-size: 14.5px;
+    font-weight: 750;
+  }
+
+  small {
+    color: var(--adm-muted);
+    font-size: 12.5px;
+  }
+}
+
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--adm-ok);
+  }
+}
+
+.amounts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  color: var(--adm-ink-2);
+  font-size: 12.5px;
+}
+
+.txs {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 8px 0;
+    border-top: 1px solid #f1f5f9;
+    font-size: 13px;
+
+    &.is-void .tx-amount {
+      text-decoration: line-through;
+      color: var(--adm-faint);
+    }
+  }
+}
+
+.tx-amount {
+  color: var(--adm-ink);
+  font-weight: 700;
+}
+
+.tx-meta {
+  color: var(--adm-muted);
+  font-size: 12.5px;
+
+  em {
+    color: var(--adm-bad);
+    font-style: normal;
+  }
+}
+
+.tx-actions {
+  display: flex;
+  gap: 10px;
+  font-size: 12.5px;
+
+  .void {
+    color: var(--adm-bad);
+  }
+}
+
+.fee-foot {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -1,0 +1,156 @@
+<div class="adm-page">
+  <header class="adm-head">
+    <div>
+      <h1 class="adm-title">{{ ctx()?.businessName || 'Admissions' }}</h1>
+      <p class="adm-sub">
+        @if (ctx()?.isAdmin) {
+          Every student in admissions.
+        } @else {
+          Your students only.
+        }
+        Figures for added students and visa results cover {{ periodLabel() || 'the last 12 months' }}.
+      </p>
+    </div>
+    <div class="adm-actions">
+      <a class="adm-btn" routerLink="/admissions/students">All students</a>
+      <a class="adm-btn adm-btn--primary" routerLink="/admissions/pipeline">Open pipeline</a>
+    </div>
+  </header>
+
+  <section class="adm-filters" aria-label="Filters">
+    <label class="month">
+      <span>Reporting month</span>
+      <input type="month" (change)="setFilter('month', $any($event.target).value)" aria-label="Reporting month" />
+    </label>
+    <select aria-label="Level" (change)="setFilter('studyLevel', $any($event.target).value)">
+      <option value="">Any level</option>
+      <option value="BACHELOR">Bachelor's</option>
+      <option value="MASTER">Master's</option>
+    </select>
+    <select aria-label="Intake month" (change)="setFilter('intakeMonth', $any($event.target).value)">
+      <option value="">Any intake month</option>
+      @for (m of months; track m.value) {
+        <option [value]="m.value">{{ m.label }}</option>
+      }
+    </select>
+    <select aria-label="Intake year" (change)="setFilter('intakeYear', $any($event.target).value)">
+      <option value="">Any intake year</option>
+      @for (y of years; track y) {
+        <option [value]="y">{{ y }}</option>
+      }
+    </select>
+    @if (showCounsellor()) {
+      <select aria-label="Counsellor" (change)="setFilter('counsellorId', $any($event.target).value)">
+        <option value="">All counsellors</option>
+        @for (c of ctx()?.counsellors; track c._id) {
+          <option [value]="c._id">{{ c.name }}</option>
+        }
+      </select>
+    }
+    @if (ctx()?.universities?.length) {
+      <select aria-label="University" (change)="setFilter('universityId', $any($event.target).value)">
+        <option value="">Any university</option>
+        @for (u of ctx()?.universities; track u._id) {
+          <option [value]="u._id">{{ u.name }}</option>
+        }
+      </select>
+    }
+  </section>
+
+  @if (error(); as message) {
+    <div class="adm-panel adm-state"><strong>{{ message }}</strong><button type="button" class="adm-btn" (click)="load()">Try again</button></div>
+  } @else if (loading() && !data()) {
+    <div class="adm-skeleton" style="height: 150px"></div>
+    <div class="adm-skeleton" style="height: 260px"></div>
+  } @else if (data(); as d) {
+    <section class="adm-panel route" [class.is-loading]="loading()">
+      <div class="route-head">
+        <h2>Where students are now</h2>
+        <button type="button" class="adm-link" (click)="openList(d.metrics.active.query)">
+          <span class="adm-num">{{ d.metrics.active.value }}</span> active
+        </button>
+      </div>
+      <adm-journey-rail mode="counts" [stages]="rail()" (select)="openStage($event)" />
+    </section>
+
+    <div class="columns">
+      <section class="adm-panel">
+        <div class="adm-panel__head"><h2>Needs attention</h2></div>
+        <ul class="rows">
+          <li>
+            <button type="button" (click)="openList(d.metrics.overdueFollowUps.query)" [class.is-warn]="d.metrics.overdueFollowUps.value">
+              <span>Follow-ups overdue</span>
+              <strong class="adm-num">{{ d.metrics.overdueFollowUps.value }}</strong>
+            </button>
+          </li>
+          <li>
+            <button type="button" (click)="openList(d.metrics.stuck.query)" [class.is-warn]="d.metrics.stuck.value">
+              <span>Stuck longer than their stage allows</span>
+              <strong class="adm-num">{{ d.metrics.stuck.value }}</strong>
+            </button>
+          </li>
+          <li>
+            <button type="button" (click)="openList(d.metrics.needsReview.query)" [class.is-bad]="d.metrics.needsReview.value">
+              <span>Flagged for review (failed interview or exam)</span>
+              <strong class="adm-num">{{ d.metrics.needsReview.value }}</strong>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <section class="adm-panel">
+        <div class="adm-panel__head"><h2>In this period</h2></div>
+        <ul class="rows">
+          <li>
+            <button type="button" (click)="openList(d.metrics.newLeads.query)">
+              <span>New students added</span>
+              <strong class="adm-num">{{ d.metrics.newLeads.value }}</strong>
+            </button>
+          </li>
+          <li>
+            <button type="button" (click)="openList(d.metrics.visasApproved.query)">
+              <span>Visas approved</span>
+              <strong class="adm-num ok">{{ d.metrics.visasApproved.value }}</strong>
+            </button>
+          </li>
+          <li>
+            <button type="button" (click)="openList(d.metrics.visasRejected.query)">
+              <span>Visas rejected</span>
+              <strong class="adm-num">{{ d.metrics.visasRejected.value }}</strong>
+            </button>
+          </li>
+        </ul>
+        <div class="conversion">
+          <p class="rate adm-num">
+            {{ conversionPercent() === null ? 'No students yet' : conversionPercent() + '% lead to visa' }}
+          </p>
+          <p class="definition">{{ d.conversion.definition }}</p>
+        </div>
+      </section>
+
+      <section class="adm-panel">
+        <div class="adm-panel__head">
+          <h2>Money outstanding</h2>
+          <a class="adm-link" routerLink="/admissions/payments">Payments</a>
+        </div>
+        @if (d.outstandingByCurrency.length) {
+          <ul class="rows money">
+            @for (row of d.outstandingByCurrency; track row.currency) {
+              <li>
+                <div>
+                  <span>{{ row.currency }}</span>
+                  <strong class="adm-num">{{ money(row.outstandingMinor, row.currency) }}</strong>
+                  @if (row.overdueMinor) {
+                    <small class="adm-num is-bad">{{ money(row.overdueMinor, row.currency) }} overdue</small>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="none">No fees recorded.</p>
+        }
+      </section>
+    </div>
+  }
+</div>

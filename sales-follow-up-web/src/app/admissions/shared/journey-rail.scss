@@ -1,0 +1,177 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.rail {
+  --dot: 30px;
+  display: flex;
+  margin: 0;
+  padding: 4px 2px 2px;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.rail--compact {
+  --dot: 24px;
+}
+
+.stop {
+  position: relative;
+  flex: 1 0 96px;
+  min-width: 96px;
+
+  // The track: a line from this station to the next one
+  &::after {
+    content: '';
+    position: absolute;
+    top: calc(var(--dot) / 2 + 4px);
+    left: calc(50% + var(--dot) / 2 + 2px);
+    right: calc(-50% + var(--dot) / 2 + 2px);
+    height: 3px;
+    border-radius: 2px;
+    background: var(--adm-line);
+  }
+
+  &:last-child::after {
+    display: none;
+  }
+}
+
+.station {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 4px 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: center;
+}
+
+button.station {
+  border-radius: 10px;
+  cursor: pointer;
+
+  &:hover .dot {
+    transform: scale(1.06);
+  }
+}
+
+.dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--dot);
+  height: var(--dot);
+  border: 2px solid var(--adm-line-strong);
+  border-radius: 50%;
+  background: var(--adm-surface);
+  color: var(--adm-muted);
+  font-size: 12px;
+  font-weight: 800;
+  transition: transform var(--transition-fast, 150ms ease);
+}
+
+.name {
+  max-width: 13ch;
+  color: var(--adm-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.note {
+  color: var(--adm-muted);
+  font-size: 11.5px;
+  line-height: 1.2;
+}
+
+.note--warn {
+  color: var(--adm-warn);
+  font-weight: 700;
+}
+
+/* Passed: solid ink line and filled station */
+.stop--passed {
+  &::after {
+    background: var(--adm-ink);
+  }
+
+  .dot {
+    border-color: var(--adm-ink);
+    background: var(--adm-ink);
+    color: #fff;
+  }
+
+  .name {
+    color: var(--adm-ink-2);
+  }
+}
+
+/* Current: route blue with a halo */
+.stop--current {
+  .dot {
+    border-color: var(--adm-route);
+    background: var(--adm-route);
+    color: #fff;
+    box-shadow: 0 0 0 5px var(--adm-route-soft);
+  }
+
+  .name {
+    color: var(--adm-ink);
+    font-weight: 800;
+  }
+
+  .note {
+    color: var(--adm-route-ink);
+    font-weight: 700;
+  }
+}
+
+.stop--archived .name {
+  font-style: italic;
+}
+
+/* Counts mode: every station is a stop with waiting students */
+.rail--counts {
+  .stop--current .dot {
+    box-shadow: none;
+  }
+
+  .stop--current::after {
+    background: #bfdbfe;
+  }
+
+  .stop--ahead .dot {
+    color: var(--adm-faint);
+  }
+}
+
+.stop--terminus {
+  flex: 0 0 auto;
+  min-width: auto;
+  display: flex;
+  align-items: flex-start;
+  padding-left: 6px;
+
+  .flag {
+    display: inline-flex;
+    align-items: center;
+    height: calc(var(--dot) + 4px);
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--adm-ok);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  &.is-rejected .flag {
+    background: var(--adm-bad);
+  }
+}

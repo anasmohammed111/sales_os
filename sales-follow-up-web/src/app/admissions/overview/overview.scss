@@ -1,0 +1,158 @@
+.month {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--adm-muted);
+  font-size: 12.5px;
+  font-weight: 650;
+
+  input {
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid var(--adm-line-strong);
+    border-radius: var(--adm-radius);
+    font: inherit;
+    font-size: 13px;
+    color: var(--adm-ink-2);
+  }
+}
+
+.route {
+  padding: 18px 16px 12px;
+  transition: opacity var(--transition-base, 200ms ease);
+
+  &.is-loading {
+    opacity: 0.6;
+  }
+}
+
+.route-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 4px 14px;
+
+  h2 {
+    margin: 0;
+    color: var(--adm-ink);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+  }
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.rows {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 8px 16px;
+    border: 0;
+    background: none;
+    color: var(--adm-ink-2);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: #f9fafb;
+
+      span {
+        color: var(--adm-ink);
+      }
+    }
+
+    strong {
+      color: var(--adm-ink);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    &.is-warn strong {
+      color: var(--adm-warn);
+    }
+
+    &.is-bad strong {
+      color: var(--adm-bad);
+    }
+
+    .ok {
+      color: var(--adm-ok);
+    }
+  }
+
+  li + li {
+    border-top: 1px solid #f1f5f9;
+  }
+}
+
+.money li > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 16px;
+
+  span {
+    color: var(--adm-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--adm-ink);
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .is-bad {
+    color: var(--adm-bad);
+    font-weight: 650;
+  }
+}
+
+.conversion {
+  padding: 12px 16px 16px;
+  border-top: 1px solid #f1f5f9;
+
+  .rate {
+    margin: 0;
+    color: var(--adm-ink);
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .definition {
+    margin: 4px 0 0;
+    color: var(--adm-muted);
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+}
+
+.none {
+  margin: 0;
+  padding: 16px;
+  color: var(--adm-muted);
+  font-size: 13.5px;
+}
+
+@media (max-width: 1100px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}

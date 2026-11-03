@@ -1,0 +1,64 @@
+@if (request(); as req) {
+  @if (blocked() || error()) {
+    <div class="adm-dialog-backdrop" (click)="closed.emit()" role="presentation">
+      <div class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="move-title" (click)="$event.stopPropagation()">
+        <div class="adm-dialog__head">
+          <div>
+            <h2 id="move-title">{{ req.studentName }} can't move to {{ req.toStageName }} yet</h2>
+            @if (blocked(); as b) {
+              <p>{{ b.missing.length ? 'Complete these first:' : 'This needs attention first:' }}</p>
+            }
+          </div>
+          <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="closed.emit()" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+              stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div class="adm-dialog__body adm-form">
+          @if (error(); as message) {
+            <div class="adm-alert adm-alert--bad">{{ message }}</div>
+          }
+
+          @if (blocked(); as b) {
+            @if (b.gateError) {
+              <div class="adm-alert adm-alert--bad">{{ b.gateError }}</div>
+            }
+            @if (b.missing.length) {
+              <ul class="missing">
+                @for (item of b.missing; track item.stageKey + item.itemKey) {
+                  <li>
+                    <strong>{{ item.label }}</strong>
+                    @if (item.reason !== 'Not completed yet') {
+                      <span>{{ item.reason }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+
+            @if (isAdmin()) {
+              <label class="adm-field">
+                <span>Move anyway (admin override)</span>
+                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"
+                  placeholder="Why is it fine to skip these? This is saved in the history."></textarea>
+                <small>At least 5 characters.</small>
+              </label>
+            }
+          }
+        </div>
+
+        <div class="adm-dialog__foot">
+          <button type="button" class="adm-btn" (click)="closed.emit()">Close</button>
+          @if (blocked() && isAdmin()) {
+            <button type="button" class="adm-btn adm-btn--danger" [disabled]="busy() || reason().trim().length < 5"
+              (click)="override()">
+              {{ busy() ? 'Moving…' : 'Move anyway' }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+}
+

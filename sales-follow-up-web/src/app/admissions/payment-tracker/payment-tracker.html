@@ -1,0 +1,121 @@
+<div class="adm-page">
+  <header class="adm-head">
+    <div>
+      <h1 class="adm-title">Payments</h1>
+      <p class="adm-sub">Fees per student. Each currency is totalled on its own.</p>
+    </div>
+    <div class="adm-actions">
+      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('csv')">Export CSV</button>
+      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('xlsx')">Export Excel</button>
+    </div>
+  </header>
+
+  <section class="adm-filters" aria-label="Filters">
+    <label class="adm-search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <span class="adm-visually-hidden">Search student</span>
+      <input type="search" placeholder="Student name, phone or email" (input)="onSearch($any($event.target).value)" />
+    </label>
+    <select aria-label="Payment status" [value]="filters()['status'] || ''" (change)="setFilter('status', $any($event.target).value)">
+      <option value="OUTSTANDING">Money outstanding</option>
+      <option value="OVERDUE">Overdue</option>
+      <option value="UNPAID">Unpaid</option>
+      <option value="PARTIALLY_PAID">Partly paid</option>
+      <option value="PAID">Paid</option>
+      <option value="">All fees</option>
+    </select>
+    <select aria-label="Fee type" (change)="setFilter('category', $any($event.target).value)">
+      <option value="">All fee types</option>
+      @for (c of categories; track c[0]) {
+        <option [value]="c[0]">{{ c[1] }}</option>
+      }
+    </select>
+    <select aria-label="Intake month" (change)="setFilter('intakeMonth', $any($event.target).value)">
+      <option value="">Any intake month</option>
+      @for (m of months; track m.value) {
+        <option [value]="m.value">{{ m.label }}</option>
+      }
+    </select>
+    <select aria-label="Intake year" (change)="setFilter('intakeYear', $any($event.target).value)">
+      <option value="">Any year</option>
+      @for (y of years; track y) {
+        <option [value]="y">{{ y }}</option>
+      }
+    </select>
+    @if (showCounsellor()) {
+      <select aria-label="Counsellor" (change)="setFilter('counsellorId', $any($event.target).value)">
+        <option value="">All counsellors</option>
+        @for (c of ctx()?.counsellors; track c._id) {
+          <option [value]="c._id">{{ c.name }}</option>
+        }
+      </select>
+    }
+  </section>
+
+  @if (totals().length) {
+    <dl class="totals">
+      @for (t of totals(); track t.currency) {
+        <div>
+          <dt>{{ t.currency }} outstanding</dt>
+          <dd class="adm-num">{{ money(t.outstandingMinor, t.currency) }}</dd>
+          <small class="adm-num">{{ money(t.paidMinor, t.currency) }} paid of {{ money(t.dueMinor, t.currency) }}</small>
+        </div>
+      }
+    </dl>
+  }
+
+  @if (error(); as message) {
+    <div class="adm-panel adm-state"><strong>{{ message }}</strong><button type="button" class="adm-btn" (click)="load()">Try again</button></div>
+  } @else if (loading()) {
+    <div class="adm-skeleton" style="height: 260px"></div>
+  } @else if (!items().length) {
+    <div class="adm-panel adm-state">
+      <strong>No fees match</strong>
+      <span>Add fees from a student's Payments tab.</span>
+    </div>
+  } @else {
+    <div class="adm-panel adm-table-wrap">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th scope="col">Student</th>
+            <th scope="col">Fee</th>
+            <th scope="col">Due date</th>
+            <th scope="col" class="num">Amount</th>
+            <th scope="col" class="num">Paid</th>
+            <th scope="col" class="num">Outstanding</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of items(); track row.id) {
+            <tr class="is-link" (click)="open(row)">
+              <td>
+                <a [routerLink]="['/admissions/students', row.applicationId]" [queryParams]="{ tab: 'payments' }" (click)="$event.stopPropagation()">
+                  <strong>{{ row.student?.name }}</strong>
+                </a>
+                <small class="sub">
+                  {{ intakeLabel(row.intakeMonth, row.intakeYear) }}{{ showCounsellor() && row.counsellor ? ', ' + row.counsellor.name : '' }}
+                </small>
+              </td>
+              <td>
+                {{ row.label }}
+                <small class="sub">{{ categoryLabels[row.category] }}</small>
+              </td>
+              <td [class.is-overdue]="row.isOverdue">{{ row.dueDate ? formatDate(row.dueDate, tz()) : 'No date' }}</td>
+              <td class="num">{{ money(row.amountDueMinor, row.currency) }}</td>
+              <td class="num">{{ money(row.paidMinor, row.currency) }}</td>
+              <td class="num"><strong>{{ money(row.outstandingMinor, row.currency) }}</strong></td>
+              <td>
+                <span class="adm-chip" [class]="'adm-chip adm-chip--' + (row.isOverdue ? 'bad' : statusTone[row.status])">
+                  {{ row.isOverdue ? 'Overdue' : statusLabels[row.status] }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

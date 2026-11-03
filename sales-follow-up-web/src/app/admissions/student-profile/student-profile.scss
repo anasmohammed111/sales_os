@@ -1,0 +1,87 @@
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  color: var(--adm-muted);
+  font-size: 13px;
+  font-weight: 650;
+
+  &:hover {
+    color: var(--adm-ink);
+  }
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.who {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+
+  .adm-title {
+    font-size: 28px;
+  }
+}
+
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-select select {
+  height: 38px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--adm-line-strong);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  color: var(--adm-ink-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.rail-panel {
+  padding: 16px 12px 10px;
+}
+
+.assign {
+  max-width: 100%;
+  height: 30px;
+  padding: 0 24px 0 8px;
+  border: 1px solid var(--adm-line-strong);
+  border-radius: 8px;
+  background: var(--adm-surface);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--adm-ink);
+}
+
+@media (max-width: 640px) {
+  .who .adm-title {
+    font-size: 24px;
+  }
+
+  .hero-actions {
+    width: 100%;
+
+    .adm-btn--route {
+      flex: 1;
+    }
+  }
+}

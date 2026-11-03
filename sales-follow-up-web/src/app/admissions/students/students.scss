@@ -1,0 +1,123 @@
+.list {
+  overflow: hidden;
+}
+
+.student {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+
+  strong {
+    display: block;
+    color: var(--adm-ink);
+    font-weight: 700;
+  }
+
+  small {
+    display: block;
+    color: var(--adm-muted);
+    font-size: 12.5px;
+  }
+}
+
+.stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--adm-ink);
+  font-weight: 600;
+}
+
+.stage-no {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--adm-route);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--adm-muted);
+  font-size: 12.5px;
+}
+
+.is-overdue {
+  color: var(--adm-warn) !important;
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    border-top: 1px solid #f1f5f9;
+  }
+}
+
+.card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  strong {
+    color: var(--adm-ink);
+    font-size: 15px;
+  }
+}
+
+.card-meta {
+  display: grid;
+  gap: 2px;
+  color: var(--adm-muted);
+  font-size: 13px;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+}

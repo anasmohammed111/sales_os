@@ -1,0 +1,143 @@
+<form class="grid" (ngSubmit)="save()">
+  <section class="adm-panel">
+    <div class="adm-panel__head"><h3>Contact</h3></div>
+    <div class="adm-panel__body adm-form">
+      <label class="adm-field">
+        <span>Full name</span>
+        <input name="name" [(ngModel)]="name" required />
+      </label>
+      <div class="adm-form-row">
+        <label class="adm-field">
+          <span>Phone</span>
+          <input name="phone" type="tel" [(ngModel)]="phone" />
+        </label>
+        <label class="adm-field">
+          <span>WhatsApp</span>
+          <input name="whatsapp" type="tel" [(ngModel)]="whatsapp" />
+        </label>
+      </div>
+      <div class="adm-form-row">
+        <label class="adm-field">
+          <span>Email</span>
+          <input name="email" type="email" [(ngModel)]="email" />
+        </label>
+        <label class="adm-field">
+          <span>City</span>
+          <input name="city" [(ngModel)]="city" />
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="adm-panel">
+    <div class="adm-panel__head"><h3>Admission</h3></div>
+    <div class="adm-panel__body adm-form">
+      <div class="adm-field">
+        <span>Level</span>
+        <div class="adm-segmented" role="group" aria-label="Study level">
+          <button type="button" [attr.aria-pressed]="studyLevel === 'BACHELOR'" (click)="studyLevel = 'BACHELOR'">Bachelor's</button>
+          <button type="button" [attr.aria-pressed]="studyLevel === 'MASTER'" (click)="studyLevel = 'MASTER'">Master's</button>
+        </div>
+      </div>
+      <div class="adm-form-row">
+        <label class="adm-field">
+          <span>Intake month</span>
+          <select name="intakeMonth" [(ngModel)]="intakeMonth">
+            @for (m of months; track m.value) {
+              <option [ngValue]="m.value">{{ m.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="adm-field">
+          <span>Intake year</span>
+          <select name="intakeYear" [(ngModel)]="intakeYear">
+            @for (y of years; track y) {
+              <option [ngValue]="y">{{ y }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <label class="adm-field">
+        <span>Lead source</span>
+        <select name="leadSource" [(ngModel)]="leadSource">
+          @for (s of sources(); track s.key) {
+            @if (!s.isArchived || s.key === leadSource) {
+              <option [value]="s.key">{{ s.name }}</option>
+            }
+          }
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="adm-panel wide">
+    <div class="adm-panel__head">
+      <h3>Universities</h3>
+      <button type="button" class="adm-btn adm-btn--sm" (click)="addChoice()">Add to shortlist</button>
+    </div>
+    <div class="adm-panel__body adm-form">
+      <ng-template #choiceFields let-choice let-i="index" let-prefix="prefix">
+        <div class="choice">
+          @if (universities().length) {
+            <label class="adm-field">
+              <span>University</span>
+              <select [name]="prefix + 'uni' + i" [(ngModel)]="choice.universityId" (ngModelChange)="choice.courseId = ''">
+                <option value="">Other (type below)</option>
+                @for (u of universities(); track u._id) {
+                  <option [value]="u._id">{{ u.name }}</option>
+                }
+              </select>
+            </label>
+          }
+          @if (!choice.universityId) {
+            <label class="adm-field">
+              <span>University name</span>
+              <input [name]="prefix + 'uniName' + i" [(ngModel)]="choice.universityName" placeholder="Charles University" />
+            </label>
+          }
+          @if (choice.universityId && coursesOf(choice.universityId).length) {
+            <label class="adm-field">
+              <span>Course</span>
+              <select [name]="prefix + 'course' + i" [(ngModel)]="choice.courseId">
+                <option value="">Other (type below)</option>
+                @for (c of coursesOf(choice.universityId); track c._id) {
+                  <option [value]="c._id">{{ c.name }}</option>
+                }
+              </select>
+            </label>
+          }
+          @if (!choice.courseId) {
+            <label class="adm-field">
+              <span>Course name</span>
+              <input [name]="prefix + 'courseName' + i" [(ngModel)]="choice.courseName" placeholder="MSc Data Science" />
+            </label>
+          }
+        </div>
+      </ng-template>
+
+      <h4>Shortlist</h4>
+      @for (choice of shortlist; track $index; let i = $index) {
+        <div class="choice-row">
+          <ng-container *ngTemplateOutlet="choiceFields; context: { $implicit: choice, index: i, prefix: 's' }" />
+          <div class="choice-actions">
+            <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="useAsFinal(choice)">Make final choice</button>
+            <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeChoice(i)">Remove</button>
+          </div>
+        </div>
+      } @empty {
+        <p class="adm-muted">No universities shortlisted yet.</p>
+      }
+
+      <h4>Final choice</h4>
+      <ng-container *ngTemplateOutlet="choiceFields; context: { $implicit: finalChoice, index: 0, prefix: 'f' }" />
+    </div>
+  </section>
+
+  <div class="foot wide">
+    @if (duplicateWarning(); as warning) {
+      <span class="adm-alert adm-alert--warn">{{ warning }}</span>
+      <button type="button" class="adm-btn" (click)="save(true)">Save anyway</button>
+    }
+    <button type="submit" class="adm-btn adm-btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save details' }}</button>
+  </div>
+</form>

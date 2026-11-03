@@ -1,0 +1,243 @@
+<div class="adm-page">
+  <header class="adm-head">
+    <div>
+      <h1 class="adm-title">Admissions settings</h1>
+      <p class="adm-sub">Changes apply to students who haven't reached a stage yet. Work already recorded is kept as it was.</p>
+    </div>
+    @if (section() !== 'universities') {
+      <div class="adm-actions">
+        @if (dirty()) {
+          <button type="button" class="adm-btn" (click)="load()">Discard changes</button>
+        }
+        <button type="button" class="adm-btn adm-btn--primary" [disabled]="saving() || !dirty()" (click)="save()">
+          {{ saving() ? 'Saving…' : 'Save settings' }}
+        </button>
+      </div>
+    }
+  </header>
+
+  <div class="adm-tabs" role="tablist" aria-label="Settings sections">
+    <button type="button" role="tab" [attr.aria-selected]="section() === 'stages'" (click)="section.set('stages')">Stages and checklists</button>
+    <button type="button" role="tab" [attr.aria-selected]="section() === 'lists'" (click)="section.set('lists')">Documents and lead sources</button>
+    <button type="button" role="tab" [attr.aria-selected]="section() === 'universities'" (click)="section.set('universities')">Universities</button>
+    <button type="button" role="tab" [attr.aria-selected]="section() === 'reminders'" (click)="section.set('reminders')">Reminders and time</button>
+  </div>
+
+  @if (error(); as message) {
+    <div class="adm-panel adm-state"><strong>{{ message }}</strong><button type="button" class="adm-btn" (click)="load()">Try again</button></div>
+  } @else if (config(); as c) {
+    @switch (section()) {
+      @case ('stages') {
+        <ol class="stage-list">
+          @for (stage of c.stages; track $index; let i = $index; let first = $first; let last = $last) {
+            <li class="adm-panel stage" [class.is-archived]="stage.isArchived">
+              <div class="stage-head">
+                <span class="station adm-num">{{ i + 1 }}</span>
+                <label class="grow">
+                  <span class="adm-visually-hidden">Stage name</span>
+                  <input class="name-input" [(ngModel)]="stage.name" (ngModelChange)="touch()" [name]="'stage' + i" />
+                </label>
+                <label class="days">
+                  Stuck after
+                  <input type="number" min="1" max="365" [(ngModel)]="stage.stuckThresholdDays" (ngModelChange)="touch()" [name]="'days' + i" />
+                  days
+                </label>
+                <div class="order">
+                  <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="first" (click)="moveStage(i, -1)" aria-label="Move stage up">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+                  </button>
+                  <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="last" (click)="moveStage(i, 1)" aria-label="Move stage down">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </div>
+                @if (isSaved(stage)) {
+                  <label class="adm-check">
+                    <input type="checkbox" [(ngModel)]="stage.isArchived" (ngModelChange)="touch()" [name]="'archived' + i" />
+                    Archived
+                  </label>
+                } @else {
+                  <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeUnsaved(c.stages, i)">Remove</button>
+                }
+              </div>
+
+              <ul class="items">
+                @for (item of stage.items; track $index; let j = $index) {
+                  <li [class.is-archived]="item.isArchived">
+                    <input class="item-label" [(ngModel)]="item.label" (ngModelChange)="touch()" [name]="'item' + i + '-' + j"
+                      placeholder="What needs to be done" aria-label="Checklist item" />
+                    <label class="adm-check">
+                      <input type="checkbox" [(ngModel)]="item.required" (ngModelChange)="touch()" [name]="'req' + i + '-' + j" />
+                      Required
+                    </label>
+                    <select [value]="item.condition || ''" (change)="setCondition(item, $any($event.target).value)" aria-label="When it applies">
+                      <option value="">Always applies</option>
+                      <option value="INTERVIEW_REQUIRED">Only if interview required</option>
+                      <option value="EXAM_REQUIRED">Only if exam required</option>
+                    </select>
+                    @if (isSaved(item)) {
+                      <label class="adm-check">
+                        <input type="checkbox" [(ngModel)]="item.isArchived" (ngModelChange)="touch()" [name]="'iarch' + i + '-' + j" />
+                        Archived
+                      </label>
+                    } @else {
+                      <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeUnsaved(stage.items, j)">Remove</button>
+                    }
+                    @if (item.rule) {
+                      <small class="rule">{{ ruleNotes[item.rule] }}</small>
+                    }
+                  </li>
+                }
+              </ul>
+              <button type="button" class="adm-btn adm-btn--sm add" (click)="addItem(stage)">Add checklist item</button>
+            </li>
+          }
+        </ol>
+        <button type="button" class="adm-btn" (click)="addStage()">Add stage</button>
+      }
+
+      @case ('lists') {
+        <div class="two">
+          <section class="adm-panel">
+            <div class="adm-panel__head">
+              <h2>Document types</h2>
+              <button type="button" class="adm-btn adm-btn--sm" (click)="addDocumentType()">Add type</button>
+            </div>
+            <ul class="simple">
+              @for (d of c.documentTypes; track $index; let i = $index) {
+                <li [class.is-archived]="d.isArchived">
+                  <input [(ngModel)]="d.name" (ngModelChange)="touch()" [name]="'doc' + i" aria-label="Document type name" placeholder="For example: Birth certificate" />
+                  <label class="adm-check"><input type="checkbox" [(ngModel)]="d.hasExpiry" (ngModelChange)="touch()" [name]="'exp' + i" />Has expiry date</label>
+                  @if (isSaved(d)) {
+                    <label class="adm-check"><input type="checkbox" [(ngModel)]="d.isArchived" (ngModelChange)="touch()" [name]="'darch' + i" />Archived</label>
+                  } @else {
+                    <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeUnsaved(c.documentTypes, i)">Remove</button>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+
+          <section class="adm-panel">
+            <div class="adm-panel__head">
+              <h2>Lead sources</h2>
+              <button type="button" class="adm-btn adm-btn--sm" (click)="addLeadSource()">Add source</button>
+            </div>
+            <ul class="simple">
+              @for (s of c.leadSources; track $index; let i = $index) {
+                <li [class.is-archived]="s.isArchived">
+                  <input [(ngModel)]="s.name" (ngModelChange)="touch()" [name]="'src' + i" aria-label="Lead source name" placeholder="For example: Education fair" />
+                  @if (isSaved(s)) {
+                    <label class="adm-check"><input type="checkbox" [(ngModel)]="s.isArchived" (ngModelChange)="touch()" [name]="'sarch' + i" />Archived</label>
+                  } @else {
+                    <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeUnsaved(c.leadSources, i)">Remove</button>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        </div>
+      }
+
+      @case ('universities') {
+        <div class="unis">
+          @for (u of universities(); track u._id) {
+            <section class="adm-panel uni" [class.is-archived]="u.isArchived">
+              <div class="uni-head">
+                <input [(ngModel)]="u.name" [name]="'u' + u._id" aria-label="University name" class="name-input" />
+                <input [(ngModel)]="u.city" [name]="'uc' + u._id" aria-label="City" placeholder="City" />
+                <label class="adm-check"><input type="checkbox" [(ngModel)]="u.isArchived" [name]="'ua' + u._id" />Archived</label>
+              </div>
+              <ul class="simple">
+                @for (course of u.courses; track $index; let k = $index) {
+                  <li [class.is-archived]="course.isArchived">
+                    <input [(ngModel)]="course.name" [name]="'cn' + u._id + k" aria-label="Course name" placeholder="Course name" />
+                    <select [(ngModel)]="course.level" [name]="'cl' + u._id + k" aria-label="Level">
+                      <option value="BACHELOR">Bachelor's</option>
+                      <option value="MASTER">Master's</option>
+                    </select>
+                    @if (course._id) {
+                      <label class="adm-check"><input type="checkbox" [(ngModel)]="course.isArchived" [name]="'ca' + u._id + k" />Archived</label>
+                    } @else {
+                      <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeUnsavedCourse(u, k)">Remove</button>
+                    }
+                  </li>
+                }
+              </ul>
+              <div class="uni-foot">
+                <button type="button" class="adm-btn adm-btn--sm" (click)="addCourse(u)">Add course</button>
+                <button type="button" class="adm-btn adm-btn--sm adm-btn--primary" (click)="saveUniversity(u)">Save {{ u.name }}</button>
+              </div>
+            </section>
+          }
+
+          <form class="adm-panel uni new" (ngSubmit)="createUniversity()">
+            <h2>Add a university</h2>
+            <div class="uni-head">
+              <input [(ngModel)]="newUniversity.name" name="newName" aria-label="University name" placeholder="University name" class="name-input" required />
+              <input [(ngModel)]="newUniversity.city" name="newCity" aria-label="City" placeholder="City" />
+            </div>
+            <ul class="simple">
+              @for (course of newUniversity.courses; track $index; let k = $index) {
+                <li>
+                  <input [(ngModel)]="course.name" [name]="'ncn' + k" aria-label="Course name" placeholder="Course name" />
+                  <select [(ngModel)]="course.level" [name]="'ncl' + k" aria-label="Level">
+                    <option value="BACHELOR">Bachelor's</option>
+                    <option value="MASTER">Master's</option>
+                  </select>
+                  <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeUnsavedCourse(newUniversity, k)">Remove</button>
+                </li>
+              }
+            </ul>
+            <div class="uni-foot">
+              <button type="button" class="adm-btn adm-btn--sm" (click)="addCourse(newUniversity)">Add course</button>
+              <button type="submit" class="adm-btn adm-btn--sm adm-btn--primary" [disabled]="!newUniversity.name?.trim()">Add university</button>
+            </div>
+          </form>
+        </div>
+      }
+
+      @case ('reminders') {
+        <section class="adm-panel adm-panel__body adm-form reminders">
+          <p class="adm-muted">Reminders appear in the notification bell of the person responsible.</p>
+          <div class="adm-form-row">
+            <label class="adm-field">
+              <span>Follow-ups: minutes before</span>
+              <input type="number" min="0" max="10080" [(ngModel)]="c.reminderDefaults.followUpMinutesBefore" (ngModelChange)="touch()" name="r1" />
+            </label>
+            <label class="adm-field">
+              <span>Interviews: days before</span>
+              <input type="number" min="0" max="60" [(ngModel)]="c.reminderDefaults.interviewDaysBefore" (ngModelChange)="touch()" name="r2" />
+            </label>
+            <label class="adm-field">
+              <span>Entrance exams: days before</span>
+              <input type="number" min="0" max="60" [(ngModel)]="c.reminderDefaults.examDaysBefore" (ngModelChange)="touch()" name="r3" />
+            </label>
+          </div>
+          <div class="adm-form-row">
+            <label class="adm-field">
+              <span>Visa appointments: days before</span>
+              <input type="number" min="0" max="60" [(ngModel)]="c.reminderDefaults.visaDaysBefore" (ngModelChange)="touch()" name="r4" />
+            </label>
+            <label class="adm-field">
+              <span>Payments due: days before</span>
+              <input type="number" min="0" max="60" [(ngModel)]="c.reminderDefaults.paymentDaysBefore" (ngModelChange)="touch()" name="r5" />
+            </label>
+            <label class="adm-field">
+              <span>Document expiry: days before</span>
+              <input type="number" min="0" max="365" [(ngModel)]="c.reminderDefaults.documentExpiryDaysBefore" (ngModelChange)="touch()" name="r6" />
+            </label>
+          </div>
+          <label class="adm-field tz">
+            <span>Timezone for dates and "today"</span>
+            <input list="timezones" [(ngModel)]="c.timezone" (ngModelChange)="touch()" name="timezone" />
+            <datalist id="timezones">
+              @for (zone of timezones; track zone) {
+                <option [value]="zone"></option>
+              }
+            </datalist>
+          </label>
+        </section>
+      }
+    }
+  }
+</div>

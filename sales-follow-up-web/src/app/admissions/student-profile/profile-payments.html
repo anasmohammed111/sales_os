@@ -1,0 +1,192 @@
+@if (error(); as message) {
+  <div class="adm-panel adm-state"><strong>{{ message }}</strong><button type="button" class="adm-btn" (click)="load()">Try again</button></div>
+} @else if (loading()) {
+  <div class="adm-skeleton" style="height: 220px"></div>
+} @else {
+  <div class="top">
+    @if (summary().length) {
+      <dl class="totals">
+        @for (row of summary(); track row.currency) {
+          <div>
+            <dt>{{ row.currency }}</dt>
+            <dd class="adm-num">
+              <strong>{{ money(row.outstandingMinor, row.currency) }}</strong> outstanding
+              <small>{{ money(row.paidMinor, row.currency) }} paid of {{ money(row.dueMinor, row.currency) }}</small>
+            </dd>
+          </div>
+        }
+      </dl>
+    } @else {
+      <p class="adm-muted">No fees recorded yet. Add the agency, university or nostrification fee when it's agreed.</p>
+    }
+    <button type="button" class="adm-btn adm-btn--primary" (click)="addingFee.set(true)">Add fee</button>
+  </div>
+
+  <ul class="fees">
+    @for (fee of fees(); track fee.id) {
+      <li class="adm-panel fee">
+        <div class="fee-head">
+          <div>
+            <h3>{{ fee.label }}</h3>
+            <small>
+              {{ categoryLabels[fee.category] }}{{ fee.dueDate ? ', due ' + formatDate(fee.dueDate, tz()) : '' }}
+            </small>
+          </div>
+          <span class="adm-chip" [class]="'adm-chip adm-chip--' + (fee.isOverdue ? 'bad' : statusTone[fee.status])">
+            {{ fee.isOverdue ? 'Overdue' : statusLabels[fee.status] }}
+          </span>
+        </div>
+
+        <div class="bar" role="progressbar" [attr.aria-valuenow]="paidPercent(fee)" aria-valuemin="0" aria-valuemax="100"
+          [attr.aria-label]="'Paid ' + paidPercent(fee) + '%'">
+          <span [style.width.%]="paidPercent(fee)"></span>
+        </div>
+        <p class="amounts adm-num">
+          <span>{{ money(fee.paidMinor, fee.currency) }} paid</span>
+          <span>{{ money(fee.outstandingMinor, fee.currency) }} left of {{ money(fee.amountDueMinor, fee.currency) }}</span>
+        </p>
+
+        @if (fee.transactions.length) {
+          <ul class="txs">
+            @for (tx of fee.transactions; track tx.id) {
+              <li [class.is-void]="tx.isVoided">
+                <span class="adm-num tx-amount">{{ money(tx.amountMinor, fee.currency) }}</span>
+                <span class="tx-meta">
+                  {{ formatDate(tx.paidAt, tz()) }}{{ tx.method ? ', ' + tx.method : '' }}{{ tx.reference ? ', ref ' + tx.reference : '' }}
+                  @if (tx.isVoided) {
+                    <br /><em>Voided: {{ tx.voidReason }}</em>
+                  }
+                </span>
+                <span class="tx-actions">
+                  @if (tx.hasReceipt) {
+                    <button type="button" class="adm-link" (click)="openReceipt(fee, tx)">Receipt</button>
+                  }
+                  @if (!tx.isVoided) {
+                    <button type="button" class="adm-link void" (click)="voiding.set({ fee, tx }); voidReason = ''">Void</button>
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (fee.outstandingMinor > 0) {
+          <div class="fee-foot">
+            <button type="button" class="adm-btn adm-btn--sm" (click)="startPayment(fee)">Record payment</button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+}
+
+@if (addingFee()) {
+  <div class="adm-dialog-backdrop" (click)="addingFee.set(false)" role="presentation">
+    <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="fee-title" (click)="$event.stopPropagation()" (ngSubmit)="addFee()">
+      <div class="adm-dialog__head"><div><h2 id="fee-title">Add fee</h2><p>Each fee has one currency. Totals are never mixed across currencies.</p></div></div>
+      <div class="adm-dialog__body adm-form">
+        <label class="adm-field">
+          <span>Type</span>
+          <select name="category" [(ngModel)]="feeCategory">
+            @for (c of categories; track c[0]) {
+              <option [value]="c[0]">{{ c[1] }}</option>
+            }
+          </select>
+        </label>
+        <label class="adm-field">
+          <span>Description <small>(optional)</small></span>
+          <input name="label" [(ngModel)]="feeLabel" placeholder="For example: first semester tuition" />
+        </label>
+        <div class="adm-form-row">
+          <label class="adm-field">
+            <span>Amount due</span>
+            <input name="amount" inputmode="decimal" [(ngModel)]="feeAmount" placeholder="1500.00" required />
+            <small>Numbers only, no commas.</small>
+          </label>
+          <label class="adm-field">
+            <span>Currency</span>
+            <select name="currency" [(ngModel)]="feeCurrency">
+              @for (c of currencies; track c) {
+                <option [value]="c">{{ c }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <label class="adm-field">
+          <span>Due date <small>(optional)</small></span>
+          <input name="due" type="date" [(ngModel)]="feeDue" />
+        </label>
+      </div>
+      <div class="adm-dialog__foot">
+        <button type="button" class="adm-btn" (click)="addingFee.set(false)">Cancel</button>
+        <button type="submit" class="adm-btn adm-btn--primary" [disabled]="saving() || !feeAmount.trim()">Add fee</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (payingFee(); as fee) {
+  <div class="adm-dialog-backdrop" (click)="payingFee.set(null)" role="presentation">
+    <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="pay-title" (click)="$event.stopPropagation()" (ngSubmit)="recordPayment()">
+      <div class="adm-dialog__head">
+        <div>
+          <h2 id="pay-title">Record payment: {{ fee.label }}</h2>
+          <p class="adm-num">{{ money(fee.outstandingMinor, fee.currency) }} still to pay.</p>
+        </div>
+      </div>
+      <div class="adm-dialog__body adm-form">
+        <div class="adm-form-row">
+          <label class="adm-field">
+            <span>Amount ({{ fee.currency }})</span>
+            <input name="payAmount" inputmode="decimal" [(ngModel)]="payAmount" required />
+          </label>
+          <label class="adm-field">
+            <span>Paid on</span>
+            <input name="payDate" type="date" [(ngModel)]="payDate" required />
+          </label>
+        </div>
+        <div class="adm-form-row">
+          <label class="adm-field">
+            <span>Method <small>(optional)</small></span>
+            <input name="payMethod" [(ngModel)]="payMethod" placeholder="UPI, bank transfer, cash" />
+          </label>
+          <label class="adm-field">
+            <span>Reference <small>(optional)</small></span>
+            <input name="payReference" [(ngModel)]="payReference" placeholder="Transaction ID" />
+          </label>
+        </div>
+        <label class="adm-field">
+          <span>Receipt <small>(optional, PDF or image)</small></span>
+          <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="onReceipt($event)" />
+        </label>
+      </div>
+      <div class="adm-dialog__foot">
+        <button type="button" class="adm-btn" (click)="payingFee.set(null)">Cancel</button>
+        <button type="submit" class="adm-btn adm-btn--primary" [disabled]="saving() || !payAmount.trim() || !payDate">Record payment</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (voiding(); as target) {
+  <div class="adm-dialog-backdrop" (click)="voiding.set(null)" role="presentation">
+    <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="void-title" (click)="$event.stopPropagation()" (ngSubmit)="confirmVoid()">
+      <div class="adm-dialog__head">
+        <div>
+          <h2 id="void-title">Void {{ money(target.tx.amountMinor, target.fee.currency) }}?</h2>
+          <p>The payment stays in the history, marked void, and the balance goes back up.</p>
+        </div>
+      </div>
+      <div class="adm-dialog__body">
+        <label class="adm-field">
+          <span>Reason</span>
+          <input name="voidReason" [(ngModel)]="voidReason" placeholder="For example: payment bounced" />
+        </label>
+      </div>
+      <div class="adm-dialog__foot">
+        <button type="button" class="adm-btn" (click)="voiding.set(null)">Cancel</button>
+        <button type="submit" class="adm-btn adm-btn--danger" [disabled]="saving() || voidReason.trim().length < 3">Void payment</button>
+      </div>
+    </form>
+  </div>
+}

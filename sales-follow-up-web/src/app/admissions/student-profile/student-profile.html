@@ -1,0 +1,208 @@
+@if (error(); as message) {
+  <div class="adm-panel adm-state">
+    <strong>{{ message }}</strong>
+    <a class="adm-btn" routerLink="/admissions/students">Back to students</a>
+  </div>
+} @else if (loading()) {
+  <div class="adm-page" aria-busy="true">
+    <div class="adm-skeleton" style="height: 64px; width: 50%"></div>
+    <div class="adm-skeleton" style="height: 90px"></div>
+    <div class="adm-skeleton" style="height: 360px"></div>
+  </div>
+} @else if (app(); as a) {
+  <div class="adm-page">
+    <a class="back" routerLink="/admissions/students">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+      Students
+    </a>
+
+    <header class="hero">
+      <div class="who">
+        <h1 class="adm-title">{{ a.student.name }}</h1>
+        <p class="adm-sub">
+          {{ levelLabels[a.studyLevel] }}, intake {{ intakeLabel(a.intakeMonth, a.intakeYear) }}
+          @if (a.finalChoice.universityName) {
+            <br />{{ a.finalChoice.universityName }}{{ a.finalChoice.courseName ? ', ' + a.finalChoice.courseName : '' }}
+          }
+          @if (a.student.city) {
+            <br />{{ a.student.city }}
+          }
+        </p>
+        <div class="contact">
+          @if (a.student.phone) {
+            <a class="adm-btn adm-btn--sm" [href]="'tel:' + a.student.phone">Call</a>
+          }
+          @if (a.student.whatsapp || a.student.phone) {
+            <a class="adm-btn adm-btn--sm" [href]="whatsappLink(a.student.whatsapp || a.student.phone)" target="_blank" rel="noopener">WhatsApp</a>
+          }
+          @if (a.student.email) {
+            <a class="adm-btn adm-btn--sm" [href]="'mailto:' + a.student.email">Email</a>
+          }
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        @if (a.status === 'ACTIVE') {
+          @if (a.canAdvance) {
+            <button type="button" class="adm-btn adm-btn--route" (click)="moveNext()">
+              Move to {{ a.nextStage?.name }}
+            </button>
+          }
+          <label class="stage-select">
+            <span class="adm-visually-hidden">Change stage</span>
+            <select (change)="changeStage($any($event.target).value); $any($event.target).value = ''">
+              <option value="">Change stage…</option>
+              @for (s of ctx()?.config?.stages; track s.key) {
+                @if (!s.isArchived && s.key !== a.currentStage.key) {
+                  <option [value]="s.key">{{ s.order }}. {{ s.name }}</option>
+                }
+              }
+            </select>
+          </label>
+          <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="withdrawing.set(true)">Withdraw</button>
+        } @else if (a.status === 'WITHDRAWN') {
+          <span class="adm-chip adm-chip--muted">Withdrawn: {{ a.withdrawnReason }}</span>
+          <button type="button" class="adm-btn adm-btn--sm" (click)="reactivate()">Reactivate</button>
+        }
+      </div>
+    </header>
+
+    <div class="adm-panel rail-panel">
+      <adm-journey-rail [stages]="rail()" [currentKey]="a.currentStage.key"
+        [outcome]="a.status === 'CLOSED' ? a.visa.outcome : null" />
+    </div>
+
+    @if (a.needsReview) {
+      <div class="adm-alert adm-alert--bad" role="status">
+        <div><strong>Flagged for review.</strong> {{ a.reviewReason }}. The student won't move on until this is resolved or an admin overrides.</div>
+      </div>
+    }
+
+    <dl class="adm-facts">
+      <div [class.is-warn]="a.isFollowUpOverdue">
+        <dt>Next follow-up</dt>
+        <dd>{{ followUpText() }}</dd>
+      </div>
+      <div [class.is-warn]="a.pendingRequirements > 0 && a.status === 'ACTIVE'">
+        <dt>Left in {{ a.currentStage.name }}</dt>
+        <dd>
+          @if (a.status !== 'ACTIVE') {
+            Closed
+          } @else if (a.pendingRequirements) {
+            <button type="button" class="adm-link" (click)="selectTab('checklist')">{{ a.pendingRequirements }} to do</button>
+          } @else {
+            Ready to move on
+          }
+        </dd>
+      </div>
+      <div [class.is-bad]="a.isPaymentOverdue">
+        <dt>Outstanding</dt>
+        <dd>
+          @if (outstanding()) {
+            <button type="button" class="adm-link" (click)="selectTab('payments')">{{ outstanding() }}</button>
+          } @else {
+            {{ a.paymentSummary.status === 'NONE' ? 'No fees yet' : 'Nothing due' }}
+          }
+        </dd>
+      </div>
+      <div [class.is-warn]="a.isStuck">
+        <dt>In this stage</dt>
+        <dd class="adm-num">{{ a.daysInStage }} {{ a.daysInStage === 1 ? 'day' : 'days' }} (limit {{ a.stuckThresholdDays }})</dd>
+      </div>
+      <div>
+        <dt>Counsellor</dt>
+        <dd>
+          @if (canAssign()) {
+            <select class="assign" aria-label="Counsellor" [value]="a.counsellorId || ''" (change)="assign($any($event.target).value)">
+              @if (ctx()?.isAdmin) {
+                <option value="">Unassigned</option>
+              }
+              @if (a.counsellor && !counsellorListed()) {
+                <option [value]="a.counsellorId">{{ a.counsellor.name }}</option>
+              }
+              @for (c of ctx()?.counsellors; track c._id) {
+                <option [value]="c._id">{{ c.name }}</option>
+              }
+            </select>
+          } @else {
+            {{ a.counsellor?.name || 'Unassigned' }}
+          }
+        </dd>
+      </div>
+    </dl>
+
+    @if (a.otherApplications.length) {
+      <div class="adm-alert adm-alert--route">
+        <div>
+          Other applications for this student:
+          @for (o of a.otherApplications; track o.id) {
+            <a class="adm-link" [routerLink]="['/admissions/students', o.id]">
+              {{ intakeLabel(o.intakeMonth, o.intakeYear) }} ({{ o.status === 'ACTIVE' ? o.currentStage.name : o.status === 'CLOSED' ? (o.visa.outcome === 'APPROVED' ? 'visa approved' : 'visa rejected') : 'withdrawn' }})</a>{{ $last ? '' : ', ' }}
+          }
+        </div>
+      </div>
+    }
+
+    <div class="adm-tabs" role="tablist" aria-label="Student sections">
+      @for (t of tabs; track t.key) {
+        <button type="button" role="tab" [attr.aria-selected]="tab() === t.key" (click)="selectTab(t.key)">
+          {{ t.label }}
+          @if (t.key === 'checklist' && a.pendingRequirements && a.status === 'ACTIVE') {
+            <span class="count adm-num">{{ a.pendingRequirements }}</span>
+          }
+        </button>
+      }
+    </div>
+
+    <section role="tabpanel">
+      @switch (tab()) {
+        @case ('overview') {
+          <adm-profile-overview [application]="a" (updated)="onUpdated($event)" />
+        }
+        @case ('checklist') {
+          <adm-profile-checklist [application]="a" (updated)="onUpdated($event)" (moveNext)="moveNext()" />
+        }
+        @case ('documents') {
+          <adm-profile-documents [application]="a" />
+        }
+        @case ('payments') {
+          <adm-profile-payments [application]="a" (updated)="onUpdated(null)" />
+        }
+        @case ('tasks') {
+          <adm-profile-tasks [application]="a" (updated)="onUpdated(null)" />
+        }
+        @case ('activity') {
+          <adm-profile-activity [application]="a" />
+        }
+      }
+    </section>
+  </div>
+
+  @if (withdrawing()) {
+    <div class="adm-dialog-backdrop" (click)="withdrawing.set(false)" role="presentation">
+      <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="withdraw-title" (click)="$event.stopPropagation()"
+        (ngSubmit)="withdraw()">
+        <div class="adm-dialog__head">
+          <div>
+            <h2 id="withdraw-title">Withdraw {{ a.student.name }}'s application?</h2>
+            <p>It leaves the pipeline and its reminders stop. You can reactivate it later.</p>
+          </div>
+        </div>
+        <div class="adm-dialog__body">
+          <label class="adm-field">
+            <span>Reason</span>
+            <textarea name="reason" [(ngModel)]="withdrawReason" rows="3" placeholder="For example: chose another agency"></textarea>
+          </label>
+        </div>
+        <div class="adm-dialog__foot">
+          <button type="button" class="adm-btn" (click)="withdrawing.set(false)">Cancel</button>
+          <button type="submit" class="adm-btn adm-btn--danger" [disabled]="withdrawReason.trim().length < 3">Withdraw</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <adm-stage-move-dialog [request]="moveRequest()" [isAdmin]="!!ctx()?.isAdmin" (moved)="onMoved($event)"
+    (closed)="moveRequest.set(null)" (stale)="load()" />
+}

@@ -1,0 +1,233 @@
+@let app = application();
+
+@if (app.currentRequirements.gateError && isActive()) {
+  <div class="adm-alert adm-alert--bad gate">{{ app.currentRequirements.gateError }}</div>
+}
+
+<ol class="stages">
+  @for (stage of app.stageProgress; track stage.key) {
+    @let state = stageState(stage);
+    @let isOpen = open().has(stage.key);
+    <li class="stage" [class]="'stage stage--' + state">
+      <button type="button" class="stage-head" (click)="toggle(stage.key)" [attr.aria-expanded]="isOpen"
+        [attr.aria-controls]="'stage-' + stage.key">
+        <span class="station adm-num">
+          @if (state === 'passed') {
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+          } @else {
+            {{ stage.order }}
+          }
+        </span>
+        <span class="stage-name">
+          {{ stage.name }}
+          @if (state === 'current') {
+            <span class="adm-chip adm-chip--route">Current stage</span>
+          }
+        </span>
+        <span class="stage-progress adm-num">
+          @if (stage.required) {
+            {{ stage.done }} of {{ stage.required }}
+          }
+        </span>
+        <svg class="chev" [class.is-open]="isOpen" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+
+      @if (isOpen) {
+        <div class="stage-body" [id]="'stage-' + stage.key">
+          @if (hasRule(stage.key, 'ASSESSMENT')) {
+            <form class="side-form" (ngSubmit)="saveAssessment()">
+              <h4>Interview and entrance exam</h4>
+              <div class="assess-grid">
+                <fieldset>
+                  <legend>Interview required?</legend>
+                  <div class="adm-segmented" role="group">
+                    <button type="button" [attr.aria-pressed]="interview === 'yes'" (click)="interview = 'yes'">Yes</button>
+                    <button type="button" [attr.aria-pressed]="interview === 'no'" (click)="interview = 'no'">No</button>
+                    <button type="button" [attr.aria-pressed]="interview === 'unknown'" (click)="interview = 'unknown'">Not known yet</button>
+                  </div>
+                  @if (interview === 'yes') {
+                    <label class="adm-field">
+                      <span>Interview date and time</span>
+                      <input type="datetime-local" name="interviewAt" [(ngModel)]="interviewAt" />
+                    </label>
+                    <label class="adm-field">
+                      <span>Result</span>
+                      <select name="interviewResult" [(ngModel)]="interviewResult">
+                        <option value="PENDING">Not yet</option>
+                        <option value="PASSED">Passed</option>
+                        <option value="FAILED">Failed</option>
+                      </select>
+                    </label>
+                  }
+                </fieldset>
+                <fieldset>
+                  <legend>Entrance exam required?</legend>
+                  <div class="adm-segmented" role="group">
+                    <button type="button" [attr.aria-pressed]="exam === 'yes'" (click)="exam = 'yes'">Yes</button>
+                    <button type="button" [attr.aria-pressed]="exam === 'no'" (click)="exam = 'no'">No</button>
+                    <button type="button" [attr.aria-pressed]="exam === 'unknown'" (click)="exam = 'unknown'">Not known yet</button>
+                  </div>
+                  @if (exam === 'yes') {
+                    <label class="adm-field">
+                      <span>Exam date and time</span>
+                      <input type="datetime-local" name="examAt" [(ngModel)]="examAt" />
+                    </label>
+                    <label class="adm-field">
+                      <span>Result</span>
+                      <select name="examResult" [(ngModel)]="examResult">
+                        <option value="PENDING">Not yet</option>
+                        <option value="PASSED">Passed</option>
+                        <option value="FAILED">Failed</option>
+                      </select>
+                    </label>
+                  }
+                </fieldset>
+              </div>
+              <div class="side-actions">
+                <button type="submit" class="adm-btn adm-btn--sm" [disabled]="savingAssessment()">
+                  {{ savingAssessment() ? 'Saving…' : 'Save interview and exam' }}
+                </button>
+              </div>
+            </form>
+          }
+
+          @if (hasRule(stage.key, 'VISA')) {
+            <div class="side-form">
+              <h4>Visa</h4>
+              @if (app.status === 'CLOSED') {
+                <p class="outcome" [class.is-bad]="app.visa.outcome === 'REJECTED'">
+                  {{ app.visa.outcome === 'APPROVED' ? 'Visa approved' : 'Visa rejected' }}
+                  on {{ formatDateTime(app.visa.outcomeAt, tz()) }}.
+                </p>
+                @if (ctx()?.isAdmin) {
+                  <button type="button" class="adm-link"
+                    (click)="confirmOutcome.set(app.visa.outcome === 'APPROVED' ? 'REJECTED' : 'APPROVED')">
+                    Correct this result
+                  </button>
+                }
+              } @else {
+                <form class="visa-row" (ngSubmit)="saveVisaDate()">
+                  <label class="adm-field">
+                    <span>Appointment date and time</span>
+                    <input type="datetime-local" name="visaAt" [(ngModel)]="visaAt" />
+                  </label>
+                  <button type="submit" class="adm-btn adm-btn--sm" [disabled]="savingVisa()">Save date</button>
+                </form>
+                @if (state === 'current') {
+                  <div class="outcome-actions">
+                    <span>When the embassy decides:</span>
+                    <button type="button" class="adm-btn adm-btn--sm" (click)="confirmOutcome.set('APPROVED')">Visa approved</button>
+                    <button type="button" class="adm-btn adm-btn--sm adm-btn--danger" (click)="confirmOutcome.set('REJECTED')">Visa rejected</button>
+                  </div>
+                }
+              }
+            </div>
+          }
+
+          <ul class="items">
+            @for (entry of entriesFor(stage.key); track entry.itemKey) {
+              <li class="item" [class]="'item item--' + entry.status.toLowerCase()" [class.is-dim]="!entry.isApplicable">
+                <span class="mark" aria-hidden="true">
+                  @if (entry.status === 'COMPLETED') {
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6"
+                      stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  } @else if (entry.status === 'NOT_APPLICABLE') {
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6"
+                      stroke-linecap="round"><path d="M6 12h12" /></svg>
+                  }
+                </span>
+                <div class="item-text">
+                  <span class="label">
+                    {{ entry.label }}
+                    @if (!entry.required) {
+                      <span class="adm-chip adm-chip--muted">Optional</span>
+                    }
+                  </span>
+                  @if (entry.status === 'COMPLETED') {
+                    <small>Done{{ completedByName(entry) ? ' by ' + completedByName(entry) : '' }}, {{ formatDateTime(entry.completedAt, tz()) }}</small>
+                  } @else if (entry.status === 'NOT_APPLICABLE') {
+                    <small>Not applicable: {{ entry.naReason }}</small>
+                  } @else if (!entry.isApplicable) {
+                    <small>{{ notNeededReason(entry) }}</small>
+                  } @else if (entry.blockedBy) {
+                    <small class="is-warn">{{ entry.blockedBy }}</small>
+                  }
+                  @if (entry.paymentCategory && entry.status === 'PENDING') {
+                    <small>Ticking this doesn't record money. Add the payment in the Payments tab.</small>
+                  }
+
+                  @if (naFor() === entry.itemKey) {
+                    <form class="na-form" (ngSubmit)="setStatus(entry, 'NOT_APPLICABLE', naReason)">
+                      <input name="naReason" [(ngModel)]="naReason" placeholder="Why doesn't this apply?" aria-label="Reason" />
+                      <button type="submit" class="adm-btn adm-btn--sm" [disabled]="naReason.trim().length < 3">Save</button>
+                      <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="naFor.set(null)">Cancel</button>
+                    </form>
+                  }
+                </div>
+
+                @if (isActive() && naFor() !== entry.itemKey) {
+                  <div class="item-actions">
+                    @if (entry.status === 'PENDING') {
+                      <button type="button" class="adm-btn adm-btn--sm" [disabled]="busyKey() === entry.itemKey || !!entry.blockedBy"
+                        (click)="setStatus(entry, 'COMPLETED')">Done</button>
+                      <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyKey() === entry.itemKey"
+                        (click)="startNa(entry)">Not applicable</button>
+                    } @else {
+                      <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyKey() === entry.itemKey"
+                        (click)="setStatus(entry, 'PENDING')">Undo</button>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+
+          @if (state === 'current') {
+            <div class="stage-foot">
+              @if (app.canAdvance) {
+                <span>Everything required here is done.</span>
+                <button type="button" class="adm-btn adm-btn--route" (click)="moveNext.emit()">Move to {{ app.nextStage?.name }}</button>
+              } @else if (app.nextStage) {
+                <span class="adm-num">
+                  {{ app.currentRequirements.missing.length }}
+                  {{ app.currentRequirements.missing.length === 1 ? 'item' : 'items' }} left before {{ app.nextStage.name }}.
+                </span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </li>
+  }
+</ol>
+
+@if (confirmOutcome(); as outcome) {
+  <div class="adm-dialog-backdrop" (click)="confirmOutcome.set(null)" role="presentation">
+    <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="outcome-title" (click)="$event.stopPropagation()"
+      (ngSubmit)="recordOutcome()">
+      <div class="adm-dialog__head">
+        <div>
+          <h2 id="outcome-title">Record visa {{ outcome === 'APPROVED' ? 'approval' : 'rejection' }} for {{ app.student.name }}?</h2>
+          <p>This closes the application. It no longer appears in the pipeline or gets reminders.</p>
+        </div>
+      </div>
+      @if (app.status === 'CLOSED') {
+        <div class="adm-dialog__body">
+          <label class="adm-field">
+            <span>Why is the result being corrected?</span>
+            <textarea name="correctionReason" [(ngModel)]="correctionReason" rows="3"></textarea>
+          </label>
+        </div>
+      }
+      <div class="adm-dialog__foot">
+        <button type="button" class="adm-btn" (click)="confirmOutcome.set(null)">Cancel</button>
+        <button type="submit" class="adm-btn" [class.adm-btn--primary]="outcome === 'APPROVED'" [class.adm-btn--danger]="outcome === 'REJECTED'"
+          [disabled]="savingVisa() || (app.status === 'CLOSED' && correctionReason.trim().length < 5)">
+          {{ outcome === 'APPROVED' ? 'Record approval' : 'Record rejection' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}

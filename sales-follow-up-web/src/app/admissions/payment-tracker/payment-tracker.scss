@@ -1,0 +1,53 @@
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+
+  div {
+    display: grid;
+    gap: 2px;
+    min-width: 200px;
+    padding: 12px 16px;
+    border: 1px solid var(--adm-line);
+    border-radius: var(--adm-radius-lg);
+    background: var(--adm-surface);
+  }
+
+  dt {
+    color: var(--adm-muted);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--adm-ink);
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  small {
+    color: var(--adm-muted);
+    font-size: 12px;
+  }
+}
+
+.sub {
+  display: block;
+  color: var(--adm-muted);
+  font-size: 12.5px;
+}
+
+a strong {
+  color: var(--adm-ink);
+}
+
+a:hover strong {
+  color: var(--adm-route-ink);
+}
+
+.is-overdue {
+  color: var(--adm-bad) !important;
+  font-weight: 700;
+}

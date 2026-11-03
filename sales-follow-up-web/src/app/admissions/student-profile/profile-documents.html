@@ -1,0 +1,99 @@
+@if (error(); as message) {
+  <div class="adm-panel adm-state"><strong>{{ message }}</strong><button type="button" class="adm-btn" (click)="load()">Try again</button></div>
+} @else if (loading()) {
+  <div class="adm-skeleton" style="height: 240px"></div>
+} @else {
+  <p class="lead">Files are private. Links to open them work for one minute. Uploading doesn't verify a document: check it, then mark it verified or rejected.</p>
+
+  <ul class="types">
+    @for (group of groups(); track group.type.key) {
+      <li class="adm-panel type">
+        <div class="type-head">
+          <h3>{{ group.type.name }}</h3>
+          @if (!group.docs.length) {
+            <span class="adm-chip adm-chip--muted">Missing</span>
+          }
+          <span class="spacer"></span>
+          <label class="adm-btn adm-btn--sm upload" [class.is-busy]="busyId() === group.type.key">
+            {{ busyId() === group.type.key ? 'Uploading…' : group.docs.length ? 'Upload another' : 'Upload' }}
+            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="upload($event, group.type)" />
+          </label>
+          @if (!group.docs.length) {
+            <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="addRecord(group.type)"
+              title="Track this document without a file, for example an original seen in the office">Track without file</button>
+          }
+        </div>
+
+        @for (doc of group.docs; track doc.id) {
+          <div class="doc">
+            <div class="doc-main">
+              <span class="adm-chip" [class]="'adm-chip adm-chip--' + statusTone[doc.status]">{{ statusLabels[doc.status] }}</span>
+              @if (doc.file.hasFile) {
+                <button type="button" class="adm-link" (click)="open(doc)">{{ doc.file.originalName }}</button>
+              } @else {
+                <span class="adm-muted">No file</span>
+              }
+              <small>
+                @if (doc.uploadedAt) {
+                  Uploaded by {{ doc.uploadedBy?.name || 'someone' }}, {{ formatDateTime(doc.uploadedAt, tz()) }}.
+                }
+                @if (doc.reviewedAt) {
+                  {{ doc.status === 'VERIFIED' ? 'Verified' : 'Rejected' }} by {{ doc.reviewedBy?.name || 'someone' }}, {{ formatDateTime(doc.reviewedAt, tz()) }}.
+                }
+              </small>
+              @if (doc.status === 'REJECTED' && doc.rejectionReason) {
+                <small class="is-bad">Reason: {{ doc.rejectionReason }}</small>
+              }
+              @if (group.type.hasExpiry) {
+                <label class="expiry">
+                  <span>Expiry date</span>
+                  <input type="date" [value]="toDateInput(doc.expiresAt)" (change)="setExpiry(doc, $any($event.target).value)" />
+                  @if (doc.expiresAt) {
+                    <small [class.is-warn]="isExpiringSoon(doc)">{{ expiryNote(doc) }}</small>
+                  }
+                </label>
+              }
+            </div>
+            <div class="doc-actions">
+              @if (doc.status !== 'VERIFIED') {
+                <button type="button" class="adm-btn adm-btn--sm" [disabled]="busyId() === doc.id" (click)="verify(doc)">Verify</button>
+              }
+              @if (doc.status !== 'REJECTED') {
+                <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyId() === doc.id"
+                  (click)="rejecting.set(doc); rejectReason = ''">Reject</button>
+              }
+              <label class="adm-btn adm-btn--sm adm-btn--ghost upload">
+                Replace file
+                <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="upload($event, group.type, doc)" />
+              </label>
+            </div>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+}
+
+@if (rejecting(); as doc) {
+  <div class="adm-dialog-backdrop" (click)="rejecting.set(null)" role="presentation">
+    <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="reject-title" (click)="$event.stopPropagation()"
+      (ngSubmit)="confirmReject()">
+      <div class="adm-dialog__head">
+        <div>
+          <h2 id="reject-title">Reject this document?</h2>
+          <p>Tell the student what to fix. The reason is saved with the document.</p>
+        </div>
+      </div>
+      <div class="adm-dialog__body">
+        <label class="adm-field">
+          <span>Reason</span>
+          <textarea name="rejectReason" [(ngModel)]="rejectReason" rows="3" placeholder="For example: scan is blurry, page 2 missing"></textarea>
+        </label>
+      </div>
+      <div class="adm-dialog__foot">
+        <button type="button" class="adm-btn" (click)="rejecting.set(null)">Cancel</button>
+        <button type="submit" class="adm-btn adm-btn--danger" [disabled]="rejectReason.trim().length < 3">Reject</button>
+      </div>
+    </form>
+  </div>
+}

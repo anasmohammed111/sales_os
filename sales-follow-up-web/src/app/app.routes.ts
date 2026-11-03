@@ -45,6 +45,15 @@ export const routes: Routes = [
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
+    // SYB admissions: rendered inside the app shell's outlet
+    path: 'admissions',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./dashboard/dashboard').then((m) => m.Dashboard),
+    loadChildren: () =>
+      import('./admissions/admissions.routes').then((m) => m.ADMISSIONS_ROUTES),
+  },
+  {
     path: 'auth',
     loadChildren: () =>
       import('./auth/auth.routes').then((m) => m.AUTH_ROUTES),
