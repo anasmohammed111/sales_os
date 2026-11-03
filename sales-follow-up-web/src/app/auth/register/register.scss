@@ -46,27 +46,64 @@
   margin-bottom: 0;
 }
 
-.btn-google {
+.google-button {
   width: 100%;
-  height: 44px;
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Google account being registered */
+.google-account {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  background: #ffffff;
-  color: #1e293b;
+  background: #f8fafc;
+}
+
+.google-account .details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.google-account strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.google-account span {
+  color: #64748b;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.optional {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.link-button {
+  display: block;
+  margin: 16px auto 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.btn-google:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+.link-button:hover {
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 /* Divider */

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -46,6 +46,22 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface GoogleAuthPayload {
+  credential: string;
+  businessName?: string;
+  phone?: string;
+}
+
+/** A verified Google account that has no CRM account yet. */
+export interface PendingGoogleSignup {
+  credential: string;
+  email: string;
+  name: string;
+}
+
+/** Error code the API returns when a Google user still needs to register a business. */
+export const GOOGLE_SIGNUP_REQUIRED = 'GOOGLE_SIGNUP_REQUIRED';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -53,6 +69,9 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly apiUrl = `${environment.apiUrl}/auth`;
+
+  /** Set when Google sign-in finds no account, so the register page can finish signup. */
+  readonly pendingGoogleSignup = signal<PendingGoogleSignup | null>(null);
 
   register(payload: RegisterPayload): Observable<AuthData> {
     return this.http
@@ -66,6 +85,18 @@ export class AuthService {
       .pipe(
         map((res) => res.data),
         tap((data) => this.setSession(data))
+      );
+  }
+
+  googleAuth(payload: GoogleAuthPayload): Observable<AuthData> {
+    return this.http
+      .post<ApiResponse<AuthData>>(`${this.apiUrl}/google`, payload)
+      .pipe(
+        map((res) => res.data),
+        tap((data) => {
+          this.pendingGoogleSignup.set(null);
+          this.setSession(data);
+        })
       );
   }
 

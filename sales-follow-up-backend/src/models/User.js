@@ -30,7 +30,15 @@ const userSchema = new mongoose.Schema(
 
         password: {
             type: String,
-            required: true,
+            required: function () {
+                return !this.googleId;
+            },
+            default: null,
+        },
+
+        // Left unset (not null) for password-only users so the sparse unique index skips them
+        googleId: {
+            type: String,
         },
 
         role: {
@@ -69,6 +77,11 @@ const userSchema = new mongoose.Schema(
 userSchema.index(
     { email: 1 },
     { unique: true }
+);
+
+userSchema.index(
+    { googleId: 1 },
+    { unique: true, sparse: true }
 );
 
 module.exports = mongoose.model('User', userSchema);

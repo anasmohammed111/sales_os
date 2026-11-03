@@ -18,7 +18,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
       // Redirect to login if token is expired or unauthorized
-      if (error.status === 401 && !req.url.includes('/auth/login')) {
+      if (
+        error.status === 401 &&
+        !req.url.includes('/auth/login') &&
+        !req.url.includes('/auth/google')
+      ) {
         authService.logout();
       }
       return throwError(() => error);
