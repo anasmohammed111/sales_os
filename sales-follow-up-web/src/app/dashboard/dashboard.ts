@@ -1,8 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { AuthService, AuthUser } from '../core/services/auth.service';
+import { AdmissionsService } from '../core/services/admissions.service';
+import { NotificationBell } from '../shared/notification-bell/notification-bell';
 import { Leads } from '../leads/leads';
 import { FollowUps } from '../follow-ups/follow-ups';
 import { Team } from '../team/team';
@@ -29,10 +31,19 @@ export interface PipelineStage {
   color: string;
 }
 
+type DashboardTab =
+  | 'dashboard'
+  | 'leads'
+  | 'follow-ups'
+  | 'team'
+  | 'pipeline'
+  | 'quotations'
+  | 'admissions';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, Leads, FollowUps, Team, Pipeline, Quotations],
+  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, NotificationBell],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -40,8 +51,22 @@ export class Dashboard {
   router = inject(Router);
   private authService = inject(AuthService);
 
-  currentTab = signal<'dashboard' | 'leads' | 'follow-ups' | 'team' | 'pipeline' | 'quotations'>(
-    this.router.url.includes('follow-ups')
+  private admissions = inject(AdmissionsService);
+  // Admissions entries only show for businesses with the module switched on
+  admissionsEnabled = computed(() => !!this.admissions.context());
+  readonly admissionsLinks = [
+    { path: 'overview', label: 'Overview' },
+    { path: 'pipeline', label: 'Admissions pipeline' },
+    { path: 'students', label: 'Students' },
+    { path: 'tasks', label: 'My tasks' },
+    { path: 'payments', label: 'Payments' },
+  ];
+
+  currentTab = signal<DashboardTab>(
+    // Checked first: '/admissions/pipeline' also contains 'pipeline'
+    this.router.url.startsWith('/admissions')
+      ? 'admissions'
+      : this.router.url.includes('follow-ups')
       ? 'follow-ups'
       : this.router.url.includes('leads')
       ? 'leads'
@@ -57,8 +82,11 @@ export class Dashboard {
   isOwner = computed(() => this.user()?.role === 'OWNER');
 
   constructor() {
+    this.admissions.loadContext().subscribe();
     this.router.events.subscribe(() => {
-      if (this.router.url.includes('follow-ups')) {
+      if (this.router.url.startsWith('/admissions')) {
+        this.currentTab.set('admissions');
+      } else if (this.router.url.includes('follow-ups')) {
         this.currentTab.set('follow-ups');
       } else if (this.router.url.includes('leads')) {
         this.currentTab.set('leads');
@@ -79,8 +107,9 @@ export class Dashboard {
   }
 
   isMobileMoreOpen = signal(false);
+  isSidebarCollapsed = signal(this.getInitialSidebarState());
 
-  navigateTo(tab: 'dashboard' | 'leads' | 'follow-ups' | 'team' | 'pipeline' | 'quotations'): void {
+  navigateTo(tab: DashboardTab): void {
     if (tab === 'team' && !this.isOwner()) {
       return;
     }
@@ -89,12 +118,42 @@ export class Dashboard {
     this.router.navigate([tab === 'dashboard' ? '/dashboard' : `/${tab}`]);
   }
 
+  goAdmissions(path: string): void {
+    this.isMobileMoreOpen.set(false);
+    this.router.navigate(['/admissions', path]);
+  }
+
+  isAdmissionsPath(path: string): boolean {
+    return this.currentTab() === 'admissions' && this.router.url.startsWith(`/admissions/${path}`);
+  }
+
   toggleMobileMore(): void {
     this.isMobileMoreOpen.update((open) => !open);
   }
 
   closeMobileMore(): void {
     this.isMobileMoreOpen.set(false);
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarCollapsed.update((collapsed) => {
+      const nextState = !collapsed;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('salesos_sidebar_collapsed', String(nextState));
+      }
+      return nextState;
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  handleEscapeKey(): void {
+    this.closeMobileMore();
+    this.isQuickAddOpen.set(false);
+  }
+
+  private getInitialSidebarState(): boolean {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('salesos_sidebar_collapsed') === 'true';
   }
 
   searchQuery = signal('');
@@ -259,6 +318,7 @@ export class Dashboard {
   }
 
   logout(): void {
+    this.admissions.resetContext();
     this.authService.logout();
     this.router.navigate(['/auth/login']);
   }

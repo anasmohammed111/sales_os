@@ -1577,3 +1577,53 @@
   border-color: #dc2626 !important;
   box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12) !important;
 }
+
+/* Shared page rhythm and interaction polish */
+.team-page-header {
+  column-gap: 24px;
+  row-gap: 14px;
+
+  .header-text-group .title-row .header-title {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+
+  .header-text-group .header-subtitle {
+    max-width: 720px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+.table-responsive-wrapper {
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar { height: 10px; }
+  &::-webkit-scrollbar-track { background: #f1f5f9; }
+  &::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border: 2px solid #f1f5f9;
+    border-radius: 999px;
+  }
+}
+
+@media (max-width: 768px) {
+  .team-page-header { align-items: stretch; }
+}

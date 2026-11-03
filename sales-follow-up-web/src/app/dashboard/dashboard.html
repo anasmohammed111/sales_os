@@ -1,4 +1,4 @@
-<div class="dashboard-shell">
+<div class="dashboard-shell" [class.sidebar-is-collapsed]="isSidebarCollapsed()">
   <!-- Mobile & Tablet Top Bar (Visible <= 1024px) -->
   <header class="mobile-topbar" aria-label="Mobile Navigation Bar">
     <div class="mobile-brand">
@@ -15,132 +15,207 @@
     </div>
 
     <div class="mobile-topbar-actions">
-      <div class="mobile-user-chip" (click)="toggleMobileMore()" role="button" tabindex="0" title="Account Details & More">
+      <app-notification-bell />
+      <button type="button" class="mobile-user-chip" (click)="toggleMobileMore()"
+        [attr.aria-expanded]="isMobileMoreOpen()" aria-controls="mobile-workspace-menu"
+        title="Open workspace menu">
         <div class="user-avatar-small">
           {{ user()?.name?.charAt(0) || 'U' }}
         </div>
         <span class="user-name-small">{{ user()?.name?.split(' ')?.[0] || 'User' }}</span>
-      </div>
-
-      <button type="button" class="btn-mobile-logout" (click)="logout()" title="Sign Out" aria-label="Sign Out">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <svg class="mobile-menu-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
+          <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
     </div>
   </header>
 
-  <!-- Minimalist Sidebar (Desktop Only) -->
-  <aside class="sidebar">
+  <!-- Desktop Sidebar -->
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed()" aria-label="Primary navigation">
     <div class="brand-row">
-      <div class="brand-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+      <div class="brand-lockup">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+        <div class="brand-info">
+          <span class="brand-title">SalesOS</span>
+          <span class="brand-tag">Follow-up Engine</span>
+        </div>
+      </div>
+      <app-notification-bell class="sidebar-bell" />
+      <button type="button" class="sidebar-collapse-btn" (click)="toggleSidebar()"
+        [attr.aria-label]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [title]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round" stroke-linejoin="round">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          <polyline [attr.points]="isSidebarCollapsed() ? '9 18 15 12 9 6' : '15 18 9 12 15 6'"></polyline>
         </svg>
-      </div>
-      <div class="brand-info">
-        <span class="brand-title">SalesOS</span>
-        <span class="brand-tag">Follow-up Engine</span>
-      </div>
+      </button>
     </div>
 
-    <!-- Navigation List -->
-    <nav class="nav-list">
-      <div class="nav-section-title">Workspace</div>
+    <nav class="nav-list" aria-label="Workspace">
+      <div class="nav-section-title"><span>Sales workspace</span></div>
 
-      <a class="nav-item" [class.active]="currentTab() === 'dashboard'" (click)="navigateTo('dashboard')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
-        </svg>
+      <button type="button" class="nav-item" [class.active]="currentTab() === 'dashboard'"
+        [attr.aria-current]="currentTab() === 'dashboard' ? 'page' : null" (click)="navigateTo('dashboard')"
+        title="Dashboard">
+        <span class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </span>
         <span class="nav-text">Dashboard</span>
-        <span class="nav-pill active-pill" *ngIf="currentTab() === 'dashboard'">Live</span>
-      </a>
+      </button>
 
-      <a class="nav-item" [class.active]="currentTab() === 'leads'" (click)="navigateTo('leads')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
+      <button type="button" class="nav-item" [class.active]="currentTab() === 'leads'"
+        [attr.aria-current]="currentTab() === 'leads' ? 'page' : null" (click)="navigateTo('leads')" title="Leads">
+        <span class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </span>
         <span class="nav-text">Leads</span>
-      </a>
+      </button>
 
-      <a class="nav-item" [class.active]="currentTab() === 'follow-ups'" (click)="navigateTo('follow-ups')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <span class="nav-text">Follow-up</span>
-      </a>
+      <button type="button" class="nav-item" [class.active]="currentTab() === 'follow-ups'"
+        [attr.aria-current]="currentTab() === 'follow-ups' ? 'page' : null" (click)="navigateTo('follow-ups')"
+        title="Follow-ups">
+        <span class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <span class="nav-text">Follow-ups</span>
+        @if (urgentCount() > 0) {
+        <span class="nav-pill urgent-pill" aria-label="{{ urgentCount() }} urgent">{{ urgentCount() }}</span>
+        }
+      </button>
 
-      @if (isOwner()) {
-      <a class="nav-item" [class.active]="currentTab() === 'team'" (click)="navigateTo('team')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-        <span class="nav-text">Team</span>
-      </a>
+      <button type="button" class="nav-item" [class.active]="currentTab() === 'pipeline'"
+        [attr.aria-current]="currentTab() === 'pipeline' ? 'page' : null" (click)="navigateTo('pipeline')"
+        title="Pipeline">
+        <span class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h16"></path>
+            <path d="M7 12h10"></path>
+            <path d="M10 18h4"></path>
+          </svg>
+        </span>
+        <span class="nav-text">Pipeline</span>
+      </button>
+
+      <button type="button" class="nav-item" [class.active]="currentTab() === 'quotations'"
+        [attr.aria-current]="currentTab() === 'quotations' ? 'page' : null" (click)="navigateTo('quotations')"
+        title="Quotations">
+        <span class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </span>
+        <span class="nav-text">Quotations</span>
+      </button>
+
+      @if (admissionsEnabled()) {
+      <div class="nav-section-title"><span>Admissions</span></div>
+      @for (link of admissionsLinks; track link.path) {
+      <button type="button" class="nav-item" [class.active]="isAdmissionsPath(link.path)"
+        [attr.aria-current]="isAdmissionsPath(link.path) ? 'page' : null" (click)="goAdmissions(link.path)"
+        [title]="link.label">
+        <span class="nav-icon-wrap">
+          @switch (link.path) {
+          @case ('overview') {
+          <!-- route with stations -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><path d="M7.5 12h9"></path></svg>
+          }
+          @case ('pipeline') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"></rect><rect x="10" y="4" width="5" height="11" rx="1.5"></rect><rect x="17" y="4" width="4" height="7" rx="1.5"></rect></svg>
+          }
+          @case ('students') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg>
+          }
+          @case ('tasks') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          }
+          @default {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
+          }
+          }
+        </span>
+        <span class="nav-text">{{ link.label }}</span>
+      </button>
+      }
       }
 
-      <a class="nav-item" [class.active]="currentTab() === 'pipeline'" (click)="navigateTo('pipeline')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="1" x2="12" y2="23"></line>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
-        <span class="nav-text">Pipeline & Deals</span>
-      </a>
+      <div class="nav-section-title"><span>Manage</span></div>
 
-      <a class="nav-item" [class.active]="currentTab() === 'quotations'" (click)="navigateTo('quotations')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
-        </svg>
-        <span class="nav-text">Quotations</span>
-      </a>
+      @if (isOwner()) {
+      <button type="button" class="nav-item" [class.active]="currentTab() === 'team'"
+        [attr.aria-current]="currentTab() === 'team' ? 'page' : null" (click)="navigateTo('team')" title="Team">
+        <span class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </span>
+        <span class="nav-text">Team</span>
+      </button>
+      }
 
-      <div class="nav-section-title">Insights</div>
-
-      <a class="nav-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
-        <span class="nav-text">Reports & Stats</span>
-      </a>
+      <div class="nav-item nav-item-disabled" aria-disabled="true" title="Reports are coming soon">
+        <span class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </span>
+        <span class="nav-text">Reports</span>
+        <span class="nav-soon">Soon</span>
+      </div>
     </nav>
 
-    <!-- Sidebar User Footer -->
     <div class="sidebar-user">
-      <div class="user-avatar">
-        {{ user()?.name?.charAt(0) || 'U' }}
+      <div class="user-avatar-wrap">
+        <div class="user-avatar">
+          {{ user()?.name?.charAt(0) || 'U' }}
+        </div>
+        <span class="online-indicator" aria-label="Online"></span>
       </div>
       <div class="user-details">
         <span class="user-name">{{ user()?.name || 'User' }}</span>
         <span class="user-role">{{ user()?.role === 'OWNER' ? 'Owner' : user()?.role === 'SALES_MANAGER' ? 'Sales Manager' : 'Sales Representative' }}</span>
       </div>
-      <button type="button" class="btn-logout" (click)="logout()" title="Log Out">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      <button type="button" class="btn-logout" (click)="logout()" title="Sign out" aria-label="Sign out">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
           <polyline points="16 17 21 12 16 7"></polyline>
@@ -152,7 +227,10 @@
 
   <!-- Main View Area -->
   <main class="main-content">
-    @if (currentTab() === 'leads') {
+    <div class="page-stage">
+    @if (currentTab() === 'admissions') {
+    <router-outlet />
+    } @else if (currentTab() === 'leads') {
     <app-leads></app-leads>
     } @else if (currentTab() === 'follow-ups') {
     <app-follow-ups></app-follow-ups>
@@ -493,6 +571,7 @@
       </aside>
     </div>
     }
+    </div>
   </main>
 
   <!-- =========================================================================
@@ -502,6 +581,7 @@
     <div class="glass-bottom-nav-inner">
       <!-- Item 1: Home / Dashboard -->
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'dashboard'"
+        [attr.aria-current]="currentTab() === 'dashboard' ? 'page' : null"
         (click)="navigateTo('dashboard')" aria-label="Home Dashboard">
         <div class="nav-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 24 24" [attr.fill]="currentTab() === 'dashboard' ? 'currentColor' : 'none'"
@@ -514,6 +594,7 @@
 
       <!-- Item 2: Leads -->
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'leads'"
+        [attr.aria-current]="currentTab() === 'leads' ? 'page' : null"
         (click)="navigateTo('leads')" aria-label="Leads">
         <div class="nav-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -529,6 +610,7 @@
 
       <!-- Item 3: Follow-ups (with emerald circular badge matching reference image) -->
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'follow-ups'"
+        [attr.aria-current]="currentTab() === 'follow-ups' ? 'page' : null"
         (click)="navigateTo('follow-ups')" aria-label="Follow-ups">
         <div class="nav-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -540,12 +622,13 @@
           <span class="nav-badge" aria-label="{{ urgentCount() }} urgent follow-ups">{{ urgentCount() }}</span>
           }
         </div>
-        <span class="nav-label">Follow-up</span>
+        <span class="nav-label">Follow-ups</span>
       </button>
 
       <!-- Item 4: Team -->
       @if (isOwner()) {
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'team'"
+        [attr.aria-current]="currentTab() === 'team' ? 'page' : null"
         (click)="navigateTo('team')" aria-label="Team Management">
         <div class="nav-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -561,7 +644,9 @@
       }
 
       <!-- Item 5: More Menu -->
-      <button type="button" class="glass-nav-item" [class.active]="isMobileMoreOpen()"
+      <button type="button" class="glass-nav-item"
+        [class.active]="isMobileMoreOpen() || currentTab() === 'pipeline' || currentTab() === 'quotations'"
+        [attr.aria-expanded]="isMobileMoreOpen()" aria-controls="mobile-workspace-menu"
         (click)="toggleMobileMore()" aria-label="More Menu">
         <div class="nav-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -582,7 +667,8 @@
        ========================================================================= -->
   @if (isMobileMoreOpen()) {
   <div class="mobile-more-backdrop" (click)="closeMobileMore()" role="presentation">
-    <div class="mobile-more-sheet" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Workspace Tools & Account">
+    <div id="mobile-workspace-menu" class="mobile-more-sheet" (click)="$event.stopPropagation()" role="dialog"
+      aria-modal="true" aria-label="Workspace tools and account">
       <div class="sheet-drag-handle"></div>
       
       <div class="sheet-header">
@@ -614,6 +700,23 @@
       <!-- Additional Workspace Navigation Links -->
       <div class="sheet-nav-title">WORKSPACE MODULES</div>
       <div class="sheet-nav-list">
+        @if (admissionsEnabled()) {
+        <button type="button" class="sheet-nav-card" [class.active]="currentTab() === 'admissions'" (click)="goAdmissions('overview')">
+          <div class="sheet-nav-icon icon-deals">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg>
+          </div>
+          <div class="sheet-nav-text">
+            <span class="sheet-nav-name">Admissions</span>
+            <span class="sheet-nav-desc">Students, pipeline, tasks and payments</span>
+          </div>
+          <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+        }
+
         <button type="button" class="sheet-nav-card" [class.active]="currentTab() === 'pipeline'" (click)="navigateTo('pipeline')">
           <div class="sheet-nav-icon icon-deals">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -652,7 +755,7 @@
           </svg>
         </button>
 
-        <button type="button" class="sheet-nav-card" (click)="closeMobileMore()">
+        <div class="sheet-nav-card disabled" aria-disabled="true">
           <div class="sheet-nav-icon icon-reports">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -663,13 +766,10 @@
           </div>
           <div class="sheet-nav-text">
             <span class="sheet-nav-name">Reports & Analytics</span>
-            <span class="sheet-nav-desc">Team performance & ROI</span>
+            <span class="sheet-nav-desc">Team performance · Coming soon</span>
           </div>
-          <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
+          <span class="sheet-soon-pill">Soon</span>
+        </div>
       </div>
 
       <!-- Sheet Footer Sign Out -->

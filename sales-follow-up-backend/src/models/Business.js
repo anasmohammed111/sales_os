@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const BUSINESS_CURRENCIES = ['INR', 'USD', 'EUR', 'CZK', 'GBP', 'AED'];
+
 const businessSchema = new mongoose.Schema(
     {
         businessName: {
@@ -46,6 +48,13 @@ const businessSchema = new mongoose.Schema(
             default: true,
         },
 
+        // Currency for lead values and the sales pipeline (display only, no conversion)
+        currency: {
+            type: String,
+            enum: BUSINESS_CURRENCIES,
+            default: 'USD',
+        },
+
         // Optional modules switched on per business (see scripts/admissions-enable.js)
         features: {
             admissions: {
@@ -60,3 +69,4 @@ const businessSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('Business', businessSchema);
+module.exports.BUSINESS_CURRENCIES = BUSINESS_CURRENCIES;

@@ -1350,3 +1350,36 @@
   white-space: nowrap;
 }
 
+/* Shared page rhythm and interaction polish */
+.quotations-header {
+  column-gap: 24px;
+  row-gap: 14px;
+
+  .header-text-group .header-title {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+
+  .header-text-group .header-subtitle {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.btn:not(.btn-large) {
+  height: 38px;
+  padding-inline: 14px;
+  box-sizing: border-box;
+}
+
+.btn:focus-visible,
+.btn-back-link:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .quotations-header .header-actions,
+  .quotations-header .header-actions .btn { width: 100%; }
+}
+

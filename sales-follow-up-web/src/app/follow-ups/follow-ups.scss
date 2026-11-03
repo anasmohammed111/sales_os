@@ -1877,3 +1877,71 @@
   }
 }
 
+/* Shared page rhythm and interaction polish */
+.page-header {
+  column-gap: 24px;
+  row-gap: 14px;
+}
+
+.page-title {
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.page-subtitle {
+  max-width: 720px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.btn:not(.btn-sm) {
+  height: 38px;
+  padding-inline: 14px;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.btn:focus-visible,
+.view-toggle-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+.table-responsive-wrapper {
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar { height: 10px; }
+  &::-webkit-scrollbar-track { background: #f1f5f9; }
+  &::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border: 2px solid #f1f5f9;
+    border-radius: 999px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 520px) {
+  .header-actions {
+    .view-toggle-group,
+    > .btn {
+      width: 100%;
+    }
+
+    .view-toggle-btn { flex: 1; }
+  }
+}
+
