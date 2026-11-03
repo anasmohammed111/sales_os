@@ -7,6 +7,7 @@ const applications = require('../controllers/admissions/applicationController');
 const workflow = require('../controllers/admissions/workflowController');
 const tasks = require('../controllers/admissions/taskController');
 const documents = require('../controllers/admissions/documentController');
+const payments = require('../controllers/admissions/paymentController');
 const { serveFile } = require('../controllers/admissions/fileController');
 const { uploadSingle } = require('../services/storage/uploads');
 
@@ -42,6 +43,14 @@ router.patch('/documents/:docId', documents.updateDocument);
 router.post('/documents/:docId/file', uploadSingle, documents.uploadDocumentFile);
 router.patch('/documents/:docId/review', documents.reviewDocument);
 router.get('/documents/:docId/download-url', documents.getDownloadUrl);
+
+router.get('/applications/:id/fees', payments.listFees);
+router.post('/applications/:id/fees', payments.createFee);
+router.patch('/fees/:feeId', payments.updateFee);
+router.post('/fees/:feeId/transactions', uploadSingle, payments.recordPayment);
+router.patch('/fees/:feeId/transactions/:txId/void', payments.voidPayment);
+router.get('/fees/:feeId/transactions/:txId/receipt-url', payments.getReceiptUrl);
+router.get('/payments', payments.listPayments);
 
 router.get('/tasks', tasks.listTasks);
 router.patch('/tasks/:id', tasks.updateTask);
