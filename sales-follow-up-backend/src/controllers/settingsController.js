@@ -2,10 +2,19 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Business = require('../models/Business');
 const { BUSINESS_CURRENCIES } = require('../models/Business');
+const { getStorage } = require('../services/storage');
+const {
+    buildStorageKey,
+    detectFileType,
+    safeOriginalName,
+    scanFile,
+    sha256,
+} = require('../services/storage/fileValidation');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 const MAX_PASSWORD = 128;
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 
@@ -14,7 +23,7 @@ const text = (value, max) => (typeof value === 'string' ? value.trim().slice(0, 
 const loadSettings = async (userId, businessId) => {
     const [user, business] = await Promise.all([
         User.findById(userId).select('name email phone role password googleId'),
-        Business.findById(businessId).select('businessName email phone address gstin currency features'),
+        Business.findById(businessId).select('businessName email phone address gstin currency features logo'),
     ]);
     if (!user || !business) return null;
 
@@ -36,10 +45,100 @@ const loadSettings = async (userId, businessId) => {
             address: business.address,
             gstin: business.gstin,
             currency: business.currency || 'USD',
+            logoUrl: business.logo?.storageKey
+                ? `/api/settings/logo/${business._id}?v=${business.logo.updatedAt?.getTime?.() || business.updatedAt?.getTime?.() || ''}`
+                : '',
+            logoName: business.logo?.originalName || '',
         },
         features: { admissions: business.features?.admissions === true },
         currencies: BUSINESS_CURRENCIES,
     };
+};
+
+/** Public, cacheable workspace logo. The opaque storage key stays private. */
+const getBusinessLogo = async (req, res, next) => {
+    try {
+        if (!require('mongoose').isValidObjectId(req.params.businessId)) {
+            return fail(res, 404, 'Logo not found');
+        }
+
+        const business = await Business.findById(req.params.businessId).select('logo');
+        if (!business?.logo?.storageKey || !business.logo.mimeType) {
+            return fail(res, 404, 'Logo not found');
+        }
+
+        res.set({
+            'Content-Type': business.logo.mimeType,
+            'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+            ETag: `"${business.logo.sha256}"`,
+        });
+        if (req.headers['if-none-match'] === `"${business.logo.sha256}"`) return res.status(304).end();
+
+        const stream = await getStorage().getStream(business.logo.storageKey);
+        stream.on('error', next);
+        return stream.pipe(res);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/** Uploads or replaces the workspace logo. Owner only. */
+const uploadBusinessLogo = async (req, res, next) => {
+    let newStorageKey = null;
+    try {
+        if (req.user.role !== 'OWNER') return fail(res, 403, 'Only the business owner can change the workspace logo');
+        if (!req.file?.buffer?.length) return fail(res, 400, 'Choose a logo to upload');
+        if (req.file.buffer.length > MAX_LOGO_BYTES) return fail(res, 413, 'Logo must be 2 MB or smaller');
+
+        const type = detectFileType(req.file.buffer);
+        if (!type || !['image/jpeg', 'image/png', 'image/webp'].includes(type.mime)) {
+            return fail(res, 400, 'Logo must be a JPG, PNG or WEBP image');
+        }
+
+        const scan = await scanFile(req.file.buffer);
+        if (!scan.clean) return fail(res, 400, 'This logo failed the security scan');
+
+        const business = await Business.findOne({ _id: req.user.businessId, isActive: true }).select('logo');
+        if (!business) return fail(res, 404, 'Business not found');
+
+        newStorageKey = buildStorageKey(req.user.businessId, req.user.businessId, type.ext);
+        await getStorage().put(newStorageKey, req.file.buffer, type.mime);
+
+        const previousKey = business.logo?.storageKey || '';
+        business.logo = {
+            storageKey: newStorageKey,
+            originalName: safeOriginalName(req.file.originalname || `logo.${type.ext}`),
+            mimeType: type.mime,
+            size: req.file.buffer.length,
+            sha256: sha256(req.file.buffer),
+            updatedAt: new Date(),
+        };
+        await business.save();
+        newStorageKey = null;
+
+        if (previousKey) await getStorage().remove(previousKey).catch(() => {});
+        return respond(req, res, 'Workspace logo saved');
+    } catch (error) {
+        if (newStorageKey) await getStorage().remove(newStorageKey).catch(() => {});
+        next(error);
+    }
+};
+
+/** Removes the workspace logo and returns the updated settings. Owner only. */
+const removeBusinessLogo = async (req, res, next) => {
+    try {
+        if (req.user.role !== 'OWNER') return fail(res, 403, 'Only the business owner can change the workspace logo');
+        const business = await Business.findOne({ _id: req.user.businessId, isActive: true }).select('logo');
+        if (!business) return fail(res, 404, 'Business not found');
+
+        const previousKey = business.logo?.storageKey || '';
+        business.logo = undefined;
+        await business.save();
+        if (previousKey) await getStorage().remove(previousKey).catch(() => {});
+        return respond(req, res, 'Workspace logo removed');
+    } catch (error) {
+        next(error);
+    }
 };
 
 const respond = async (req, res, message) => {
@@ -146,4 +245,12 @@ const changePassword = async (req, res, next) => {
     }
 };
 
-module.exports = { getSettings, updateProfile, updateBusiness, changePassword };
+module.exports = {
+    getSettings,
+    getBusinessLogo,
+    updateProfile,
+    updateBusiness,
+    uploadBusinessLogo,
+    removeBusinessLogo,
+    changePassword,
+};

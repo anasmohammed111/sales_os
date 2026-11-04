@@ -21,6 +21,8 @@ export interface AccountSettings {
     address: string;
     gstin: string;
     currency: string;
+    logoUrl: string;
+    logoName: string;
   };
   features: { admissions: boolean };
   currencies: string[];
@@ -39,12 +41,29 @@ export class SettingsService {
 
   /** The business currency for money shown across the app. */
   readonly currency = signal('USD');
+  /** Workspace branding shared by the sidebar and Settings page. */
+  readonly businessName = signal('kelto');
+  readonly businessLogoUrl = signal('');
 
-  private remember = (settings: AccountSettings) => this.currency.set(settings.business.currency || 'USD');
+  private normalize = (settings: AccountSettings): AccountSettings => ({
+    ...settings,
+    business: {
+      ...settings.business,
+      logoUrl: settings.business.logoUrl
+        ? new URL(settings.business.logoUrl, environment.apiUrl).toString()
+        : '',
+    },
+  });
+
+  private remember = (settings: AccountSettings) => {
+    this.currency.set(settings.business.currency || 'USD');
+    this.businessName.set(settings.business.businessName || 'kelto');
+    this.businessLogoUrl.set(settings.business.logoUrl || '');
+  };
 
   get(): Observable<AccountSettings> {
     return this.http.get<ApiResponse<AccountSettings>>(this.base).pipe(
-      map((res) => res.data),
+      map((res) => this.normalize(res.data)),
       tap(this.remember)
     );
   }
@@ -55,18 +74,40 @@ export class SettingsService {
   }
 
   updateProfile(body: { name: string; phone: string }): Observable<AccountSettings> {
-    return this.http.patch<ApiResponse<AccountSettings>>(`${this.base}/profile`, body).pipe(map((res) => res.data));
+    return this.http.patch<ApiResponse<AccountSettings>>(`${this.base}/profile`, body).pipe(
+      map((res) => this.normalize(res.data)),
+      tap(this.remember)
+    );
   }
 
   updateBusiness(body: Partial<AccountSettings['business']>): Observable<AccountSettings> {
     return this.http.patch<ApiResponse<AccountSettings>>(`${this.base}/business`, body).pipe(
-      map((res) => res.data),
+      map((res) => this.normalize(res.data)),
+      tap(this.remember)
+    );
+  }
+
+  uploadBusinessLogo(file: File): Observable<AccountSettings> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<ApiResponse<AccountSettings>>(`${this.base}/business/logo`, body).pipe(
+      map((res) => this.normalize(res.data)),
+      tap(this.remember)
+    );
+  }
+
+  removeBusinessLogo(): Observable<AccountSettings> {
+    return this.http.delete<ApiResponse<AccountSettings>>(`${this.base}/business/logo`).pipe(
+      map((res) => this.normalize(res.data)),
       tap(this.remember)
     );
   }
 
   changePassword(body: { currentPassword?: string; newPassword: string }): Observable<AccountSettings> {
-    return this.http.post<ApiResponse<AccountSettings>>(`${this.base}/password`, body).pipe(map((res) => res.data));
+    return this.http.post<ApiResponse<AccountSettings>>(`${this.base}/password`, body).pipe(
+      map((res) => this.normalize(res.data)),
+      tap(this.remember)
+    );
   }
 }
 

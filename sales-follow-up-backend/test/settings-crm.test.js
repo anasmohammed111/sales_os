@@ -4,6 +4,7 @@ const request = require('supertest');
 const h = require('./helpers');
 const app = require('../src/app');
 const User = require('../src/models/User');
+const Business = require('../src/models/Business');
 
 before(h.startDb);
 after(h.stopDb);
@@ -75,6 +76,41 @@ test('only the owner can change business details, and they are validated', async
     assert.strictEqual((await api(owner).patch('/business', { currency: 'XYZ' })).status, 400);
     assert.strictEqual((await api(owner).patch('/business', { email: 'not-an-email' })).status, 400);
     assert.strictEqual((await api(owner).patch('/business', { businessName: ' ' })).status, 400);
+});
+
+test('the owner can upload, replace and remove a public workspace logo', async () => {
+    const business = await h.makeBusiness();
+    const owner = await h.makeUser(business, { role: 'OWNER' });
+    const member = await h.makeUser(business, { role: 'SALESPERSON' });
+    const png = Buffer.from('89504e470d0a1a0a0000000d494844520000000100000001', 'hex');
+
+    const forbidden = await request(app)
+        .post('/api/settings/business/logo')
+        .set(h.auth(member))
+        .attach('file', png, 'member-logo.png');
+    assert.strictEqual(forbidden.status, 403);
+
+    const uploaded = await request(app)
+        .post('/api/settings/business/logo')
+        .set(h.auth(owner))
+        .attach('file', png, 'firm-logo.png');
+    assert.strictEqual(uploaded.status, 200, JSON.stringify(uploaded.body));
+    assert.match(uploaded.body.data.business.logoUrl, new RegExp(`/api/settings/logo/${business._id}`));
+    assert.strictEqual(uploaded.body.data.business.logoName, 'firm-logo.png');
+    assert.strictEqual(JSON.stringify(uploaded.body).includes('storageKey'), false);
+
+    const saved = await Business.findById(business._id);
+    assert.strictEqual(saved.logo.mimeType, 'image/png');
+    assert.match(saved.logo.storageKey, /^[a-f0-9]{24}\/[a-f0-9]{24}\/[a-f0-9-]{36}\.png$/);
+
+    const publicLogo = await request(app).get(`/api/settings/logo/${business._id}`);
+    assert.strictEqual(publicLogo.status, 200);
+    assert.match(publicLogo.headers['content-type'], /image\/png/);
+
+    const removed = await request(app).delete('/api/settings/business/logo').set(h.auth(owner));
+    assert.strictEqual(removed.status, 200, JSON.stringify(removed.body));
+    assert.strictEqual(removed.body.data.business.logoUrl, '');
+    assert.strictEqual((await request(app).get(`/api/settings/logo/${business._id}`)).status, 404);
 });
 
 test('changing password needs the current one and a strong new one', async () => {

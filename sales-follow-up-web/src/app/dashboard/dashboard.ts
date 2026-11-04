@@ -223,6 +223,8 @@ export class Dashboard {
   summaryError = signal<string | null>(null);
   busyFollowUpId = signal<string | null>(null);
   currency = this.settingsService.currency;
+  businessName = this.settingsService.businessName;
+  businessLogoUrl = this.settingsService.businessLogoUrl;
 
   private readonly stageColors: Record<string, string> = {
     NEW: 'var(--kelto-stage-new-lead)',

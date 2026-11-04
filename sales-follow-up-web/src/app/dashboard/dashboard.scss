@@ -2078,3 +2078,37 @@
     background: rgba(255, 255, 255, 0.985);
   }
 }
+
+// Firm branding: the logo and name each workspace sets in Settings.
+// Names wrap to a second line rather than being cut short.
+.sidebar .brand-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mobile-topbar .mobile-brand .brand-title {
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// A logo sits on a white tile so dark and transparent logos stay visible
+.brand-icon.has-logo,
+.mobile-topbar .mobile-brand .brand-icon.has-logo {
+  padding: 3px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+  object-fit: contain;
+}

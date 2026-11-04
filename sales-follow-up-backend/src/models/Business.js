@@ -55,6 +55,17 @@ const businessSchema = new mongoose.Schema(
             default: 'USD',
         },
 
+        // Private storage metadata for the workspace logo. Only the public
+        // logo endpoint exposes the image; the storage key never leaves the API.
+        logo: {
+            storageKey: { type: String, default: '' },
+            originalName: { type: String, default: '' },
+            mimeType: { type: String, default: '' },
+            size: { type: Number, default: 0 },
+            sha256: { type: String, default: '' },
+            updatedAt: { type: Date, default: null },
+        },
+
         // Optional modules switched on per business (see scripts/admissions-enable.js)
         features: {
             admissions: {
