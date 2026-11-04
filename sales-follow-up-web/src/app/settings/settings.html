@@ -1,1 +1,130 @@
-<p>settings works!</p>
+<div class="settings-page">
+  <header class="page-head">
+    <h1>Settings</h1>
+    <p>Your profile and password, and your business details.</p>
+  </header>
+
+  @if (error(); as message) {
+  <div class="card state">
+    <strong>{{ message }}</strong>
+    <button type="button" class="btn" (click)="load()">Try again</button>
+  </div>
+  } @else if (!settings()) {
+  <div class="card state" aria-busy="true">Loading settings…</div>
+  } @else if (settings(); as s) {
+  <div class="grid">
+    <!-- My profile -->
+    <form class="card" (ngSubmit)="saveProfile()">
+      <h2>My profile</h2>
+      <dl class="facts">
+        <div><dt>Email</dt><dd>{{ s.profile.email }}</dd></div>
+        <div><dt>Role</dt><dd>{{ roleLabels[s.profile.role] || s.profile.role }}</dd></div>
+      </dl>
+      <label class="field">
+        <span>Name</span>
+        <input id="profile-name" name="name" [(ngModel)]="profile.name" required autocomplete="name" />
+      </label>
+      <label class="field">
+        <span>Phone</span>
+        <input name="phone" type="tel" [(ngModel)]="profile.phone" autocomplete="tel" />
+      </label>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" [disabled]="saving() === 'profile' || profile.name.trim().length < 2">
+          {{ saving() === 'profile' ? 'Saving…' : 'Save profile' }}
+        </button>
+      </div>
+    </form>
+
+    <!-- Password -->
+    <form class="card" (ngSubmit)="savePassword()">
+      <h2>{{ s.profile.hasPassword ? 'Change password' : 'Set a password' }}</h2>
+      @if (!s.profile.hasPassword) {
+      <p class="hint">You sign in with Google. Set a password if you also want to sign in with your email.</p>
+      } @else {
+      <label class="field">
+        <span>Current password</span>
+        <input name="current" type="password" [(ngModel)]="password.current" autocomplete="current-password" />
+      </label>
+      }
+      <label class="field">
+        <span>New password</span>
+        <input name="next" type="password" [(ngModel)]="password.next" autocomplete="new-password" />
+        <small>At least 8 characters.</small>
+      </label>
+      <label class="field">
+        <span>Repeat new password</span>
+        <input name="confirm" type="password" [(ngModel)]="password.confirm" autocomplete="new-password" />
+      </label>
+      <div class="actions">
+        @if (password.next && passwordProblem(); as problem) {
+        <small class="problem">{{ problem }}</small>
+        }
+        <button type="submit" class="btn btn-primary" [disabled]="saving() === 'password' || !!passwordProblem()">
+          {{ saving() === 'password' ? 'Saving…' : s.profile.hasPassword ? 'Change password' : 'Set password' }}
+        </button>
+      </div>
+    </form>
+
+    <!-- Business -->
+    <section class="card wide">
+      <h2>Business</h2>
+      @if (isOwner()) {
+      <form id="business-form" class="business-form" (ngSubmit)="saveBusiness()">
+        <label class="field">
+          <span>Business name</span>
+          <input id="business-name" name="businessName" [(ngModel)]="business.businessName" required />
+        </label>
+        <label class="field">
+          <span>Business email</span>
+          <input name="email" type="email" [(ngModel)]="business.email" />
+        </label>
+        <label class="field">
+          <span>Phone</span>
+          <input name="bphone" type="tel" [(ngModel)]="business.phone" />
+        </label>
+        <label class="field">
+          <span>GSTIN</span>
+          <input name="gstin" [(ngModel)]="business.gstin" placeholder="Optional" />
+        </label>
+        <label class="field span-2">
+          <span>Address</span>
+          <input name="address" [(ngModel)]="business.address" />
+        </label>
+        <label class="field">
+          <span>Currency for lead values</span>
+          <select name="currency" [(ngModel)]="business.currency">
+            @for (c of s.currencies; track c) {
+            <option [value]="c">{{ c }}</option>
+            }
+          </select>
+          <small>Changes how amounts are shown. Values are not converted.</small>
+        </label>
+        <div class="actions span-2">
+          <button type="submit" class="btn btn-primary" [disabled]="saving() === 'business'">
+            {{ saving() === 'business' ? 'Saving…' : 'Save business details' }}
+          </button>
+        </div>
+      </form>
+      } @else {
+      <dl class="facts">
+        <div><dt>Business name</dt><dd>{{ s.business.businessName }}</dd></div>
+        <div><dt>Email</dt><dd>{{ s.business.email || '—' }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ s.business.phone || '—' }}</dd></div>
+        <div><dt>Currency</dt><dd>{{ s.business.currency }}</dd></div>
+      </dl>
+      <p class="hint">Only the business owner can change these.</p>
+      }
+    </section>
+
+    @if (s.features.admissions && isOwner()) {
+    <section class="card wide link-card">
+      <div>
+        <h2>Admissions</h2>
+        <p class="hint">Stages, checklists, document types, lead sources, universities, reminders and timezone.</p>
+      </div>
+      <a class="btn" routerLink="/admissions/settings">Open admissions settings</a>
+    </section>
+    }
+  </div>
+  }
+</div>

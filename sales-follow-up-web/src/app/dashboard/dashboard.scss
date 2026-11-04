@@ -1891,3 +1891,55 @@
     }
   }
 }
+
+/* Quick log lead picker */
+.lead-picker {
+  position: relative;
+}
+
+.lead-options {
+  position: absolute;
+  z-index: 30;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.25);
+
+  button {
+    display: flex;
+    width: 100%;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    font: inherit;
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: #f1f5f9;
+    }
+
+    span {
+      color: #64748b;
+      font-size: 12.5px;
+    }
+  }
+}
+
+.lead-hint {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}

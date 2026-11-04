@@ -1,35 +1,21 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterOutlet } from '@angular/router';
 import { AuthService, AuthUser } from '../core/services/auth.service';
 import { AdmissionsService } from '../core/services/admissions.service';
 import { NotificationBell } from '../shared/notification-bell/notification-bell';
+import { toast } from 'ngx-sonner';
+import { HomeDashboardService, HomeSummary, QueueItem } from '../core/services/home-dashboard.service';
+import { FollowUpService, FollowUpType } from '../core/services/follow-up.service';
+import { Lead, LeadService } from '../core/services/lead.service';
+import { formatMoney, SettingsService } from '../core/services/settings.service';
+import { Settings } from '../settings/settings';
 import { Leads } from '../leads/leads';
 import { FollowUps } from '../follow-ups/follow-ups';
 import { Team } from '../team/team';
 import { Pipeline } from '../pipeline/pipeline';
 import { Quotations } from '../quotations/quotations';
-
-export interface FollowUpItem {
-  id: string;
-  leadName: string;
-  company: string;
-  dealValue: string;
-  channel: 'call' | 'email' | 'whatsapp' | 'meeting';
-  status: 'pending' | 'urgent' | 'completed';
-  dueTime: string;
-  note: string;
-  priority: 'Urgent' | 'High' | 'Medium';
-}
-
-export interface PipelineStage {
-  name: string;
-  count: number;
-  value: string;
-  percent: number;
-  color: string;
-}
 
 type DashboardTab =
   | 'dashboard'
@@ -38,12 +24,13 @@ type DashboardTab =
   | 'team'
   | 'pipeline'
   | 'quotations'
-  | 'admissions';
+  | 'admissions'
+  | 'settings';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, NotificationBell],
+  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Settings, NotificationBell],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -52,6 +39,7 @@ export class Dashboard {
   private authService = inject(AuthService);
 
   private admissions = inject(AdmissionsService);
+  private settingsService = inject(SettingsService);
   // Admissions entries only show for businesses with the module switched on
   admissionsEnabled = computed(() => !!this.admissions.context());
   readonly admissionsLinks = [
@@ -66,6 +54,8 @@ export class Dashboard {
     // Checked first: '/admissions/pipeline' also contains 'pipeline'
     this.router.url.startsWith('/admissions')
       ? 'admissions'
+      : this.router.url.startsWith('/settings')
+      ? 'settings'
       : this.router.url.includes('follow-ups')
       ? 'follow-ups'
       : this.router.url.includes('leads')
@@ -78,14 +68,17 @@ export class Dashboard {
       ? 'quotations'
       : 'dashboard'
   );
-  user = signal<AuthUser | null>(this.authService.getUser());
+  user = this.authService.currentUser;
   isOwner = computed(() => this.user()?.role === 'OWNER');
 
   constructor() {
     this.admissions.loadContext().subscribe();
+    this.settingsService.loadCurrency();
     this.router.events.subscribe(() => {
       if (this.router.url.startsWith('/admissions')) {
         this.currentTab.set('admissions');
+      } else if (this.router.url.startsWith('/settings')) {
+        this.currentTab.set('settings');
       } else if (this.router.url.includes('follow-ups')) {
         this.currentTab.set('follow-ups');
       } else if (this.router.url.includes('leads')) {
@@ -157,164 +150,226 @@ export class Dashboard {
   }
 
   searchQuery = signal('');
-  activeFilter = signal<'all' | 'urgent' | 'call' | 'quotation' | 'completed'>('all');
+  activeFilter = signal<'all' | 'urgent' | 'call' | 'overdue' | 'completed'>('all');
   isQuickAddOpen = signal(false);
 
-  // New follow-up quick form state
-  newLeadName = '';
-  newCompany = '';
-  newDealValue = '';
-  newChannel: 'call' | 'email' | 'whatsapp' | 'meeting' = 'call';
-  newDueTime = 'Today, 4:00 PM';
+  // Home dashboard: everything below comes from GET /api/dashboard/summary
+  private homeDashboard = inject(HomeDashboardService);
+  private followUpService = inject(FollowUpService);
+  private leadService = inject(LeadService);
+
+  summary = signal<HomeSummary | null>(null);
+  summaryLoading = signal(false);
+  summaryError = signal<string | null>(null);
+  busyFollowUpId = signal<string | null>(null);
+  currency = this.settingsService.currency;
+
+  private readonly stageColors: Record<string, string> = {
+    NEW: '#3b82f6',
+    CONTACTED: '#6366f1',
+    QUALIFIED: '#8b5cf6',
+    QUOTATION_SENT: '#f59e0b',
+    NEGOTIATION: '#10b981',
+  };
+
+  // Quick log: a real follow-up for an existing lead
+  leadSearch = '';
+  leadOptions = signal<Lead[]>([]);
+  selectedLead = signal<Lead | null>(null);
+  newType: FollowUpType = 'CALL';
+  newWhen = '';
   newNote = '';
+  savingQuickLog = signal(false);
+  private leadSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Pipeline stages
-  pipelineStages = signal<PipelineStage[]>([
-    { name: 'Lead Qualified', count: 18, value: '$42,500', percent: 28, color: '#3b82f6' },
-    { name: 'Follow-up Due', count: 12, value: '$68,200', percent: 45, color: '#f59e0b' },
-    { name: 'Quote / Proposal', count: 7, value: '$34,000', percent: 22, color: '#8b5cf6' },
-    { name: 'Closing Won', count: 5, value: '$21,500', percent: 14, color: '#10b981' },
-  ]);
+  private readonly loadHomeWhenShown = effect(() => {
+    if (this.currentTab() === 'dashboard') untracked(() => this.loadSummary());
+  });
 
-  // Main follow-up queue
-  followUps = signal<FollowUpItem[]>([
-    {
-      id: 'f1',
-      leadName: 'Liam Vance',
-      company: 'TechCorp Solutions',
-      dealValue: '$18,500',
-      channel: 'call',
-      status: 'urgent',
-      dueTime: 'Overdue (10:30 AM)',
-      note: 'Confirm budget approval with Finance VP for enterprise package.',
-      priority: 'Urgent',
-    },
-    {
-      id: 'f2',
-      leadName: 'Elena Rostova',
-      company: 'Nordic Logistics',
-      dealValue: '$24,000',
-      channel: 'email',
-      status: 'urgent',
-      dueTime: '11:15 AM',
-      note: 'Send revised quotation with tiered payment terms.',
-      priority: 'Urgent',
-    },
-    {
-      id: 'f3',
-      leadName: 'Marcus Chen',
-      company: 'Aura Health Inc.',
-      dealValue: '$12,800',
-      channel: 'whatsapp',
-      status: 'pending',
-      dueTime: '1:30 PM',
-      note: 'Quick check-in on the software demo feedback from yesterday.',
-      priority: 'High',
-    },
-    {
-      id: 'f4',
-      leadName: 'Sophia Miller',
-      company: 'Apex Retail Group',
-      dealValue: '$36,000',
-      channel: 'meeting',
-      status: 'pending',
-      dueTime: '3:00 PM',
-      note: 'Strategy alignment call with regional sales team.',
-      priority: 'High',
-    },
-    {
-      id: 'f5',
-      leadName: 'David Kim',
-      company: 'Vanguard Cyber',
-      dealValue: '$9,400',
-      channel: 'call',
-      status: 'pending',
-      dueTime: '4:45 PM',
-      note: 'Second follow-up regarding integration specifications.',
-      priority: 'Medium',
-    },
-    {
-      id: 'f6',
-      leadName: 'Amara Okafor',
-      company: 'Prime Global Logistics',
-      dealValue: '$15,200',
-      channel: 'email',
-      status: 'completed',
-      dueTime: 'Completed 9:20 AM',
-      note: 'Sent formal onboarding contract and verified signature.',
-      priority: 'Medium',
-    },
-  ]);
+  totalCount = computed(() => this.summary()?.followUpsToday.total ?? 0);
+  urgentCount = computed(() => this.summary()?.followUpsToday.urgent ?? 0);
+  completedCount = computed(() => this.summary()?.followUpsToday.completed ?? 0);
+  pendingCount = computed(() => this.summary()?.followUpsToday.pending ?? 0);
+  overdueCount = computed(() => this.summary()?.followUpsToday.overdue ?? 0);
 
-  // Computed metrics
-  totalCount = computed(() => this.followUps().length);
-  urgentCount = computed(() => this.followUps().filter((f) => f.status === 'urgent').length);
-  completedCount = computed(() => this.followUps().filter((f) => f.status === 'completed').length);
-  pendingCount = computed(() => this.followUps().filter((f) => f.status !== 'completed').length);
+  pipelineStages = computed(() => {
+    const pipeline = this.summary()?.pipeline;
+    if (!pipeline) return [];
+    return pipeline.byStatus.map((s) => ({
+      ...s,
+      percent: pipeline.openValue ? Math.round((s.value / pipeline.openValue) * 100) : 0,
+      color: this.stageColors[s.status] || '#64748b',
+    }));
+  });
+
+  conversionPercent = computed(() => {
+    const rate = this.summary()?.conversion.rate;
+    return rate === null || rate === undefined ? null : Math.round(rate * 1000) / 10;
+  });
 
   filteredFollowUps = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();
     const filter = this.activeFilter();
 
-    return this.followUps().filter((item) => {
-      // Search filter
+    return (this.summary()?.queue ?? []).filter((item) => {
       const matchesSearch =
         !query ||
         item.leadName.toLowerCase().includes(query) ||
         item.company.toLowerCase().includes(query) ||
-        item.note.toLowerCase().includes(query);
-
+        (item.notes || '').toLowerCase().includes(query) ||
+        (item.title || '').toLowerCase().includes(query);
       if (!matchesSearch) return false;
 
-      // Category filter
-      if (filter === 'urgent') return item.status === 'urgent';
-      if (filter === 'call') return item.channel === 'call';
-      if (filter === 'quotation') return item.dealValue.includes('$') && item.status !== 'completed';
-      if (filter === 'completed') return item.status === 'completed';
-
+      if (filter === 'urgent') return item.status === 'PENDING' && (item.isOverdue || item.priority === 'HIGH');
+      if (filter === 'call') return item.type === 'CALL';
+      if (filter === 'overdue') return item.isOverdue;
+      if (filter === 'completed') return item.status === 'COMPLETED';
       return true;
     });
   });
 
-  toggleStatus(id: string): void {
-    this.followUps.update((items) =>
-      items.map((item) => {
-        if (item.id === id) {
-          const nextStatus = item.status === 'completed' ? 'pending' : 'completed';
-          return {
-            ...item,
-            status: nextStatus,
-            dueTime: nextStatus === 'completed' ? 'Completed just now' : 'Today, 5:00 PM',
-          };
-        }
-        return item;
-      })
-    );
+  loadSummary(): void {
+    this.summaryLoading.set(true);
+    this.summaryError.set(null);
+    this.homeDashboard.getSummary().subscribe({
+      next: (data) => {
+        this.summary.set(data);
+        this.currency.set(data.currency);
+        this.summaryLoading.set(false);
+      },
+      error: (err) => {
+        this.summaryLoading.set(false);
+        this.summaryError.set(err?.error?.message || 'The dashboard could not load. Check your connection and try again.');
+      },
+    });
+  }
+
+  money(value: number | null | undefined): string {
+    return formatMoney(value, this.currency());
+  }
+
+  channelOf(type: string): 'call' | 'email' | 'whatsapp' | 'meeting' | 'other' {
+    const channels: Record<string, 'call' | 'email' | 'whatsapp' | 'meeting'> = {
+      CALL: 'call',
+      EMAIL: 'email',
+      WHATSAPP: 'whatsapp',
+      MEETING: 'meeting',
+    };
+    return channels[type] || 'other';
+  }
+
+  typeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      CALL: 'Phone call',
+      EMAIL: 'Email',
+      WHATSAPP: 'WhatsApp',
+      MEETING: 'Meeting',
+      TASK: 'To-do',
+      DOCUMENT: 'Documents',
+      PAYMENT: 'Payment',
+      EXAM: 'Entrance exam',
+      INTERVIEW: 'Interview',
+      VISA: 'Visa',
+    };
+    return labels[type] || 'Other';
+  }
+
+  dueText(item: QueueItem): string {
+    const time = (value: string) => new Date(value).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (item.status === 'COMPLETED' && item.completedAt) return `Completed ${time(item.completedAt)}`;
+    if (item.isOverdue) {
+      const due = new Date(item.scheduledAt);
+      const day = due.toDateString() === new Date().toDateString() ? '' : `${due.toLocaleDateString([], { day: 'numeric', month: 'short' })}, `;
+      return `Overdue (${day}${time(item.scheduledAt)})`;
+    }
+    return `Today, ${time(item.scheduledAt)}`;
+  }
+
+  timeAgo(value: string | null): string {
+    if (!value) return '';
+    const minutes = Math.round((Date.now() - new Date(value).getTime()) / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours} h ago`;
+    return `${Math.round(hours / 24)} d ago`;
+  }
+
+  /** Marks a follow-up done, or back to pending, in the database. */
+  toggleStatus(item: QueueItem): void {
+    this.busyFollowUpId.set(item.id);
+    const status = item.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+    this.followUpService.updateFollowUp(item.id, { status }).subscribe({
+      next: () => {
+        this.busyFollowUpId.set(null);
+        toast.success(status === 'COMPLETED' ? `Follow-up with ${item.leadName} done` : 'Marked as pending again');
+        this.loadSummary();
+      },
+      error: (err) => {
+        this.busyFollowUpId.set(null);
+        toast.error(err?.error?.message || 'The follow-up could not be updated.');
+      },
+    });
+  }
+
+  openQuickLog(): void {
+    const open = !this.isQuickAddOpen();
+    this.isQuickAddOpen.set(open);
+    if (!open) return;
+    const later = new Date(Date.now() + 60 * 60 * 1000);
+    later.setMinutes(0, 0, 0);
+    this.newWhen = new Date(later.getTime() - later.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    this.selectedLead.set(null);
+    this.leadSearch = '';
+    this.leadOptions.set([]);
+    this.newNote = '';
+  }
+
+  onLeadSearch(value: string): void {
+    this.leadSearch = value;
+    this.selectedLead.set(null);
+    if (this.leadSearchTimer) clearTimeout(this.leadSearchTimer);
+    if (value.trim().length < 2) {
+      this.leadOptions.set([]);
+      return;
+    }
+    this.leadSearchTimer = setTimeout(() => {
+      this.leadService.getLeads({ search: value.trim(), limit: 8 }).subscribe({
+        next: (result) => this.leadOptions.set(result.leads ?? []),
+        error: () => this.leadOptions.set([]),
+      });
+    }, 250);
+  }
+
+  pickLead(lead: Lead): void {
+    this.selectedLead.set(lead);
+    this.leadSearch = lead.customerName + (lead.companyName ? ` (${lead.companyName})` : '');
+    this.leadOptions.set([]);
   }
 
   saveQuickFollowUp(): void {
-    if (!this.newLeadName.trim()) return;
-
-    const newItem: FollowUpItem = {
-      id: 'f_' + Date.now(),
-      leadName: this.newLeadName.trim(),
-      company: this.newCompany.trim() || 'Direct Client',
-      dealValue: this.newDealValue.trim() ? (this.newDealValue.startsWith('$') ? this.newDealValue : `$${this.newDealValue}`) : '$5,000',
-      channel: this.newChannel,
-      status: 'pending',
-      dueTime: this.newDueTime || 'Today, 5:00 PM',
-      note: this.newNote.trim() || 'Follow up on proposal and next steps.',
-      priority: 'High',
-    };
-
-    this.followUps.update((items) => [newItem, ...items]);
-
-    // Reset form
-    this.newLeadName = '';
-    this.newCompany = '';
-    this.newDealValue = '';
-    this.newNote = '';
-    this.isQuickAddOpen.set(false);
+    const lead = this.selectedLead();
+    if (!lead || !this.newWhen) return;
+    this.savingQuickLog.set(true);
+    this.followUpService
+      .createFollowUp({
+        leadId: lead._id,
+        type: this.newType,
+        scheduledAt: new Date(this.newWhen).toISOString(),
+        notes: this.newNote.trim(),
+      })
+      .subscribe({
+        next: () => {
+          this.savingQuickLog.set(false);
+          this.isQuickAddOpen.set(false);
+          toast.success(`Follow-up with ${lead.customerName} added`);
+          this.loadSummary();
+        },
+        error: (err) => {
+          this.savingQuickLog.set(false);
+          toast.error(err?.error?.message || 'The follow-up could not be added.');
+        },
+      });
   }
 
   logout(): void {

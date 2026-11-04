@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { SettingsService } from '../core/services/settings.service';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -51,6 +52,9 @@ const ALLOWED_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   styleUrl: './pipeline.scss',
 })
 export class Pipeline implements OnInit {
+  /** Business currency from Settings */
+  readonly currency = inject(SettingsService).currency;
+
   private readonly router = inject(Router);
   private readonly pipelineService = inject(PipelineService);
   private readonly teamService = inject(TeamService);

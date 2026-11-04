@@ -14,24 +14,26 @@
       </div>
 
       <div class="leads-header-actions">
-        <button type="button" class="btn btn-secondary" title="Import leads from CSV or Excel">
+        <button type="button" class="btn btn-secondary" disabled aria-disabled="true"
+          title="CSV and Excel import is coming soon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <span>Import Leads</span>
+          <span>Import (soon)</span>
         </button>
 
-        <button type="button" class="btn btn-secondary" title="Export leads to CSV or spreadsheet">
+        <button type="button" class="btn btn-secondary" disabled aria-disabled="true"
+          title="Lead export is coming soon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>Export</span>
+          <span>Export (soon)</span>
         </button>
 
         <button type="button" class="btn btn-primary" (click)="openAddModal()" title="Create a new lead record">
@@ -457,7 +459,10 @@
               <td class="th-customer">
                 <div class="lead-contact-stack">
                   <!-- 1. Customer Name -->
-                  <div class="lead-customer-name" (click)="openDetails(lead)" title="View lead details">
+                  <div class="lead-customer-name" role="button" tabindex="0" (click)="openDetails(lead)"
+                    (keydown.enter)="openDetails(lead)"
+                    (keydown.space)="$event.preventDefault(); openDetails(lead)" title="View lead details"
+                    [attr.aria-label]="'View details for ' + lead.customerName">
                     {{ lead.customerName }}
                   </div>
 
@@ -505,7 +510,7 @@
               <td class="th-interest">{{ lead.interestedIn || '—' }}</td>
               <td class="th-value">
                 @if (lead.estimatedValue !== undefined && lead.estimatedValue !== null) {
-                <strong>{{ lead.estimatedValue | currency:'USD':'symbol':'1.0-0' }}</strong>
+                <strong>{{ lead.estimatedValue | currency:currency():'symbol-narrow':'1.0-0' }}</strong>
                 } @else {
                 <span class="text-muted">—</span>
                 }
@@ -896,7 +901,7 @@
           <div class="snapshot-col">
             <span class="snapshot-label">Est. Value</span>
             <span class="snapshot-value">
-              {{ (selectedLead()?.estimatedValue | currency:'USD':'symbol':'1.0-0') || '—' }}
+              {{ (selectedLead()?.estimatedValue | currency:currency():'symbol-narrow':'1.0-0') || '—' }}
             </span>
           </div>
         </div>

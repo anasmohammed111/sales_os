@@ -70,6 +70,9 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly apiUrl = `${environment.apiUrl}/auth`;
 
+  /** The signed-in user; updates when the profile changes. */
+  readonly currentUser = signal<AuthUser | null>(this.getUser());
+
   /** Set when Google sign-in finds no account, so the register page can finish signup. */
   readonly pendingGoogleSignup = signal<PendingGoogleSignup | null>(null);
 
@@ -100,10 +103,34 @@ export class AuthService {
       );
   }
 
+  /** Emails a reset link if the account exists; the answer is the same either way. */
+  forgotPassword(email: string): Observable<string> {
+    return this.http
+      .post<{ success: boolean; message: string }>(`${this.apiUrl}/forgot-password`, { email })
+      .pipe(map((res) => res.message));
+  }
+
+  /** Sets a new password with the token from the reset email. */
+  resetPassword(token: string, password: string): Observable<string> {
+    return this.http
+      .post<{ success: boolean; message: string }>(`${this.apiUrl}/reset-password`, { token, password })
+      .pipe(map((res) => res.message));
+  }
+
   setSession(authData: AuthData): void {
     if (typeof localStorage === 'undefined') return;
     localStorage.setItem('auth_token', authData.token);
     localStorage.setItem('auth_user', JSON.stringify(authData.user));
+    this.currentUser.set(authData.user);
+  }
+
+  /** Keeps the stored user in step after a profile edit (e.g. a new name). */
+  updateStoredUser(changes: Partial<AuthUser>): void {
+    const user = this.getUser();
+    if (!user || typeof localStorage === 'undefined') return;
+    const next = { ...user, ...changes };
+    localStorage.setItem('auth_user', JSON.stringify(next));
+    this.currentUser.set(next);
   }
 
   getToken(): string | null {
@@ -122,6 +149,7 @@ export class AuthService {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
     }
+    this.currentUser.set(null);
     this.router.navigate(['/auth/login']);
   }
 

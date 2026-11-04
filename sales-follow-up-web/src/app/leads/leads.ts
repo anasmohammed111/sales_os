@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { SettingsService } from '../core/services/settings.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { finalize } from 'rxjs';
@@ -25,6 +26,9 @@ import { TeamService, TeamMember } from '../core/services/team.service';
   styleUrl: './leads.scss',
 })
 export class Leads implements OnInit {
+  /** Business currency from Settings */
+  readonly currency = inject(SettingsService).currency;
+
   private readonly fb = inject(FormBuilder);
   private readonly leadService = inject(LeadService);
   private readonly teamService = inject(TeamService);

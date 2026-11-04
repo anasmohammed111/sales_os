@@ -5,6 +5,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -14,6 +15,7 @@ import { RouterLink } from '@angular/router';
 })
 export class ForgotPassword {
   private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
 
   isLoading = signal(false);
   isSubmitted = signal(false);
@@ -26,24 +28,37 @@ export class ForgotPassword {
   });
 
   submit(): void {
+    if (this.forgotForm.invalid) {
+      this.errorMessage.set('Enter a valid email address');
+      return;
+    }
     this.errorMessage.set(null);
     this.isLoading.set(true);
-
-    setTimeout(() => {
-      this.isLoading.set(false);
+    this.send(() => {
       this.submittedEmail.set(this.forgotForm.controls.email.value);
       this.isSubmitted.set(true);
-    }, 800);
+    });
   }
 
   resendLink(): void {
     this.resendSuccess.set(false);
     this.isLoading.set(true);
-
-    setTimeout(() => {
-      this.isLoading.set(false);
+    this.send(() => {
       this.resendSuccess.set(true);
       setTimeout(() => this.resendSuccess.set(false), 4000);
-    }, 800);
+    });
+  }
+
+  private send(done: () => void): void {
+    this.authService.forgotPassword(this.forgotForm.controls.email.value.trim()).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        done();
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(err?.error?.message || 'The reset email could not be sent. Try again.');
+      },
+    });
   }
 }
