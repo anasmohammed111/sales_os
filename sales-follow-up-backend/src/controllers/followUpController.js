@@ -709,6 +709,7 @@ const deleteFollowUp = async (req, res) => {
 };
 
 module.exports = {
+    getFollowUpScope,
     createFollowUp,
     getFollowUps,
     updateFollowUp,

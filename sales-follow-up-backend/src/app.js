@@ -10,6 +10,7 @@ const quotationRoutes = require('./routes/quotationRoutes');
 const admissionRoutes = require('./routes/admissionRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const homeDashboardRoutes = require('./routes/homeDashboardRoutes');
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use('/api/quotation', quotationRoutes);
 app.use('/api/admissions', admissionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/dashboard', homeDashboardRoutes);
 
 // Catch-all for undefined API routes
 app.use('/api', (req, res) => {

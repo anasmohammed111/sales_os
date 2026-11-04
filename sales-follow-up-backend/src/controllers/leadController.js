@@ -796,6 +796,7 @@ const archiveLead = async (req, res) => {
 };
 
 module.exports = {
+    getLeadScope,
     createLead,
     getLeads,
     getLeadById,
