@@ -696,8 +696,10 @@ a {
    ========================================================================= */
 .select-wrapper {
   position: relative;
+  width: 100%;
 
   select {
+    width: 100%;
     background-image: none !important;
     appearance: none;
     -webkit-appearance: none;

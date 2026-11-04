@@ -320,7 +320,7 @@ const getPipeline = async (req, res) => {
 const updatePipelineStatus = async (req, res) => {
     try {
         const { leadId } = req.params;
-        const { status, lostReason } = req.body;
+        const { status, lostReason, notes, nextFollowUpAt, estimatedValue, isArchived } = req.body;
 
         if (!mongoose.isValidObjectId(leadId)) {
             return res.status(400).json({
@@ -351,18 +351,27 @@ const updatePipelineStatus = async (req, res) => {
             });
         }
 
-        // Issue 5: Missing status transition validation
+        // If lead is already in this status, update any supplementary fields without error
         if (lead.status === status) {
-            return res.status(400).json({
-                success: false,
-                message: `Lead is already in ${status} status`,
-            });
-        }
+            const extraUpdates = {};
+            if (notes !== undefined) extraUpdates.notes = notes;
+            if (nextFollowUpAt !== undefined) extraUpdates.nextFollowUpAt = nextFollowUpAt;
+            if (estimatedValue !== undefined) extraUpdates.estimatedValue = estimatedValue;
+            if (isArchived !== undefined) extraUpdates.isArchived = isArchived;
 
-        if (lead.status === 'WON') {
-            return res.status(400).json({
-                success: false,
-                message: 'Closed WON deals cannot change status',
+            if (Object.keys(extraUpdates).length > 0) {
+                await Lead.updateOne({ _id: lead._id }, { $set: extraUpdates });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Lead pipeline status updated',
+                data: {
+                    ...lead.toObject(),
+                    ...extraUpdates,
+                    leadId: lead._id,
+                    status: lead.status,
+                },
             });
         }
 
@@ -374,9 +383,13 @@ const updatePipelineStatus = async (req, res) => {
             });
         }
 
-        // Issue 6: Lost reason needs validation
         const updates = { status };
         let historyReason = '';
+
+        if (notes !== undefined) updates.notes = notes;
+        if (nextFollowUpAt !== undefined) updates.nextFollowUpAt = nextFollowUpAt;
+        if (estimatedValue !== undefined) updates.estimatedValue = estimatedValue;
+        if (isArchived !== undefined) updates.isArchived = isArchived;
 
         if (status === 'LOST') {
             if (!lostReason || typeof lostReason !== 'string' || !lostReason.trim()) {
@@ -401,7 +414,7 @@ const updatePipelineStatus = async (req, res) => {
             updates.lostReason = '';
         }
 
-        // Issue 7: Status change history
+        // Status change history
         const updatedLead = await Lead.findOneAndUpdate(
             {
                 ...scope,

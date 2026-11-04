@@ -8,6 +8,7 @@ import { toast } from 'ngx-sonner';
 
 import { Lead, LeadPriority, LeadStatus, LeadService, LEAD_STATUS_LABELS } from '../core/services/lead.service';
 import { AdmissionsService } from '../core/services/admissions.service';
+import { menuOpensUp } from '../core/utils/menu-placement';
 import { AuthService, AuthUser } from '../core/services/auth.service';
 import { TeamMember, TeamService } from '../core/services/team.service';
 import {
@@ -32,10 +33,12 @@ const DEFAULT_STAGES: StageColumn[] = [
   { id: 'QUOTATION_SENT', name: 'Quotation Sent', color: 'var(--kelto-stage-proposal)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
   { id: 'NEGOTIATION', name: 'Negotiation', color: 'var(--kelto-stage-negotiation)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
   { id: 'WON', name: 'Won', color: 'var(--kelto-stage-won)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'ADMISSIONS', name: 'Admissions', color: '#2563eb', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'ON_HOLD', name: 'On Hold', color: '#d97706', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'CLOSED', name: 'Closed', color: '#475569', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'NO_LONGER_REQUIRED', name: 'Not Required', color: '#64748b', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'ADMISSIONS', name: 'Admissions', color: 'var(--kelto-info-600)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'ON_HOLD', name: 'On Hold', color: 'var(--kelto-warning-600)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'CLOSED', name: 'Closed', color: 'var(--kelto-neutral-600)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'NO_LONGER_REQUIRED', name: 'Not Required', color: 'var(--kelto-neutral-500)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  // The API returns this stage too; without a column these leads were not shown anywhere
+  { id: 'UNRESPONSIVE', name: 'Unresponsive', color: 'var(--kelto-neutral-400)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
   { id: 'LOST', name: 'Lost', color: 'var(--kelto-stage-lost)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
 ];
 
@@ -91,6 +94,8 @@ export class Pipeline implements OnInit {
   // Modal, Drawer & Interaction State
   selectedLead = signal<Lead | null>(null);
   activeMenuLeadId = signal<string | null>(null);
+  /** The open card menu flips up near the bottom of a column */
+  cardMenuUp = signal(false);
   isDetailsDrawerOpen = signal(false);
   isWonConfirmOpen = signal(false);
   isLostConfirmOpen = signal(false);
@@ -276,7 +281,9 @@ export class Pipeline implements OnInit {
 
   toggleCardMenu(event: MouseEvent, leadId: string): void {
     event.stopPropagation();
-    this.activeMenuLeadId.update((id) => (id === leadId ? null : leadId));
+    const opening = this.activeMenuLeadId() !== leadId;
+    if (opening) this.cardMenuUp.set(menuOpensUp(event.currentTarget));
+    this.activeMenuLeadId.set(opening ? leadId : null);
   }
 
   closeCardMenu(): void {
@@ -306,6 +313,12 @@ export class Pipeline implements OnInit {
       event.dataTransfer.setData('text/plain', lead._id);
       event.dataTransfer.effectAllowed = 'move';
     }
+  }
+
+  /** A drag that ends without a drop (Escape, or released outside a column) */
+  onDragEnd(): void {
+    this.draggedLead = null;
+    this.dragOverStageId.set(null);
   }
 
   onDragOver(event: DragEvent, stageId: LeadStatus): void {
@@ -419,33 +432,6 @@ export class Pipeline implements OnInit {
     const targetStatus = this.moveTargetStatus();
     this.isSubmittingMove.set(true);
 
-    // If moving to Admissions, also enroll into Admissions Student Journey
-    if (targetStatus === 'ADMISSIONS') {
-      this.admissionsService
-        .createApplication({
-          studentId: lead._id,
-          studyLevel: this.moveStudyLevel(),
-          intakeMonth: Number(this.moveIntakeMonth()),
-          intakeYear: Number(this.moveIntakeYear()),
-          counsellorId: lead.assignedTo?._id || this.currentUser()?.id || undefined,
-          leadSource: lead.source ? lead.source.toLowerCase() : 'other',
-        })
-        .subscribe({
-          next: () => {
-            this.executeLeadPipelineMove(lead, targetStatus);
-          },
-          error: () => {
-            // If application already exists, continue with pipeline status update
-            this.executeLeadPipelineMove(lead, targetStatus);
-          },
-        });
-      return;
-    }
-
-    this.executeLeadPipelineMove(lead, targetStatus);
-  }
-
-  private executeLeadPipelineMove(lead: Lead, targetStatus: LeadStatus): void {
     const finalReason =
       targetStatus === 'LOST'
         ? this.moveNotes().trim()
@@ -453,6 +439,7 @@ export class Pipeline implements OnInit {
           : this.moveLostReason()
         : undefined;
 
+    // Update the lead's pipeline status, notes, follow-up, and estimated value
     this.pipelineService
       .updateLeadStatus(lead._id, targetStatus, {
         lostReason: finalReason,
@@ -461,18 +448,47 @@ export class Pipeline implements OnInit {
         estimatedValue: this.moveEstimatedValue(),
         isArchived: targetStatus === 'LOST' && this.moveArchiveLost() ? true : undefined,
       })
-      .pipe(finalize(() => this.isSubmittingMove.set(false)))
       .subscribe({
         next: () => {
-          const actionText =
-            targetStatus === 'LOST' && this.moveArchiveLost()
-              ? 'Marked as Lost & Archived'
-              : `Moved to ${this.getStatusLabel(targetStatus)}`;
-          toast.success(`"${lead.customerName}" ${actionText}`);
-          this.closeMoveModal();
-          this.loadLeads();
+          // If moving to ADMISSIONS, also create/sync Admissions Student Journey
+          if (targetStatus === 'ADMISSIONS') {
+            this.admissionsService
+              .createApplication({
+                studentId: lead._id,
+                studyLevel: this.moveStudyLevel(),
+                intakeMonth: Number(this.moveIntakeMonth()),
+                intakeYear: Number(this.moveIntakeYear()),
+                counsellorId: lead.assignedTo?._id || this.currentUser()?.id || undefined,
+                leadSource: lead.source ? lead.source.toLowerCase() : 'other',
+              })
+              .subscribe({
+                next: () => {
+                  this.isSubmittingMove.set(false);
+                  toast.success(`"${lead.customerName}" moved to Admissions & enrolled!`);
+                  this.closeMoveModal();
+                  this.loadLeads();
+                },
+                error: () => {
+                  this.isSubmittingMove.set(false);
+                  // Status update succeeded even if an application was already present
+                  toast.success(`"${lead.customerName}" moved to Admissions.`);
+                  this.closeMoveModal();
+                  this.loadLeads();
+                },
+              });
+          } else {
+            this.isSubmittingMove.set(false);
+            const actionText =
+              targetStatus === 'LOST' && this.moveArchiveLost()
+                ? 'Marked as Lost & Archived'
+                : `Moved to ${this.getStatusLabel(targetStatus)}`;
+            toast.success(`"${lead.customerName}" ${actionText}`);
+            this.closeMoveModal();
+            this.loadLeads();
+          }
         },
         error: (err) => {
+          this.isSubmittingMove.set(false);
           toast.error(err.error?.message || 'Failed to advance lead stage.');
         },
       });

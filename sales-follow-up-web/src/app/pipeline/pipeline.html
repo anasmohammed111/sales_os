@@ -135,7 +135,8 @@
         @if (canManageTeam() && teamMembers().length > 0) {
         <div class="filter-select-wrap">
           <label class="filter-select-label" for="assigneeFilter">Assigned:</label>
-          <select id="assigneeFilter" class="filter-select" [ngModel]="assignedFilter()"
+          <select id="assigneeFilter" class="filter-select" [class.is-set]="assignedFilter() !== 'ALL'"
+            [ngModel]="assignedFilter()"
             (ngModelChange)="onAssigneeChange($event)">
             <option value="ALL">All Assignees</option>
             @for (member of teamMembers(); track member._id) {
@@ -148,7 +149,8 @@
         <!-- Priority Dropdown -->
         <div class="filter-select-wrap">
           <label class="filter-select-label" for="priorityFilter">Priority:</label>
-          <select id="priorityFilter" class="filter-select" [ngModel]="priorityFilter()"
+          <select id="priorityFilter" class="filter-select" [class.is-set]="priorityFilter() !== 'ALL'"
+            [ngModel]="priorityFilter()"
             (ngModelChange)="onPriorityChange($event)">
             <option value="ALL">All Priorities</option>
             <option value="HIGH">High Priority</option>
@@ -195,17 +197,18 @@
   </div>
   } @else {
   <div class="pipeline-board-container">
-    <div class="pipeline-kanban-board">
+    <div class="pipeline-kanban-board" [class.is-dragging]="!!draggedLead">
       @for (stage of stages(); track stage.id) {
       <!-- Individual Kanban Column -->
-      <div class="kanban-column stage-{{ stage.id }}" [class.drag-over]="dragOverStageId() === stage.id"
+      <div class="kanban-column stage-{{ stage.id }}" [style.--stage-color]="stage.color"
+        [class.drag-over]="dragOverStageId() === stage.id"
         (dragover)="onDragOver($event, stage.id)" (dragleave)="onDragLeave($event, stage.id)"
         (drop)="onDrop($event, stage.id)">
 
         <!-- Column Header -->
         <div class="column-header">
           <div class="header-left">
-            <span class="stage-dot" [style.background-color]="stage.color"></span>
+            <span class="stage-dot"></span>
             <h3 class="stage-name">{{ stage.name }}</h3>
             <span class="stage-count-badge" [class.won-badge]="stage.id === 'WON'"
               [class.lost-badge]="stage.id === 'LOST'">
@@ -220,7 +223,11 @@
 
         <!-- Vertical Stack of Lead Cards with Independent Scrolling -->
         <div class="column-cards-scroll">
-          @if (stage.leads.length === 0) {
+          @if (stage.leads.length === 0 && isLoading() && !summary()) {
+          <!-- First load -->
+          <div class="card-skeleton" aria-hidden="true"></div>
+          <div class="card-skeleton" aria-hidden="true"></div>
+          } @else if (stage.leads.length === 0) {
           <!-- Empty Column State -->
           <div class="column-empty-state">
             <div class="empty-stage-icon">
@@ -237,8 +244,10 @@
           <!-- Lead Cards List -->
           @for (lead of stage.leads; track lead._id) {
           <div class="lead-card" [class.lead-card-won]="stage.id === 'WON'" [class.lead-card-lost]="stage.id === 'LOST'"
-            draggable="true" (dragstart)="onDragStart($event, lead)" (click)="openLeadDetails(lead)" role="button"
-            tabindex="0">
+            draggable="true" (dragstart)="onDragStart($event, lead)" (dragend)="onDragEnd()"
+            (click)="openLeadDetails(lead)" (keydown.enter)="$event.target === $event.currentTarget && openLeadDetails(lead)"
+            role="button" tabindex="0"
+            [attr.aria-label]="'Open ' + lead.customerName">
 
             <!-- Card Header: Company, Priority, Three-dot Menu -->
             <div class="card-header-row">
@@ -265,7 +274,8 @@
                 <!-- Three-dot Menu Trigger -->
                 <div class="menu-container" (click)="$event.stopPropagation()">
                   <button type="button" class="btn-card-menu" (click)="toggleCardMenu($event, lead._id)"
-                    aria-label="Lead Actions" title="More Options">
+                    aria-label="Lead Actions" title="More Options" aria-haspopup="menu"
+                    [attr.aria-expanded]="activeMenuLeadId() === lead._id">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <circle cx="12" cy="5" r="2"></circle>
                       <circle cx="12" cy="12" r="2"></circle>
@@ -275,12 +285,12 @@
 
                   <!-- Dropdown Popover Menu -->
                   @if (activeMenuLeadId() === lead._id) {
-                  <div class="card-dropdown-menu" role="menu">
+                  <div class="card-dropdown-menu" [class.opens-up]="cardMenuUp()" role="menu">
                     <button type="button" class="menu-item" (click)="openLeadDetails(lead)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="3" r="3"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                       <span>View Lead</span>
                     </button>
@@ -368,11 +378,10 @@
 
               <!-- Assigned Salesperson Initials & Name -->
               <div class="salesperson-chip" title="Assigned to {{ lead.assignedTo?.name || 'Unassigned' }}">
-                <div class="sp-avatar">
+                <div class="sp-avatar" [class.is-empty]="!lead.assignedTo?.name">
                   {{ getInitials(lead.assignedTo?.name) }}
                 </div>
-                <span class="sp-name">{{ lead.assignedTo?.name ? (lead.assignedTo?.name?.split(' ') || ['User'])[0] :
-                  'Unassigned' }}</span>
+                <span class="sp-name">{{ lead.assignedTo?.name || 'Unassigned' }}</span>
               </div>
             </div>
 
@@ -600,20 +609,34 @@
   <section class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="move-modal-title"
     (click)="closeMoveModal()">
     <div class="modal-card modal-card-move" (click)="$event.stopPropagation()">
-      <header class="modal-header">
+      <header class="modal-header move-modal-header">
         <div class="modal-title-group">
           <div class="move-icon-badge">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </div>
           <div>
-            <h2 id="move-modal-title" class="modal-title">Move Stage: {{ leadToMove()?.customerName }}</h2>
-            <p class="modal-subtitle">
-              Current stage: <span class="current-stage-pill">{{ getStatusLabel(leadToMove()!.status) }}</span>
-            </p>
+            <div class="modal-eyebrow">Move Lead to Next Level</div>
+            <h2 id="move-modal-title" class="modal-title">{{ leadToMove()?.customerName }}</h2>
+            <div class="stage-transition-breadcrumb">
+              <span class="stage-pill from-pill">
+                <span class="stage-dot"></span>
+                {{ getStatusLabel(leadToMove()!.status) }}
+              </span>
+              <span class="stage-arrow-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </span>
+              <span class="stage-pill to-pill">
+                <span class="stage-dot"></span>
+                {{ getStatusLabel(moveTargetStatus()) }}
+              </span>
+            </div>
           </div>
         </div>
         <button type="button" class="btn-close-modal" (click)="closeMoveModal()" aria-label="Close dialog">
@@ -626,8 +649,11 @@
 
       <div class="modal-body move-modal-body">
         <!-- Target Stage Selector -->
-        <div class="form-group">
-          <label class="form-label required">Move to Next Stage / Level</label>
+        <div class="form-group stage-decision-group">
+          <label class="form-label required">
+            <span>Move to Next Stage / Level</span>
+            <span class="form-label-hint">Select the target stage for this candidate</span>
+          </label>
           <div class="select-wrapper">
             <select class="form-control select-control" [ngModel]="moveTargetStatus()"
               (ngModelChange)="moveTargetStatus.set($event)">
@@ -635,7 +661,7 @@
               <option [value]="st.value">{{ st.label }}</option>
               }
             </select>
-            <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.5">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -644,25 +670,43 @@
 
         <!-- Counsellor Discussion / Interaction Notes -->
         <div class="form-group">
-          <label class="form-label">Counsellor Discussion & Update Notes</label>
+          <label class="form-label">
+            <span>Counsellor Discussion & Update Notes</span>
+            <span class="form-label-hint">Activity record & key points</span>
+          </label>
           <textarea class="form-control textarea-control" rows="3" [ngModel]="moveNotes()"
             (ngModelChange)="moveNotes.set($event)"
-            placeholder="Input details: key discussion takeaways, student preferences, requirements, or next steps..."></textarea>
+            placeholder="Input details: key discussion takeaways, student preferences, course requirements, or next steps..."></textarea>
         </div>
 
         <div class="form-row-2col">
           <!-- Next Follow-up Date & Time -->
           <div class="form-group">
-            <label class="form-label">Next Follow-up Date & Time</label>
-            <input type="datetime-local" class="form-control" [ngModel]="moveNextFollowUpAt()"
-              (ngModelChange)="moveNextFollowUpAt.set($event)" />
+            <label class="form-label">
+              <span>Next Follow-up Date & Time</span>
+            </label>
+            <div class="input-with-icon">
+              <svg class="input-leading-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <input type="datetime-local" class="form-control with-icon-left" [ngModel]="moveNextFollowUpAt()"
+                (ngModelChange)="moveNextFollowUpAt.set($event)" />
+            </div>
           </div>
 
           <!-- Estimated Value / Budget -->
           <div class="form-group">
-            <label class="form-label">Estimated Value / Budget ({{ currency() }})</label>
-            <input type="number" class="form-control" [ngModel]="moveEstimatedValue()"
-              (ngModelChange)="moveEstimatedValue.set($event)" placeholder="0.00" min="0" step="100" />
+            <label class="form-label">
+              <span>Estimated Value / Budget ({{ currency() }})</span>
+            </label>
+            <div class="input-with-icon">
+              <span class="currency-prefix-tag">{{ currency() === 'INR' ? '₹' : (currency() || '₹') }}</span>
+              <input type="number" class="form-control with-icon-left" [ngModel]="moveEstimatedValue()"
+                (ngModelChange)="moveEstimatedValue.set($event)" placeholder="0.00" min="0" step="100" />
+            </div>
           </div>
         </div>
 
@@ -670,21 +714,26 @@
         @if (moveTargetStatus() === 'LOST') {
         <div class="lost-details-card">
           <div class="lost-card-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <span class="font-semibold">Reason for Lost Lead (Required)</span>
+            <div class="lost-header-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div>
+              <span class="lost-header-title">Reason for Lost Lead (Required)</span>
+              <p class="lost-header-desc">Record why the lead was lost for reporting and quality audits.</p>
+            </div>
           </div>
           <div class="select-wrapper">
-            <select class="form-control select-control" [ngModel]="moveLostReason()"
+            <select class="form-control select-control lost-select-control" [ngModel]="moveLostReason()"
               (ngModelChange)="moveLostReason.set($event)">
               @for (reason of lostReasonOptions; track reason) {
               <option [value]="reason">{{ reason }}</option>
               }
             </select>
-            <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.5">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -701,11 +750,16 @@
         @if (moveTargetStatus() === 'ADMISSIONS') {
         <div class="admissions-details-card">
           <div class="admissions-card-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-              <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-            </svg>
-            <span class="font-semibold">Enrolling into Admissions Student Journey</span>
+            <div class="admissions-header-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+              </svg>
+            </div>
+            <div>
+              <span class="admissions-header-title">Enrolling into Admissions Student Journey</span>
+              <p class="admissions-header-desc">Directly transitions this lead into the Admissions portal with initial application setup.</p>
+            </div>
           </div>
           <div class="form-row-2col">
             <div class="form-group">
@@ -716,7 +770,7 @@
                   <option value="BACHELOR">Bachelor's Degree</option>
                   <option value="MASTER">Master's Degree</option>
                 </select>
-                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="2.5">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
@@ -733,7 +787,7 @@
                     <option [value]="m.value">{{ m.label }}</option>
                     }
                   </select>
-                  <svg class="select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none"
+                  <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2.5">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
@@ -745,7 +799,7 @@
                     <option [value]="y">{{ y }}</option>
                     }
                   </select>
-                  <svg class="select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none"
+                  <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2.5">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
@@ -757,15 +811,19 @@
         }
       </div>
 
-      <footer class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeMoveModal()">
+      <footer class="modal-footer move-modal-footer">
+        <button type="button" class="btn btn-secondary-modern" (click)="closeMoveModal()">
           Cancel
         </button>
-        <button type="button" class="btn btn-primary" (click)="confirmMoveStage()" [disabled]="isSubmittingMove()">
+        <button type="button" class="btn btn-primary-modern" 
+          [class.btn-danger-modern]="moveTargetStatus() === 'LOST'"
+          [class.btn-admissions-modern]="moveTargetStatus() === 'ADMISSIONS'"
+          (click)="confirmMoveStage()" [disabled]="isSubmittingMove()">
           @if (isSubmittingMove()) {
+          <span class="btn-spinner"></span>
           <span>Saving...</span>
           } @else {
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
