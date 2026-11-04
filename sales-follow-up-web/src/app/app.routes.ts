@@ -30,6 +30,13 @@ export const routes: Routes = [
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
+    path: 'reports',
+    title: 'Reports | Kelto',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./dashboard/dashboard').then((m) => m.Dashboard),
+  },
+  {
     path: 'team',
     title: 'Team | Kelto',
     canActivate: [authGuard, ownerGuard],
@@ -62,8 +69,6 @@ export const routes: Routes = [
     path: 'admissions',
     title: 'Admissions | Kelto',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./dashboard/dashboard').then((m) => m.Dashboard),
     loadChildren: () =>
       import('./admissions/admissions.routes').then((m) => m.ADMISSIONS_ROUTES),
   },
@@ -78,4 +83,3 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
-

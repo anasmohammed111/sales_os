@@ -16,11 +16,13 @@ import { FollowUps } from '../follow-ups/follow-ups';
 import { Team } from '../team/team';
 import { Pipeline } from '../pipeline/pipeline';
 import { Quotations } from '../quotations/quotations';
+import { Reports } from '../reports/reports';
 
 type DashboardTab =
   | 'dashboard'
   | 'leads'
   | 'follow-ups'
+  | 'reports'
   | 'team'
   | 'pipeline'
   | 'quotations'
@@ -30,7 +32,7 @@ type DashboardTab =
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Settings, NotificationBell],
+  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Reports, Settings, NotificationBell],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -60,6 +62,8 @@ export class Dashboard {
       ? 'follow-ups'
       : this.router.url.includes('leads')
       ? 'leads'
+      : this.router.url.includes('reports')
+      ? 'reports'
       : this.router.url.includes('team')
       ? 'team'
       : this.router.url.includes('pipeline')
@@ -80,6 +84,7 @@ export class Dashboard {
       dashboard: 'Dashboard',
       leads: 'Leads',
       'follow-ups': 'Follow-ups',
+      reports: 'Reports',
       team: 'Team',
       pipeline: 'Sales pipeline',
       quotations: 'Quotations',
@@ -101,6 +106,8 @@ export class Dashboard {
         this.currentTab.set('follow-ups');
       } else if (this.router.url.includes('leads')) {
         this.currentTab.set('leads');
+      } else if (this.router.url.includes('reports')) {
+        this.currentTab.set('reports');
       } else if (this.router.url.includes('team')) {
         if (!this.isOwner()) {
           this.navigateTo('dashboard');

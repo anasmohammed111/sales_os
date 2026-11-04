@@ -1,1 +1,245 @@
-<p>reports works!</p>
+<section class="reports-page" aria-labelledby="reports-title">
+  <header class="reports-header">
+    <div>
+      <p class="eyebrow">Sales workspace</p>
+      <h1 id="reports-title">Reports &amp; analytics</h1>
+      <p class="reports-subtitle">A clear view of lead generation, pipeline health, and follow-up activity.</p>
+    </div>
+    <div class="report-actions">
+      <div class="period-control" role="group" aria-label="Report period">
+        @for (option of periods; track option.value) {
+        <button type="button" [class.active]="period() === option.value" [attr.aria-pressed]="period() === option.value"
+          (click)="period.set(option.value)">
+          {{ option.label }}
+        </button>
+        }
+      </div>
+      <button type="button" class="export-button" [disabled]="isLoading() || !!errorMessage()" (click)="exportCsv()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  @if (errorMessage(); as message) {
+  <section class="report-message error-message" role="alert">
+    <div>
+      <h2>We couldn’t load your reports</h2>
+      <p>{{ message }}</p>
+    </div>
+    <button type="button" class="export-button" (click)="loadReportData()">Try again</button>
+  </section>
+  } @else if (isLoading()) {
+  <section class="loading-state" aria-live="polite">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <span>Gathering your sales data…</span>
+  </section>
+  } @else {
+  @let report = summary();
+  <p class="period-caption">Showing {{ periodName() }} <span>·</span> Updated just now</p>
+
+  <section class="metrics-grid" aria-label="Key sales metrics">
+    <article class="metric-card">
+      <div class="metric-heading">
+        <span class="metric-icon icon-leads" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>
+            <path d="M20 8v6m3-3h-6"></path>
+          </svg>
+        </span>
+        <span class="metric-label">New leads</span>
+      </div>
+      <strong class="metric-value">{{ report.newLeads.length }}</strong>
+      <span class="metric-note">Created {{ periodName().toLowerCase() }}</span>
+    </article>
+
+    <article class="metric-card">
+      <div class="metric-heading">
+        <span class="metric-icon icon-pipeline" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20m5-15H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </span>
+        <span class="metric-label">Open pipeline</span>
+      </div>
+      <strong class="metric-value">{{ money(report.pipelineValue) }}</strong>
+      <span class="metric-note">{{ report.openLeads.length }} active opportunities</span>
+    </article>
+
+    <article class="metric-card">
+      <div class="metric-heading">
+        <span class="metric-icon icon-activity" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <span class="metric-label">Follow-ups</span>
+      </div>
+      <strong class="metric-value">{{ report.followUps.length }}</strong>
+      <span class="metric-note">{{ report.completedFollowUps }} completed {{ periodName().toLowerCase() }}</span>
+    </article>
+
+    <article class="metric-card">
+      <div class="metric-heading">
+        <span class="metric-icon icon-win" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 12 2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle>
+          </svg>
+        </span>
+        <span class="metric-label">Lead win rate</span>
+      </div>
+      <strong class="metric-value">{{ report.winRate === null ? '—' : (report.winRate | number:'1.0-1') + '%' }}</strong>
+      <span class="metric-note">
+        @if (report.closed) {
+        {{ report.won }} won of {{ report.closed }} closed leads
+        } @else {
+        No leads closed in this period
+        }
+      </span>
+    </article>
+  </section>
+
+  <section class="reports-grid" aria-label="Sales report charts">
+    <article class="report-card trend-card">
+      <div class="card-heading">
+        <div>
+          <h2>Lead generation</h2>
+          <p>New leads over {{ periodName().toLowerCase() }}</p>
+        </div>
+        <span class="card-total">{{ report.newLeads.length }} leads</span>
+      </div>
+      @if (report.newLeads.length) {
+      <div class="trend-chart" role="img" [attr.aria-label]="'New lead trend: ' + report.newLeads.length + ' leads over ' + periodName().toLowerCase()">
+        @for (bucket of report.trend; track $index) {
+        <div class="trend-column">
+          <span class="trend-count">{{ bucket.count || '' }}</span>
+          <div class="trend-track">
+            <div class="trend-bar" [style.height.%]="barWidth(bucket.count, chartValues(report.trend))"></div>
+          </div>
+          <span class="trend-label">{{ bucket.label }}</span>
+        </div>
+        }
+      </div>
+      } @else {
+      <div class="chart-empty">No new leads in this period.</div>
+      }
+    </article>
+
+    <article class="report-card sources-card">
+      <div class="card-heading">
+        <div>
+          <h2>Lead sources</h2>
+          <p>Where new leads came from</p>
+        </div>
+      </div>
+      @if (report.sources.length) {
+      <div class="horizontal-bars">
+        @for (source of report.sources; track source.label) {
+        <div class="bar-row">
+          <div class="bar-label-row"><span>{{ source.label }}</span><strong>{{ source.count }}</strong></div>
+          <div class="bar-track" role="progressbar" [attr.aria-label]="source.label"
+            [attr.aria-valuenow]="source.count" [attr.aria-valuemin]="0" [attr.aria-valuemax]="report.newLeads.length">
+            <span class="bar-fill source-fill"
+              [style.width.%]="barWidth(source.count, chartValues(report.sources))"></span>
+          </div>
+        </div>
+        }
+      </div>
+      } @else {
+      <div class="chart-empty">Lead source data will appear when leads are added.</div>
+      }
+    </article>
+
+    <article class="report-card pipeline-card">
+      <div class="card-heading">
+        <div>
+          <h2>Pipeline by stage</h2>
+          <p>Current opportunity distribution</p>
+        </div>
+        <span class="card-total">{{ report.openLeads.length }} open</span>
+      </div>
+      <div class="stage-table" role="table" aria-label="Lead pipeline by stage">
+        @for (stage of report.stages; track stage.status) {
+        <div class="stage-row" role="row">
+          <div class="stage-name" role="cell"><span class="stage-dot" [class]="'stage-dot ' + stage.status.toLowerCase()"></span>{{ stage.label }}</div>
+          <div class="stage-bar-track" role="cell">
+            <span class="stage-bar" [class]="'stage-bar ' + stage.status.toLowerCase()"
+              [style.width.%]="barWidth(stage.count, chartValues(report.stages))"></span>
+          </div>
+          <strong class="stage-count" role="cell">{{ stage.count }}</strong>
+          <span class="stage-value" role="cell">{{ money(stage.value) }}</span>
+        </div>
+        }
+      </div>
+    </article>
+
+    <article class="report-card activity-card">
+      <div class="card-heading">
+        <div>
+          <h2>Follow-up activity</h2>
+          <p>Scheduled by interaction type</p>
+        </div>
+        <span class="card-total">{{ report.followUps.length }} total</span>
+      </div>
+      @if (report.activityTypes.length) {
+      <div class="horizontal-bars">
+        @for (activity of report.activityTypes; track activity.label) {
+        <div class="bar-row">
+          <div class="bar-label-row"><span>{{ activity.label }}</span><strong>{{ activity.count }}</strong></div>
+          <div class="bar-track" role="progressbar" [attr.aria-label]="activity.label"
+            [attr.aria-valuenow]="activity.count" [attr.aria-valuemin]="0" [attr.aria-valuemax]="report.followUps.length">
+            <span class="bar-fill activity-fill"
+              [style.width.%]="barWidth(activity.count, chartValues(report.activityTypes))"></span>
+          </div>
+        </div>
+        }
+      </div>
+      } @else {
+      <div class="chart-empty">No follow-up activity in this period.</div>
+      }
+    </article>
+  </section>
+
+  <section class="report-card recent-card">
+    <div class="card-heading">
+      <div>
+        <h2>Recent follow-ups</h2>
+        <p>Latest scheduled customer touchpoints for this period</p>
+      </div>
+      <span class="card-total">{{ report.followUps.length }} in period</span>
+    </div>
+    @if (report.recentFollowUps.length) {
+    <div class="recent-list">
+      @for (item of report.recentFollowUps; track item._id) {
+      <article class="recent-row">
+        <div class="recent-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.2 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.34 1.78.65 2.62a2 2 0 0 1-.45 2.11L8 9.76a16 16 0 0 0 6 6l1.31-1.31a2 2 0 0 1 2.11-.45c.84.31 1.72.53 2.62.65A2 2 0 0 1 22 16.92z"></path>
+          </svg>
+        </div>
+        <div class="recent-main">
+          <strong>{{ followUpLead(item) }}</strong>
+          <span>{{ followUpType(item) }}@if (item.notes) { · {{ item.notes }} }</span>
+        </div>
+        <time [attr.datetime]="item.scheduledAt">{{ item.scheduledAt | date:'MMM d, y' }}</time>
+        <span class="status-chip" [class.completed]="item.status === 'COMPLETED'"
+          [class.cancelled]="item.status === 'CANCELLED'">{{ item.status | titlecase }}</span>
+      </article>
+      }
+    </div>
+    } @else {
+    <div class="chart-empty">Follow-ups scheduled in this period will appear here.</div>
+    }
+  </section>
+  }
+</section>
