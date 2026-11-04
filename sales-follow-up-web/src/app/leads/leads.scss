@@ -1,3 +1,5 @@
+@use '../../styles/data-table' as dt;
+
 :host {
   display: block;
   width: 100%;
@@ -2463,3 +2465,32 @@ $kelto-lead-stages: (
     cursor: not-allowed;
   }
 }
+
+/* =========================================================================
+   Shared Kelto table look (src/styles/_data-table.scss)
+   ========================================================================= */
+.leads-table-card {
+  @include dt.card;
+}
+
+.table-scroll-container {
+  @include dt.scroller(max(420px, calc(100vh - 300px)));
+}
+
+.leads-table {
+  @include dt.table($min-width: 1240px, $sticky-first: true, $sticky-last: true);
+
+  .th-customer {
+    min-width: 260px;
+  }
+
+  .th-actions {
+    width: 1%;
+  }
+}
+
+.table-pagination-footer {
+  @include dt.footer;
+}
+
+@include dt.cells;

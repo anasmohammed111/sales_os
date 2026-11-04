@@ -758,38 +758,7 @@
           </div>
         </div>
 
-        <nav class="pagination-controls" aria-label="Pagination Navigation">
-          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() <= 1" (click)="changePage(1)"
-            title="First page" aria-label="First page">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="11 17 6 12 11 7"></polyline>
-              <polyline points="18 17 13 12 18 7"></polyline>
-            </svg>
-          </button>
-          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() <= 1"
-            (click)="changePage(currentPage() - 1)" title="Previous page" aria-label="Previous page">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-
-          <span class="pagination-page-indicator">Page <strong>{{ currentPage() }}</strong> of <strong>{{
-              pagination().totalPages || 1 }}</strong></span>
-
-          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() >= pagination().totalPages"
-            (click)="changePage(currentPage() + 1)" title="Next page" aria-label="Next page">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
-          <button type="button" class="btn-pagination-nav" [disabled]="currentPage() >= pagination().totalPages"
-            (click)="changePage(pagination().totalPages)" title="Last page" aria-label="Last page">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="13 17 18 12 13 7"></polyline>
-              <polyline points="6 17 11 12 6 7"></polyline>
-            </svg>
-          </button>
-        </nav>
+        <kt-pager [page]="currentPage()" [totalPages]="pagination().totalPages || 1" (pageChange)="changePage($event)" />
       </footer>
     </section>
   </main>
