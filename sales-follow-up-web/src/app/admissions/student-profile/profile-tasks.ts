@@ -5,14 +5,16 @@ import { AdmissionsService } from '../../core/services/admissions.service';
 import { ApplicationDetail, Task, TaskPriority, TaskType } from '../admissions.models';
 import { errorMessage, fromLocalInput, TASK_TYPE_LABELS, toLocalInput } from '../admissions.utils';
 import { TaskRow } from '../shared/task-row';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 @Component({
   selector: 'adm-profile-tasks',
-  imports: [FormsModule, TaskRow],
+  imports: [FormsModule, TaskRow, CanDirective],
   template: `
     <div class="head">
       <p class="adm-muted">Follow-ups for this application. They also appear in the assigned person's task list.</p>
-      <button type="button" class="adm-btn adm-btn--primary" (click)="startAdd()">Add follow-up</button>
+      <button *ktCan="'admissions.edit'" type="button" class="adm-btn adm-btn--primary" (click)="startAdd()">Add follow-up</button>
     </div>
 
     @if (adding()) {
@@ -54,7 +56,7 @@ import { TaskRow } from '../shared/task-row';
           <input name="title" [(ngModel)]="title" placeholder="For example: call about pending transcripts" />
         </label>
         <div class="foot">
-          <button type="button" class="adm-btn" (click)="adding.set(false)">Cancel</button>
+          <button *ktCan="'admissions.edit'" type="button" class="adm-btn" (click)="adding.set(false)">Cancel</button>
           <button type="submit" class="adm-btn adm-btn--primary" [disabled]="saving() || !when">Add follow-up</button>
         </div>
       </form>
@@ -85,13 +87,16 @@ import { TaskRow } from '../shared/task-row';
   `,
 })
 export class ProfileTasks {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly application = input.required<ApplicationDetail>();
   readonly updated = output<void>();
 
   readonly ctx = this.admissions.context;
-  readonly canAssign = computed(() => this.ctx()?.role !== 'SALESPERSON');
+  /** Choosing someone else's name follows "admissions.assign" */
+  readonly canAssign = computed(() => this.permissions.can('admissions.assign'));
 
   readonly tasks = signal<Task[]>([]);
   readonly loading = signal(true);

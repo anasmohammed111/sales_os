@@ -14,14 +14,18 @@ import {
   money,
   toDateInput,
 } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 @Component({
   selector: 'adm-profile-payments',
-  imports: [FormsModule],
+  imports: [FormsModule, CanDirective],
   templateUrl: './profile-payments.html',
   styleUrl: './profile-payments.scss',
 })
 export class ProfilePayments {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly application = input.required<ApplicationDetail>();

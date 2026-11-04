@@ -17,6 +17,9 @@ import { Team } from '../team/team';
 import { Pipeline } from '../pipeline/pipeline';
 import { Quotations } from '../quotations/quotations';
 import { Reports } from '../reports/reports';
+import { RolesSettings } from '../settings/roles/roles-settings';
+import { PermissionService } from '../core/services/permission.service';
+import { CanDirective } from '../shared/can/can.directive';
 
 type DashboardTab =
   | 'dashboard'
@@ -27,12 +30,48 @@ type DashboardTab =
   | 'pipeline'
   | 'quotations'
   | 'admissions'
-  | 'settings';
+  | 'settings'
+  | 'roles';
+
+/** The permission each page needs; Settings (your profile) is always open */
+const TAB_PERMISSION: Partial<Record<DashboardTab, string>> = {
+  dashboard: 'dashboard.view',
+  leads: 'leads.view',
+  'follow-ups': 'followups.view',
+  reports: 'reports.view',
+  team: 'team.view',
+  pipeline: 'pipeline.view',
+  quotations: 'quotations.view',
+  admissions: 'admissions.view',
+  roles: 'settings.roles',
+};
+
+/** Which page a URL shows. '/admissions/pipeline' contains 'pipeline', so order matters. */
+const tabForUrl = (url: string): DashboardTab =>
+  url.startsWith('/admissions')
+    ? 'admissions'
+    : url.startsWith('/settings/roles')
+    ? 'roles'
+    : url.startsWith('/settings')
+    ? 'settings'
+    : url.includes('follow-ups')
+    ? 'follow-ups'
+    : url.includes('leads')
+    ? 'leads'
+    : url.includes('reports')
+    ? 'reports'
+    : url.includes('team')
+    ? 'team'
+    : url.includes('pipeline')
+    ? 'pipeline'
+    : url.includes('quotations')
+    ? 'quotations'
+    : 'dashboard';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Reports, Settings, NotificationBell],
+  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Reports, Settings, RolesSettings, NotificationBell, CanDirective],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -42,6 +81,8 @@ export class Dashboard {
 
   private admissions = inject(AdmissionsService);
   private settingsService = inject(SettingsService);
+  /** What the signed-in person may do; the sidebar and pages follow it */
+  readonly permissions = inject(PermissionService);
   // Admissions entries only show for businesses with the module switched on
   admissionsEnabled = computed(() => !!this.admissions.context());
   readonly admissionsLinks = [
@@ -52,28 +93,8 @@ export class Dashboard {
     { path: 'payments', label: 'Payments' },
   ];
 
-  currentTab = signal<DashboardTab>(
-    // Checked first: '/admissions/pipeline' also contains 'pipeline'
-    this.router.url.startsWith('/admissions')
-      ? 'admissions'
-      : this.router.url.startsWith('/settings')
-      ? 'settings'
-      : this.router.url.includes('follow-ups')
-      ? 'follow-ups'
-      : this.router.url.includes('leads')
-      ? 'leads'
-      : this.router.url.includes('reports')
-      ? 'reports'
-      : this.router.url.includes('team')
-      ? 'team'
-      : this.router.url.includes('pipeline')
-      ? 'pipeline'
-      : this.router.url.includes('quotations')
-      ? 'quotations'
-      : 'dashboard'
-  );
+  currentTab = signal<DashboardTab>(tabForUrl(this.router.url));
   user = this.authService.currentUser;
-  isOwner = computed(() => this.user()?.role === 'OWNER');
   currentPageLabel = computed(() => {
     if (this.currentTab() === 'admissions') {
       const section = this.admissionsLinks.find((link) => this.router.url.startsWith(`/admissions/${link.path}`));
@@ -90,57 +111,53 @@ export class Dashboard {
       quotations: 'Quotations',
       admissions: 'Admissions',
       settings: 'Settings',
+      roles: 'Roles & permissions',
     };
     return labels[this.currentTab()];
   });
 
   constructor() {
-    this.admissions.loadContext().subscribe();
+    // Permissions may have changed since this person signed in
+    this.permissions.refresh(true);
     this.settingsService.loadCurrency();
-    this.router.events.subscribe(() => {
-      if (this.router.url.startsWith('/admissions')) {
-        this.currentTab.set('admissions');
-      } else if (this.router.url.startsWith('/settings')) {
-        this.currentTab.set('settings');
-      } else if (this.router.url.includes('follow-ups')) {
-        this.currentTab.set('follow-ups');
-      } else if (this.router.url.includes('leads')) {
-        this.currentTab.set('leads');
-      } else if (this.router.url.includes('reports')) {
-        this.currentTab.set('reports');
-      } else if (this.router.url.includes('team')) {
-        if (!this.isOwner()) {
-          this.navigateTo('dashboard');
-        } else {
-          this.currentTab.set('team');
-        }
-      } else if (this.router.url.includes('pipeline')) {
-        this.currentTab.set('pipeline');
-      } else if (this.router.url.includes('quotations')) {
-        this.currentTab.set('quotations');
-      } else {
-        this.currentTab.set('dashboard');
-      }
-    });
+    this.router.events.subscribe(() => this.currentTab.set(tabForUrl(this.router.url)));
+  }
+
+  /** Admissions loads only for people who may see it */
+  private readonly loadAdmissions = effect(() => {
+    if (this.permissions.can('admissions.view')) untracked(() => this.admissions.loadContext().subscribe());
+  });
+
+  /** If a role change removes access to the page that is open, go somewhere allowed */
+  private readonly leaveForbiddenPage = effect(() => {
+    if (!this.permissions.loaded()) return;
+    const needed = TAB_PERMISSION[this.currentTab()];
+    if (needed && !this.permissions.can(needed)) {
+      untracked(() => this.router.navigateByUrl(this.permissions.homePath()));
+    }
+  });
+
+  /** Coming back to the tab picks up role changes made meanwhile */
+  @HostListener('window:focus')
+  onWindowFocus(): void {
+    this.permissions.refresh();
   }
 
   isMobileMoreOpen = signal(false);
   isSidebarCollapsed = signal(this.getInitialSidebarState());
   private mobileMenuTrigger: HTMLElement | null = null;
 
+  /** The signed-in person's role, e.g. "Owner" or a custom role name */
   userRoleLabel(): string {
-    if (this.user()?.role === 'OWNER') return 'Workspace owner';
-    if (this.user()?.role === 'SALES_MANAGER') return 'Sales manager';
-    return 'Sales representative';
+    return this.permissions.roleName() || 'Team member';
   }
 
   navigateTo(tab: DashboardTab): void {
-    if (tab === 'team' && !this.isOwner()) {
-      return;
-    }
+    const needed = TAB_PERMISSION[tab];
+    if (needed && !this.permissions.can(needed)) return;
     this.currentTab.set(tab);
     this.isMobileMoreOpen.set(false);
-    this.router.navigate([tab === 'dashboard' ? '/dashboard' : `/${tab}`]);
+    this.router.navigate([tab === 'dashboard' ? '/dashboard' : tab === 'roles' ? '/settings/roles' : `/${tab}`]);
   }
 
   goAdmissions(path: string): void {
@@ -245,7 +262,7 @@ export class Dashboard {
   private leadSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly loadHomeWhenShown = effect(() => {
-    if (this.currentTab() === 'dashboard') untracked(() => this.loadSummary());
+    if (this.currentTab() === 'dashboard' && this.permissions.can('dashboard.view')) untracked(() => this.loadSummary());
   });
 
   totalCount = computed(() => this.summary()?.followUpsToday.total ?? 0);

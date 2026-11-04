@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { ownerGuard } from '../core/guards/owner.guard';
+import { permissionGuard } from '../core/guards/permission.guard';
 
 export const ADMISSIONS_ROUTES: Routes = [
   {
@@ -45,7 +45,7 @@ export const ADMISSIONS_ROUTES: Routes = [
       {
         path: 'settings',
         title: 'Admissions settings',
-        canActivate: [ownerGuard],
+        canActivate: [permissionGuard('admissions.settings')],
         loadComponent: () => import('./settings/settings').then((m) => m.Settings),
       },
     ],

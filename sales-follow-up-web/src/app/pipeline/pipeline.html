@@ -12,7 +12,7 @@
 
     <div class="header-actions">
       <!-- Subtle Link / Action to Lead Management -->
-      <button type="button" class="btn btn-secondary btn-nav-leads" (click)="goToLeadManagement()"
+      <button *ktCan="'leads.view'" type="button" class="btn btn-secondary btn-nav-leads" (click)="goToLeadManagement()"
         title="Go to Lead Management to create or edit leads">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -244,7 +244,7 @@
           <!-- Lead Cards List -->
           @for (lead of stage.leads; track lead._id) {
           <div class="lead-card" [class.lead-card-won]="stage.id === 'WON'" [class.lead-card-lost]="stage.id === 'LOST'"
-            draggable="true" (dragstart)="onDragStart($event, lead)" (dragend)="onDragEnd()"
+            [attr.draggable]="canMove() ? 'true' : null" (dragstart)="onDragStart($event, lead)" (dragend)="onDragEnd()"
             (click)="openLeadDetails(lead)" (keydown.enter)="$event.target === $event.currentTarget && openLeadDetails(lead)"
             role="button" tabindex="0"
             [attr.aria-label]="'Open ' + lead.customerName">
@@ -261,7 +261,7 @@
                 </span>
 
                 <!-- Move Stage Quick Arrow Button -->
-                <button type="button" class="btn-card-move-arrow"
+                <button *ktCan="'pipeline.move'" type="button" class="btn-card-move-arrow"
                   (click)="openMoveStageDialog($event, lead)"
                   title="Move lead to next level (opens transition details)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -310,7 +310,7 @@
                       </svg>
                       <span>View Follow-ups</span>
                     </button>
-                    <button type="button" class="menu-item menu-item-move" (click)="openMoveStageDialog($event, lead)">
+                    <button *ktCan="'pipeline.move'" type="button" class="menu-item menu-item-move" (click)="openMoveStageDialog($event, lead)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                         <polyline points="12 5 19 12 12 19"></polyline>
@@ -318,7 +318,7 @@
                       <span>Move to Next Level...</span>
                     </button>
                     @if (lead.status === 'LOST' || stage.id === 'LOST') {
-                    <button type="button" class="menu-item menu-item-danger" (click)="openArchiveModal(lead, $event)">
+                    <button *ktCan="'leads.archive'" type="button" class="menu-item menu-item-danger" (click)="openArchiveModal(lead, $event)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="21 8 21 21 3 21 3 8"></polyline>
                         <rect x="1" y="3" width="22" height="5"></rect>
@@ -388,7 +388,7 @@
             <!-- Quick Action for Lost Leads: Remove / Archive -->
             @if (lead.status === 'LOST' || stage.id === 'LOST') {
             <div class="card-lost-action-bar" (click)="$event.stopPropagation()">
-              <button type="button" class="btn-archive-lost-lead" (click)="openArchiveModal(lead, $event)"
+              <button *ktCan="'leads.archive'" type="button" class="btn-archive-lost-lead" (click)="openArchiveModal(lead, $event)"
                 title="Archive and remove this lost lead from the pipeline">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="21 8 21 21 3 21 3 8"></polyline>

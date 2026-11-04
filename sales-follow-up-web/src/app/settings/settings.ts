@@ -5,6 +5,7 @@ import { concat, last, Observable } from 'rxjs';
 import { toast } from 'ngx-sonner';
 import { AccountSettings, SettingsService } from '../core/services/settings.service';
 import { AuthService } from '../core/services/auth.service';
+import { PermissionService } from '../core/services/permission.service';
 
 const ROLE_LABELS: Record<string, string> = {
   OWNER: 'Owner (admin)',
@@ -25,7 +26,11 @@ export class Settings implements OnInit, OnDestroy {
   readonly settings = signal<AccountSettings | null>(null);
   readonly error = signal<string | null>(null);
   readonly saving = signal<'profile' | 'password' | 'business' | 'branding' | 'logo' | null>(null);
-  readonly isOwner = computed(() => this.settings()?.profile.role === 'OWNER');
+  readonly permissions = inject(PermissionService);
+  /** Business details, logo and name follow the "settings.business" permission */
+  readonly canManageBusiness = computed(() => this.permissions.can('settings.business'));
+  /** The signed-in person's role, including custom roles */
+  readonly roleName = computed(() => this.permissions.roleName() || ROLE_LABELS[this.settings()?.profile.role ?? ''] || 'Team member');
   readonly selectedLogo = signal<File | null>(null);
   readonly logoPreviewUrl = signal('');
   readonly displayedLogoUrl = computed(() => this.logoPreviewUrl() || this.settings()?.business.logoUrl || '');

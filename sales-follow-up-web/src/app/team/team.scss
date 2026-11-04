@@ -1627,3 +1627,25 @@
 @media (max-width: 768px) {
   .team-page-header { align-items: stretch; }
 }
+
+/* Custom roles: link to Settings > Roles & permissions, and the optional hint */
+.role-manage-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--kelto-brand-600);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--kelto-brand-700);
+    text-decoration: underline;
+  }
+}
+
+.optional-hint {
+  margin-left: 4px;
+  color: var(--kelto-neutral-400);
+  font-size: 11.5px;
+  font-weight: 500;
+}

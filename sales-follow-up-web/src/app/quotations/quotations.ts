@@ -21,11 +21,14 @@ import {
 import { Lead, LeadService } from '../core/services/lead.service';
 import { TeamMember, TeamService } from '../core/services/team.service';
 import { AuthService, AuthUser } from '../core/services/auth.service';
+import { PermissionService } from '../core/services/permission.service';
+import { RoleService } from '../core/services/role.service';
+import { CanDirective } from '../shared/can/can.directive';
 
 @Component({
   selector: 'app-quotations',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, DatePipe, CurrencyPipe],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, DatePipe, CurrencyPipe, CanDirective],
   templateUrl: './quotations.html',
   styleUrl: './quotations.scss',
 })
@@ -83,7 +86,10 @@ export class Quotations implements OnInit {
   // Role Permissions
   isOwner = computed(() => this.currentUser()?.role === 'OWNER');
   isManager = computed(() => this.currentUser()?.role === 'SALES_MANAGER');
-  canManageTeam = computed(() => this.isOwner() || this.isManager());
+  readonly permissions = inject(PermissionService);
+  private readonly roleService = inject(RoleService);
+  /** Filtering by team member makes sense when the person sees more than their own quotations */
+  canManageTeam = computed(() => this.permissions.scope('quotations') !== 'own');
 
   // Metrics summary directly from backend
   summary = signal<QuotationSummary | null>(null);
@@ -155,6 +161,7 @@ export class Quotations implements OnInit {
   }
 
   loadLeads(): void {
+    if (!this.permissions.can('leads.view')) return;
     this.leadService.getLeads({ limit: 100 }).subscribe({
       next: (res) => {
         this.leadsList.set(res.leads || []);
@@ -165,10 +172,8 @@ export class Quotations implements OnInit {
 
   loadTeamMembers(): void {
     if (!this.canManageTeam()) return;
-    this.teamService.getTeamMembers({ status: 'ACTIVE', limit: 100 }).subscribe({
-      next: (res) => {
-        this.teamMembers.set(res.data || []);
-      },
+    this.roleService.assignable('quotations').subscribe({
+      next: (people) => this.teamMembers.set(people as unknown as TeamMember[]),
       error: () => {},
     });
   }

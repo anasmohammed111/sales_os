@@ -13,14 +13,18 @@ import {
   money,
   MONTH_OPTIONS,
 } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 @Component({
   selector: 'adm-payment-tracker',
-  imports: [RouterLink],
+  imports: [RouterLink, CanDirective],
   templateUrl: './payment-tracker.html',
   styleUrl: './payment-tracker.scss',
 })
 export class PaymentTracker implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
   private readonly router = inject(Router);
 

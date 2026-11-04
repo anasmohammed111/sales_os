@@ -310,6 +310,11 @@
     color: var(--kelto-success-600);
   }
 
+  &.icon-roles {
+    background: var(--kelto-warning-50);
+    color: var(--kelto-warning-700);
+  }
+
   &.icon-admissions {
     background: #f5f3ff;
     color: #7c3aed;

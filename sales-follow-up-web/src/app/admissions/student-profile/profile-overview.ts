@@ -6,6 +6,8 @@ import { toast } from 'ngx-sonner';
 import { AdmissionsService } from '../../core/services/admissions.service';
 import { ApplicationDetail, StudyLevel, UniversityChoice } from '../admissions.models';
 import { errorMessage, MONTH_OPTIONS } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 interface ChoiceDraft {
   universityId: string;
@@ -23,11 +25,13 @@ const draftOf = (c: Partial<UniversityChoice> | null | undefined): ChoiceDraft =
 
 @Component({
   selector: 'adm-profile-overview',
-  imports: [FormsModule, NgTemplateOutlet],
+  imports: [FormsModule, NgTemplateOutlet, CanDirective],
   templateUrl: './profile-overview.html',
   styleUrl: './profile-overview.scss',
 })
 export class ProfileOverview {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly application = input.required<ApplicationDetail>();

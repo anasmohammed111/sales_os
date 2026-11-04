@@ -11,9 +11,9 @@
       </p>
     </div>
     <div class="adm-actions">
-      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('csv')">Export CSV</button>
-      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('xlsx')">Export Excel</button>
-      <button type="button" class="adm-btn adm-btn--primary" (click)="adding.set(true)">
+      <button *ktCan="'admissions.export'" type="button" class="adm-btn" [disabled]="exporting()" (click)="export('csv')">Export CSV</button>
+      <button *ktCan="'admissions.export'" type="button" class="adm-btn" [disabled]="exporting()" (click)="export('xlsx')">Export Excel</button>
+      <button *ktCan="'admissions.create'" type="button" class="adm-btn adm-btn--primary" (click)="adding.set(true)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
           stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         Add student
@@ -63,7 +63,7 @@
         @for (c of ctx()?.counsellors; track c._id) {
           <option [value]="c._id" [selected]="c._id === filters()['counsellorId']">{{ c.name }}</option>
         }
-        @if (ctx()?.isAdmin) {
+        @if (permissions.scope('admissions') === 'all') {
           <option value="UNASSIGNED" [selected]="filters()['counsellorId'] === 'UNASSIGNED'">Unassigned</option>
         }
       </select>
@@ -128,7 +128,7 @@
       } @else {
         <strong>No students yet</strong>
         <span>Add your first enquiry to start tracking their admission.</span>
-        <button type="button" class="adm-btn adm-btn--primary" (click)="adding.set(true)">Add student</button>
+        <button *ktCan="'admissions.create'" type="button" class="adm-btn adm-btn--primary" (click)="adding.set(true)">Add student</button>
       }
     </div>
   } @else {

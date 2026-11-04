@@ -4,12 +4,14 @@ import { toast } from 'ngx-sonner';
 import { AdmissionsService } from '../../core/services/admissions.service';
 import { Activity, ApplicationDetail } from '../admissions.models';
 import { errorMessage, formatDateTime, initials } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 @Component({
   selector: 'adm-profile-activity',
-  imports: [FormsModule],
+  imports: [FormsModule, CanDirective],
   template: `
-    <form class="adm-panel composer" (ngSubmit)="addNote()">
+    <form *ktCan="'admissions.edit'" class="adm-panel composer" (ngSubmit)="addNote()">
       <label class="adm-visually-hidden" for="note">Add a note</label>
       <textarea id="note" name="note" [(ngModel)]="note" rows="3" placeholder="Add a note: a call summary, what the parents said, anything the team should know"></textarea>
       <div class="composer-foot">
@@ -63,6 +65,8 @@ import { errorMessage, formatDateTime, initials } from '../admissions.utils';
   `,
 })
 export class ProfileActivity {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly application = input.required<ApplicationDetail>();

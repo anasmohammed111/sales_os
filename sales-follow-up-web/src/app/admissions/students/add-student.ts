@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AdmissionsService } from '../../core/services/admissions.service';
 import { Application, DuplicateMatch, StudyLevel } from '../admissions.models';
 import { errorMessage, intakeLabel, MONTH_OPTIONS } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
 
 /** Add a student (or a new application for a returning one), warning about duplicates first. */
 @Component({
@@ -17,6 +18,8 @@ import { errorMessage, intakeLabel, MONTH_OPTIONS } from '../admissions.utils';
   `,
 })
 export class AddStudent {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly created = output<Application>();
@@ -29,7 +32,8 @@ export class AddStudent {
 
   readonly sources = computed(() => (this.ctx()?.config.leadSources || []).filter((s) => !s.isArchived));
   readonly counsellors = computed(() => this.ctx()?.counsellors || []);
-  readonly canAssign = computed(() => this.ctx()?.role !== 'SALESPERSON');
+  /** Choosing someone else's name follows "admissions.assign" */
+  readonly canAssign = computed(() => this.permissions.can('admissions.assign'));
 
   name = '';
   phone = '';

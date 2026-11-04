@@ -5,8 +5,8 @@
       <p class="adm-sub">Fees per student. Each currency is totalled on its own.</p>
     </div>
     <div class="adm-actions">
-      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('csv')">Export CSV</button>
-      <button type="button" class="adm-btn" [disabled]="exporting()" (click)="export('xlsx')">Export Excel</button>
+      <button *ktCan="'admissions.export'" type="button" class="adm-btn" [disabled]="exporting()" (click)="export('csv')">Export CSV</button>
+      <button *ktCan="'admissions.export'" type="button" class="adm-btn" [disabled]="exporting()" (click)="export('xlsx')">Export Excel</button>
     </div>
   </header>
 

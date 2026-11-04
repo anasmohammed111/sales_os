@@ -4,6 +4,8 @@ import { toast } from 'ngx-sonner';
 import { AdmissionsService } from '../../core/services/admissions.service';
 import { AssessmentResult, ApplicationDetail, ChecklistEntry, ItemStatus, StageProgress } from '../admissions.models';
 import { errorMessage, formatDateTime, fromLocalInput, toLocalInput } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 type Tri = 'yes' | 'no' | 'unknown';
 const toTri = (v: boolean | null): Tri => (v === true ? 'yes' : v === false ? 'no' : 'unknown');
@@ -11,11 +13,13 @@ const fromTri = (v: Tri): boolean | null => (v === 'yes' ? true : v === 'no' ? f
 
 @Component({
   selector: 'adm-profile-checklist',
-  imports: [FormsModule],
+  imports: [FormsModule, CanDirective],
   templateUrl: './profile-checklist.html',
   styleUrl: './profile-checklist.scss',
 })
 export class ProfileChecklist {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly application = input.required<ApplicationDetail>();

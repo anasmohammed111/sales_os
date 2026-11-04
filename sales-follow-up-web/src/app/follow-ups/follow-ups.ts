@@ -18,11 +18,14 @@ import {
 import { Lead, LeadService } from '../core/services/lead.service';
 import { AuthService, AuthUser } from '../core/services/auth.service';
 import { TeamService, TeamMember } from '../core/services/team.service';
+import { PermissionService } from '../core/services/permission.service';
+import { RoleService } from '../core/services/role.service';
+import { CanDirective } from '../shared/can/can.directive';
 
 @Component({
   selector: 'app-follow-ups',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, CanDirective],
   templateUrl: './follow-ups.html',
   styleUrl: './follow-ups.scss',
 })
@@ -91,11 +94,12 @@ export class FollowUps implements OnInit {
   showArchived = signal(false);
 
   // Computed Permissions & Filters
-  isOwner = computed(() => this.currentUser()?.role === 'OWNER');
-  canManageTeam = computed(() => {
-    const role = this.currentUser()?.role;
-    return role === 'OWNER' || role === 'SALES_MANAGER';
-  });
+  readonly permissions = inject(PermissionService);
+  private readonly roleService = inject(RoleService);
+  /** Permanent delete follows the "followups.delete" permission */
+  isOwner = computed(() => this.permissions.can('followups.delete'));
+  /** Filtering by team member makes sense when the person sees more than their own follow-ups */
+  canManageTeam = computed(() => this.permissions.scope('followups') !== 'own');
 
   activeFilterCount = computed(() => {
     let count = 0;
@@ -159,6 +163,7 @@ export class FollowUps implements OnInit {
   }
 
   loadLeads(): void {
+    if (!this.permissions.can('leads.view')) return;
     this.leadService.getLeads({ limit: 100 }).subscribe({
       next: (res) => {
         this.leadsList.set(res.leads || []);
@@ -168,11 +173,9 @@ export class FollowUps implements OnInit {
   }
 
   loadTeamMembers(): void {
-    if (!this.canManageTeam()) return;
-    this.teamService.getTeamMembers({ status: 'ACTIVE', limit: 100 }).subscribe({
-      next: (res) => {
-        this.teamMembers.set(res.data || []);
-      },
+    // People this person may assign follow-ups to (themselves, or their scope with "followups.assign")
+    this.roleService.assignable('followups').subscribe({
+      next: (people) => this.teamMembers.set(people as unknown as TeamMember[]),
       error: () => { },
     });
   }
@@ -330,7 +333,7 @@ export class FollowUps implements OnInit {
   openDeleteConfirmation(followUp: FollowUp, event?: Event): void {
     event?.stopPropagation();
     if (!this.isOwner()) {
-      toast.error('Only the business owner can permanently delete follow-ups.');
+      toast.error('You do not have permission to permanently delete follow-ups.');
       return;
     }
     this.followUpToDelete.set(followUp);

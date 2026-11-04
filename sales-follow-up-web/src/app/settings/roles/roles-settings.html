@@ -1,0 +1,206 @@
+<div class="roles-page">
+  <header class="roles-head">
+    <div>
+      <a class="back-link" routerLink="/settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        Settings
+      </a>
+      <h1>Roles &amp; permissions</h1>
+      <p>Decide what each role can see and do. Every button in the CRM follows these settings, and changes apply
+        straight away.</p>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="newRole()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+        stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      New role
+    </button>
+  </header>
+
+  @if (error(); as message) {
+    <div class="card state-card" role="alert">
+      <strong>{{ message }}</strong>
+      <button type="button" class="btn" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading() && !roles().length) {
+    <div class="card state-card" aria-busy="true"><span class="spinner" aria-hidden="true"></span> Loading roles…</div>
+  } @else {
+    <div class="roles-layout">
+      <!-- Role list -->
+      <nav class="card role-list" aria-label="Roles">
+        @for (role of roles(); track role._id) {
+          <button type="button" class="role-item" [class.is-active]="selectedId() === role._id"
+            [attr.aria-current]="selectedId() === role._id ? 'true' : null" (click)="select(role)">
+            <span class="role-item-main">
+              <span class="role-item-name">
+                {{ role.name }}
+                @if (role.key === 'OWNER') {
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-label="Locked">
+                    <rect x="4" y="11" width="16" height="10" rx="2" />
+                    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                  </svg>
+                }
+              </span>
+              <span class="role-item-meta">
+                {{ role.memberCount }} {{ role.memberCount === 1 ? 'person' : 'people' }}
+                @if (role.isBuiltIn) {
+                  · Built-in
+                }
+              </span>
+            </span>
+            <svg class="role-item-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          </button>
+        }
+        @if (isNew()) {
+          <button type="button" class="role-item is-active is-draft" aria-current="true">
+            <span class="role-item-main">
+              <span class="role-item-name">{{ draft()?.name || 'New role' }}</span>
+              <span class="role-item-meta">Not saved yet</span>
+            </span>
+          </button>
+        }
+      </nav>
+
+      <!-- Editor -->
+      @if (draft(); as d) {
+        <section class="card role-editor" [attr.aria-label]="'Permissions for ' + (d.name || 'new role')">
+          <div class="editor-head">
+            <div class="editor-fields">
+              <label class="field">
+                <span>Role name</span>
+                <input type="text" [ngModel]="d.name" (ngModelChange)="setName($event)" maxlength="60"
+                  placeholder="For example: Receptionist, Accountant, Visa officer" [disabled]="readOnly()" />
+              </label>
+              <label class="field">
+                <span>Description <small>Optional</small></span>
+                <input type="text" [ngModel]="d.description" (ngModelChange)="setDescription($event)" maxlength="240"
+                  placeholder="What people with this role do" [disabled]="readOnly()" />
+              </label>
+            </div>
+            <div class="editor-tools">
+              <span class="count-badge">{{ permissionCount() }} of {{ totalPermissions() }} permissions</span>
+              @if (!isNew() && selected(); as role) {
+                <button type="button" class="btn btn-sm" (click)="newRole(role)" title="Start a new role from this one">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  Duplicate
+                </button>
+                @if (!role.isBuiltIn && !readOnly()) {
+                  <button type="button" class="btn btn-sm btn-danger-text" (click)="askDelete()" [disabled]="deleting()">
+                    Delete role
+                  </button>
+                }
+              }
+            </div>
+          </div>
+
+          @if (readOnlyReason(); as reason) {
+            <div class="note" role="note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="11" width="16" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+              {{ reason }}
+            </div>
+          }
+
+          <p class="hint">Turning on an action also turns on <strong>View</strong> for that area. <strong>Sees</strong>
+            sets whose records the role can open: only their own, their team's (everyone who reports to them), or
+            everything.</p>
+
+          <div class="modules">
+            @for (module of catalog()?.modules ?? []; track module.key) {
+              <div class="module" [class.is-off]="moduleState(module) === 'none'">
+                <div class="module-head">
+                  <label class="module-toggle">
+                    <input type="checkbox" [checked]="moduleState(module) === 'all'"
+                      [indeterminate]="moduleState(module) === 'some'" [disabled]="readOnly()"
+                      (change)="toggleModule(module, $any($event.target).checked)"
+                      [attr.aria-label]="'All ' + module.label + ' permissions'" />
+                    <span>{{ module.label }}</span>
+                  </label>
+
+                  @if (module.scoped) {
+                    <div class="scope-picker" role="radiogroup" [attr.aria-label]="module.label + ': whose records'">
+                      <span class="scope-label">Sees</span>
+                      @for (scope of catalog()?.scopes ?? []; track scope.key) {
+                        <button type="button" role="radio" [attr.aria-checked]="scopeOf(module.key) === scope.key"
+                          [class.is-active]="scopeOf(module.key) === scope.key" [title]="scope.description"
+                          [disabled]="readOnly() || !has(module.key + '.view')" (click)="setScope(module.key, scope.key)">
+                          {{ scope.label }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="actions-grid">
+                  @for (action of module.actions; track action.key) {
+                    <label class="perm" [class.is-on]="has(module.key + '.' + action.key)">
+                      <input type="checkbox" [checked]="has(module.key + '.' + action.key)" [disabled]="readOnly()"
+                        (change)="toggle(module.key + '.' + action.key, $any($event.target).checked)" />
+                      <span>{{ action.label }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (!readOnly()) {
+            <footer class="editor-foot" [class.is-dirty]="dirty()">
+              <span class="foot-hint">
+                @if (dirty()) {
+                  You have changes that are not saved.
+                } @else {
+                  Everything is saved.
+                }
+              </span>
+              <button type="button" class="btn" (click)="discard()" [disabled]="!dirty() || saving()">Discard</button>
+              <button type="button" class="btn btn-primary" (click)="save()" [disabled]="!dirty() || saving()"
+                [attr.aria-busy]="saving()">
+                @if (saving()) {
+                  <span class="button-spinner" aria-hidden="true"></span>
+                }
+                {{ saving() ? 'Saving…' : isNew() ? 'Create role' : 'Save changes' }}
+              </button>
+            </footer>
+          }
+        </section>
+      }
+    </div>
+  }
+
+  <!-- Where do the people go when their role is deleted? -->
+  @if (reassigning(); as role) {
+    <div class="dialog-backdrop" (click)="reassigning.set(null)" role="presentation">
+      <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="reassign-title" (click)="$event.stopPropagation()"
+        (ngSubmit)="remove(role, reassignTo)">
+        <h2 id="reassign-title">Delete "{{ role.name }}"</h2>
+        <p>{{ role.memberCount }} {{ role.memberCount === 1 ? 'person has' : 'people have' }} this role. Choose the role
+          they move to.</p>
+        <label class="field">
+          <span>Move them to</span>
+          <select name="reassignTo" [(ngModel)]="reassignTo" required>
+            <option value="" disabled>Choose a role</option>
+            @for (option of reassignOptions(); track option._id) {
+              <option [value]="option._id">{{ option.name }}</option>
+            }
+          </select>
+        </label>
+        <div class="dialog-foot">
+          <button type="button" class="btn" (click)="reassigning.set(null)">Cancel</button>
+          <button type="submit" class="btn btn-danger" [disabled]="!reassignTo || deleting()">
+            {{ deleting() ? 'Deleting…' : 'Move people and delete' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

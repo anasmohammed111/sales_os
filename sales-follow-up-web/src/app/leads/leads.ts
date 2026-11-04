@@ -21,12 +21,15 @@ import { TeamService, TeamMember } from '../core/services/team.service';
 import { AdmissionsService } from '../core/services/admissions.service';
 import { Router, RouterLink } from '@angular/router';
 import { Pager } from '../shared/pager/pager';
+import { CanDirective } from '../shared/can/can.directive';
+import { PermissionService } from '../core/services/permission.service';
+import { RoleService } from '../core/services/role.service';
 import { avatarTone, dueInfo, leadSourceLabel, personInitials, relativeTime } from '../core/utils/table-format';
 
 @Component({
   selector: 'app-leads',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, RouterLink, DatePipe, CurrencyPipe, Pager],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, DatePipe, CurrencyPipe, Pager, CanDirective],
   templateUrl: './leads.html',
   styleUrl: './leads.scss',
 })
@@ -141,10 +144,10 @@ export class Leads implements OnInit {
   assignedFilter = signal<string>('ALL');
 
   // --- Computed Properties ---
-  canManageTeam = computed(() => {
-    const role = this.currentUser()?.role;
-    return role === 'OWNER' || role === 'SALES_MANAGER';
-  });
+  readonly permissions = inject(PermissionService);
+  private readonly roleService = inject(RoleService);
+  /** Filtering by team member makes sense when the person sees more than their own leads */
+  canManageTeam = computed(() => this.permissions.scope('leads') !== 'own');
 
   activeFilterCount = computed(() => {
     let count = 0;
@@ -213,11 +216,9 @@ export class Leads implements OnInit {
   }
 
   loadTeamMembers(): void {
-    if (!this.canManageTeam()) return;
-    this.teamService.getTeamMembers({ status: 'ACTIVE', limit: 100 }).subscribe({
-      next: (res) => {
-        this.teamMembers.set(res.data || []);
-      },
+    // People this person may assign leads to (themselves, or their scope with "leads.assign")
+    this.roleService.assignable('leads').subscribe({
+      next: (people) => this.teamMembers.set(people as unknown as TeamMember[]),
       error: () => { },
     });
   }

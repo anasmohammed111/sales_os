@@ -3,6 +3,7 @@ import { AdmissionsService } from '../../core/services/admissions.service';
 import { Task } from '../admissions.models';
 import { dayKey, errorMessage } from '../admissions.utils';
 import { TaskRow } from '../shared/task-row';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'adm-my-tasks',
@@ -19,7 +20,7 @@ import { TaskRow } from '../shared/task-row';
             <span class="adm-visually-hidden">Whose tasks</span>
             <select [value]="staff()" (change)="setStaff($any($event.target).value)">
               <option value="">Mine</option>
-              <option value="ALL">{{ ctx()?.isAdmin ? 'Everyone' : 'My team' }}</option>
+              <option value="ALL">{{ permissions.scope('admissions') === 'all' ? 'Everyone' : 'My team' }}</option>
               @for (c of ctx()?.counsellors; track c._id) {
                 @if (c._id !== ctx()?.userId) {
                   <option [value]="c._id">{{ c.name }}</option>
@@ -68,11 +69,13 @@ import { TaskRow } from '../shared/task-row';
   `,
 })
 export class MyTasks implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly ctx = this.admissions.context;
   readonly tz = computed(() => this.ctx()?.config.timezone || 'Asia/Kolkata');
-  readonly canFilter = computed(() => this.ctx()?.role !== 'SALESPERSON' && (this.ctx()?.counsellors.length ?? 0) > 1);
+  readonly canFilter = computed(() => this.permissions.scope('admissions') !== 'own' && (this.ctx()?.counsellors.length ?? 0) > 1);
 
   readonly tasks = signal<Task[]>([]);
   readonly loading = signal(true);

@@ -5,6 +5,7 @@ import { AdmissionsService } from '../../core/services/admissions.service';
 import { DashboardData, Query } from '../admissions.models';
 import { errorMessage, formatDate, money, MONTH_OPTIONS } from '../admissions.utils';
 import { JourneyRail, RailStage } from '../shared/journey-rail';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'adm-overview',
@@ -14,6 +15,8 @@ import { JourneyRail, RailStage } from '../shared/journey-rail';
   styleUrl: './overview.scss',
 })
 export class Overview implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
   private readonly router = inject(Router);
 

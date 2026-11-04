@@ -73,6 +73,7 @@
     <nav class="nav-list" aria-label="Workspace">
       <div class="nav-section-title"><span>Sales workspace</span></div>
 
+      @if (permissions.can('dashboard.view')) {
       <button type="button" class="nav-item" [class.active]="currentTab() === 'dashboard'"
         [attr.aria-current]="currentTab() === 'dashboard' ? 'page' : null" (click)="navigateTo('dashboard')"
         title="Dashboard">
@@ -87,7 +88,9 @@
         </span>
         <span class="nav-text">Dashboard</span>
       </button>
+      }
 
+      @if (permissions.can('leads.view')) {
       <button type="button" class="nav-item" [class.active]="currentTab() === 'leads'"
         [attr.aria-current]="currentTab() === 'leads' ? 'page' : null" (click)="navigateTo('leads')" title="Leads">
         <span class="nav-icon-wrap">
@@ -101,7 +104,9 @@
         </span>
         <span class="nav-text">Leads</span>
       </button>
+      }
 
+      @if (permissions.can('followups.view')) {
       <button type="button" class="nav-item" [class.active]="currentTab() === 'follow-ups'"
         [attr.aria-current]="currentTab() === 'follow-ups' ? 'page' : null" (click)="navigateTo('follow-ups')"
         title="Follow-ups">
@@ -117,7 +122,9 @@
         <span class="nav-pill urgent-pill" aria-label="{{ urgentCount() }} urgent">{{ urgentCount() }}</span>
         }
       </button>
+      }
 
+      @if (permissions.can('pipeline.view')) {
       <button type="button" class="nav-item" [class.active]="currentTab() === 'pipeline'"
         [attr.aria-current]="currentTab() === 'pipeline' ? 'page' : null" (click)="navigateTo('pipeline')"
         title="Pipeline">
@@ -131,7 +138,9 @@
         </span>
         <span class="nav-text">Pipeline</span>
       </button>
+      }
 
+      @if (permissions.can('quotations.view')) {
       <button type="button" class="nav-item" [class.active]="currentTab() === 'quotations'"
         [attr.aria-current]="currentTab() === 'quotations' ? 'page' : null" (click)="navigateTo('quotations')"
         title="Quotations">
@@ -146,6 +155,7 @@
         </span>
         <span class="nav-text">Quotations</span>
       </button>
+      }
 
       @if (admissionsEnabled()) {
       <div class="nav-section-title"><span>Student journey</span></div>
@@ -166,7 +176,7 @@
 
       <div class="nav-section-title"><span>Manage</span></div>
 
-      @if (isOwner()) {
+      @if (permissions.can('team.view')) {
       <button type="button" class="nav-item" [class.active]="currentTab() === 'team'"
         [attr.aria-current]="currentTab() === 'team' ? 'page' : null" (click)="navigateTo('team')" title="Team">
         <span class="nav-icon-wrap">
@@ -182,7 +192,7 @@
       </button>
       }
 
-      <button type="button" class="nav-item" [class.active]="currentTab() === 'settings'"
+      <button type="button" class="nav-item" [class.active]="currentTab() === 'settings' || currentTab() === 'roles'"
         [attr.aria-current]="currentTab() === 'settings' ? 'page' : null" (click)="navigateTo('settings')" title="Settings">
         <span class="nav-icon-wrap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -194,6 +204,7 @@
         <span class="nav-text">Settings</span>
       </button>
 
+      @if (permissions.can('reports.view')) {
       <button type="button" class="nav-item" [class.active]="currentTab() === 'reports'"
         [attr.aria-current]="currentTab() === 'reports' ? 'page' : null" (click)="navigateTo('reports')" title="Reports">
         <span class="nav-icon-wrap">
@@ -206,6 +217,7 @@
         </span>
         <span class="nav-text">Reports</span>
       </button>
+      }
     </nav>
 
     <div class="sidebar-user">
@@ -249,6 +261,8 @@
     <app-pipeline></app-pipeline>
     } @else if (currentTab() === 'quotations') {
     <app-quotations></app-quotations>
+    } @else if (currentTab() === 'roles') {
+    <app-roles-settings />
     } @else if (currentTab() === 'settings') {
     <app-settings></app-settings>
     } @else {
@@ -271,6 +285,7 @@
             (ngModelChange)="searchQuery.set($event)" aria-label="Search today's follow-ups" />
         </div>
 
+        @if (permissions.can('followups.create')) {
         <button type="button" class="btn-primary" (click)="openQuickLog()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round">
@@ -279,6 +294,7 @@
           </svg>
           <span>Quick Log</span>
         </button>
+        }
       </div>
     </header>
 
@@ -450,7 +466,7 @@
         <div class="queue-list">
           @for (item of filteredFollowUps(); track item.id) {
           <div class="queue-item" [class.is-completed]="item.status === 'COMPLETED'">
-            <button type="button" class="check-circle" [class.checked]="item.status === 'COMPLETED'"
+            <button *ktCan="'followups.edit'" type="button" class="check-circle" [class.checked]="item.status === 'COMPLETED'"
               [disabled]="busyFollowUpId() === item.id" (click)="toggleStatus(item)"
               [attr.aria-label]="item.status === 'COMPLETED' ? 'Mark as pending' : 'Mark as done'">
               @if (item.status === 'COMPLETED') {
@@ -534,7 +550,7 @@
             </div>
 
             <div class="item-actions">
-              <button type="button" class="action-btn" [disabled]="busyFollowUpId() === item.id" (click)="toggleStatus(item)">
+              <button *ktCan="'followups.edit'" type="button" class="action-btn" [disabled]="busyFollowUpId() === item.id" (click)="toggleStatus(item)">
                 {{ item.status === 'COMPLETED' ? 'Undo' : 'Complete' }}
               </button>
             </div>
@@ -613,6 +629,7 @@
   <nav class="glass-bottom-nav" aria-label="Bottom Navigation">
     <div class="glass-bottom-nav-inner">
       <!-- Item 1: Home / Dashboard -->
+      @if (permissions.can('dashboard.view')) {
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'dashboard'"
         [attr.aria-current]="currentTab() === 'dashboard' ? 'page' : null"
         (click)="navigateTo('dashboard')" aria-label="Home Dashboard">
@@ -624,8 +641,10 @@
         </div>
         <span class="nav-label">Home</span>
       </button>
+      }
 
       <!-- Item 2: Leads -->
+      @if (permissions.can('leads.view')) {
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'leads'"
         [attr.aria-current]="currentTab() === 'leads' ? 'page' : null"
         (click)="navigateTo('leads')" aria-label="Leads">
@@ -640,8 +659,10 @@
         </div>
         <span class="nav-label">Leads</span>
       </button>
+      }
 
       <!-- Item 3: Follow-ups (with emerald circular badge matching reference image) -->
+      @if (permissions.can('followups.view')) {
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'follow-ups'"
         [attr.aria-current]="currentTab() === 'follow-ups' ? 'page' : null"
         (click)="navigateTo('follow-ups')" aria-label="Follow-ups">
@@ -657,9 +678,10 @@
         </div>
         <span class="nav-label">Follow-ups</span>
       </button>
+      }
 
       <!-- Item 4: Team -->
-      @if (isOwner()) {
+      @if (permissions.can('team.view')) {
       <button type="button" class="glass-nav-item" [class.active]="currentTab() === 'team'"
         [attr.aria-current]="currentTab() === 'team' ? 'page' : null"
         (click)="navigateTo('team')" aria-label="Team Management">
@@ -750,6 +772,7 @@
         </button>
         }
 
+        @if (permissions.can('pipeline.view')) {
         <button type="button" class="sheet-nav-card" [class.active]="currentTab() === 'pipeline'" (click)="navigateTo('pipeline')">
           <div class="sheet-nav-icon icon-deals">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -767,7 +790,9 @@
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
+        }
 
+        @if (permissions.can('quotations.view')) {
         <button type="button" class="sheet-nav-card" [class.active]="currentTab() === 'quotations'" (click)="navigateTo('quotations')">
           <div class="sheet-nav-icon icon-quotes">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -787,8 +812,9 @@
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
+        }
 
-        <button type="button" class="sheet-nav-card" [class.active]="currentTab() === 'settings'" (click)="navigateTo('settings')">
+        <button type="button" class="sheet-nav-card" [class.active]="currentTab() === 'settings' || currentTab() === 'roles'" (click)="navigateTo('settings')">
           <div class="sheet-nav-icon icon-quotes">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8 7 17M17 7l2.8-2.8"></path></svg>
@@ -803,6 +829,7 @@
           </svg>
         </button>
 
+        @if (permissions.can('reports.view')) {
         <button type="button" class="sheet-nav-card" [class.active]="currentTab() === 'reports'" (click)="navigateTo('reports')">
           <div class="sheet-nav-icon icon-reports">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -821,6 +848,7 @@
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
+        }
       </div>
 
       <!-- Sheet Footer Sign Out -->

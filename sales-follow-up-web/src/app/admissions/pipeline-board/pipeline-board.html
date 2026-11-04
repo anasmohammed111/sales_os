@@ -278,7 +278,7 @@
 <ng-template #card let-app let-drag="drag">
   <article class="lead-card" [class.lead-card-bad]="cardTone(app) === 'bad'"
     [class.lead-card-warn]="cardTone(app) === 'warn'" [class.is-moving]="movingId() === app.id"
-    [attr.draggable]="drag ? 'true' : null" (dragstart)="drag && onDragStart($event, app)" (dragend)="onDragEnd()"
+    [attr.draggable]="drag && permissions.can('admissions.move') ? 'true' : null" (dragstart)="drag && onDragStart($event, app)" (dragend)="onDragEnd()"
     (click)="open(app)" (keydown.enter)="onCardKey($event, app)" role="button" tabindex="0"
     [attr.aria-label]="'Open ' + app.student.name">
     <div class="card-header-row">
@@ -291,7 +291,7 @@
 
         <!-- Opens the stage picker (next stage highlighted); a move saves as soon as it is chosen -->
         @if (app.nextStage) {
-          <button type="button" class="btn-card-move-arrow" (click)="$event.stopPropagation(); openPicker(app)"
+          <button *ktCan="'admissions.move'" type="button" class="btn-card-move-arrow" (click)="$event.stopPropagation(); openPicker(app)"
             [title]="'Move stage (next: ' + app.nextStage.name + ')'" [attr.aria-label]="'Move ' + app.student.name + ' to another stage'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -329,7 +329,7 @@
                 </svg>
                 <span>Checklist</span>
               </button>
-              <button type="button" class="menu-item" role="menuitem" (click)="openTab(app, 'payments')">
+              <button *ktCan="'admissions.payments'" type="button" class="menu-item" role="menuitem" (click)="openTab(app, 'payments')">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="12" y1="1" x2="12" y2="23" />
@@ -346,7 +346,7 @@
                 <span>Follow-ups</span>
               </button>
               <div class="menu-divider" role="separator"></div>
-              <button type="button" class="menu-item menu-item-move" role="menuitem" (click)="openPicker(app)">
+              <button *ktCan="'admissions.move'" type="button" class="menu-item menu-item-move" role="menuitem" (click)="openPicker(app)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="5" y1="12" x2="19" y2="12" />
@@ -435,5 +435,5 @@
   </div>
 }
 
-<adm-stage-move-dialog [request]="moveRequest()" [isAdmin]="!!ctx()?.isAdmin" (moved)="onMoved($event)"
+<adm-stage-move-dialog [request]="moveRequest()" [isAdmin]="permissions.can('admissions.override')" (moved)="onMoved($event)"
   (closed)="closeMove()" (stale)="onStale()" />

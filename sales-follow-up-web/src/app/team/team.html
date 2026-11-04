@@ -10,9 +10,9 @@
       </p>
     </div>
 
-    @if (isOwner()) {
+    @if (permissions.can('team.create')) {
     <div class="header-actions">
-      <button type="button" class="btn btn-primary" (click)="openAddModal()" title="Add a new member to your team"
+      <button *ktCan="'team.create'" type="button" class="btn btn-primary" (click)="openAddModal()" title="Add a new member to your team"
         aria-label="Add Team Member">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -141,11 +141,12 @@
       <!-- Role Filter -->
       <div class="filter-select-wrap">
         <label for="team-role-filter" class="filter-label">Role:</label>
-        <select id="team-role-filter" class="filter-select" [value]="filters().role || 'ALL'"
+        <select id="team-role-filter" class="filter-select" [value]="filters().roleId || 'ALL'"
           (change)="onRoleChange($event)" aria-label="Filter by role">
           <option value="ALL">All Roles</option>
-          <option value="SALES_MANAGER">Sales Manager</option>
-          <option value="SALESPERSON">Salesperson</option>
+          @for (role of memberRoles(); track role._id) {
+          <option [value]="role._id" [selected]="filters().roleId === role._id">{{ role.name }}</option>
+          }
         </select>
       </div>
 
@@ -220,7 +221,7 @@
         Build your sales organization by adding sales managers and sales representatives to distribute leads and manage
         follow-ups.
       </p>
-      <button type="button" class="btn btn-primary" (click)="openAddModal()">
+      <button *ktCan="'team.create'" type="button" class="btn btn-primary" (click)="openAddModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -263,44 +264,42 @@
 
             <!-- Role Badge -->
             <td class="td-role">
-              @if (member.role === 'SALES_MANAGER') {
-              <span class="role-badge role-manager">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-                <span>Sales Manager</span>
-              </span>
-              } @else {
               <div class="role-cell-group">
-                <span class="role-badge role-salesperson">
+                <span class="role-badge" [class.role-manager]="roleKey(member) === 'SALES_MANAGER'"
+                  [class.role-salesperson]="roleKey(member) !== 'SALES_MANAGER'">
+                  @if (roleKey(member) === 'SALES_MANAGER') {
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                  } @else {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
-                  <span>Salesperson</span>
+                  }
+                  <span>{{ roleName(member) }}</span>
                 </span>
                 @if (getManagerName(member)) {
-                <div class="member-reports-to" title="Reports to Manager">
+                <div class="member-reports-to" title="Reports to">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                     <circle cx="8.5" cy="7" r="4"></circle>
                     <polyline points="17 11 19 13 23 9"></polyline>
                   </svg>
-                  <span>Under: <strong>{{ getManagerName(member) }}</strong></span>
+                  <span>Reports to: <strong>{{ getManagerName(member) }}</strong></span>
                 </div>
                 }
               </div>
-              }
             </td>
 
             <!-- Status Badge & Deactivate Toggle -->
             <td class="td-status">
               <div class="status-cell-wrap">
                 <label class="switch-toggle" [title]="member.isActive ? 'Click to deactivate' : 'Click to activate'">
-                  <input type="checkbox" [checked]="member.isActive" (change)="onToggleStatus(member, $event)"
+                  <input type="checkbox" [checked]="member.isActive" [disabled]="!permissions.can('team.deactivate')" (change)="onToggleStatus(member, $event)"
                     aria-label="Deactivate toggle" />
                   <span class="slider round"></span>
                 </label>
@@ -329,7 +328,7 @@
             <td class="td-actions">
               <div class="table-actions-cell">
                 <!-- Edit Button -->
-                <button type="button" class="btn-table-action action-edit" (click)="openEditModal(member)"
+                <button *ktCan="'team.edit'" type="button" class="btn-table-action action-edit" (click)="openEditModal(member)"
                   title="Edit member" aria-label="Edit member">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -339,7 +338,7 @@
                 </button>
 
                 <!-- Delete Button -->
-                <button type="button" class="btn-table-action action-delete" (click)="openDeleteModal(member)"
+                <button *ktCan="'team.delete'" type="button" class="btn-table-action action-delete" (click)="openDeleteModal(member)"
                   title="Delete member" aria-label="Delete member">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -481,75 +480,54 @@
             }
           </div>
 
-          <!-- Role Selection -->
+          <!-- Role: what this person may do (Settings > Roles & permissions) -->
           <div class="form-group">
-            <label class="form-label">Assigned Role</label>
+            <label class="form-label">Role</label>
+            @if (grantableRoles().length === 0) {
+            <p class="manager-info-hint">No roles are available to give. Ask your workspace owner.</p>
+            } @else {
             <div class="role-selector-grid">
-              <label class="role-option-card" [class.selected]="addForm.get('role')?.value === 'SALES_MANAGER'">
-                <input type="radio" formControlName="role" value="SALES_MANAGER" class="sr-only"
-                  (change)="updateRoleValidators('add')" />
+              @for (role of grantableRoles(); track role._id) {
+              <label class="role-option-card" [class.selected]="addForm.get('roleId')?.value === role._id">
+                <input type="radio" formControlName="roleId" [value]="role._id" class="sr-only" />
                 <div class="role-card-top">
                   <div class="role-card-title-group">
-                    <div class="role-icon-box box-manager">
+                    <div class="role-icon-box" [class.box-manager]="role.key === 'SALES_MANAGER'"
+                      [class.box-salesperson]="role.key !== 'SALES_MANAGER'">
+                      @if (role.key === 'SALES_MANAGER') {
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2.2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                       </svg>
-                    </div>
-                    <span class="role-title">Sales Manager</span>
-                  </div>
-                  <div class="role-check-indicator"></div>
-                </div>
-                <p class="role-card-desc">Assign leads, view team metrics & manage pipeline.</p>
-              </label>
-
-              <label class="role-option-card" [class.selected]="addForm.get('role')?.value === 'SALESPERSON'">
-                <input type="radio" formControlName="role" value="SALESPERSON" class="sr-only"
-                  (change)="updateRoleValidators('add')" />
-                <div class="role-card-top">
-                  <div class="role-card-title-group">
-                    <div class="role-icon-box box-salesperson">
+                      } @else {
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2.2">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
+                      }
                     </div>
-                    <span class="role-title">Salesperson</span>
+                    <span class="role-title">{{ role.name }}</span>
                   </div>
                   <div class="role-check-indicator"></div>
                 </div>
-                <p class="role-card-desc">Manage assigned leads, log client calls & send quotes.</p>
+                <p class="role-card-desc">{{ role.description || role.permissions.length + ' permissions' }}</p>
               </label>
+              }
             </div>
+            }
+            @if (permissions.can('settings.roles')) {
+            <a class="role-manage-link" routerLink="/settings/roles">Create or change roles and their permissions</a>
+            }
           </div>
-
-          <!-- Reporting Manager Selection -->
-          @if (addForm.get('role')?.value === 'SALESPERSON') {
-          <div class="form-group manager-select-group animate-fade-in">
+          <!-- Reports to: managers see the work of everyone below them -->
+          <div class="form-group manager-select-group">
             <div class="manager-label-row">
               <label for="add-manager" class="form-label manager-label">
-                <span class="label-text">Manager</span>
+                <span class="label-text">Reports to <small class="optional-hint">Optional</small></span>
               </label>
             </div>
-
-            @if (managers().length === 0) {
-            <div class="manager-empty-alert">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                class="alert-icon">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <div class="alert-text">
-                <div class="alert-title">No Active Sales Managers Found</div>
-                <div class="alert-desc">Sales representatives must report to a Sales Manager. Please create an active
-                  Sales Manager first.</div>
-              </div>
-            </div>
-            } @else {
-            <div class="manager-select-wrapper"
-              [class.has-error]="addForm.get('managerId')?.touched && (!addForm.get('managerId')?.value || addForm.get('managerId')?.invalid)">
+            <div class="manager-select-wrapper">
               <div class="select-leading-icon">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -559,11 +537,10 @@
                 </svg>
               </div>
               <select id="add-manager" formControlName="managerId" class="manager-select-field"
-                [class.placeholder-selected]="!addForm.get('managerId')?.value"
-                [class.is-invalid]="addForm.get('managerId')?.touched && (!addForm.get('managerId')?.value || addForm.get('managerId')?.invalid)">
-                <option value="" disabled selected>Select Manager</option>
+                [class.placeholder-selected]="!addForm.get('managerId')?.value">
+                <option value="">Nobody</option>
                 @for (manager of managers(); track manager._id) {
-                <option [value]="manager._id">{{ manager.name }}</option>
+                <option [value]="manager._id">{{ manager.name }} · {{ roleName(manager) }}</option>
                 }
               </select>
               <div class="select-trailing-chevron">
@@ -572,30 +549,15 @@
                 </svg>
               </div>
             </div>
-
-            @if (addForm.get('managerId')?.touched && (!addForm.get('managerId')?.value ||
-            addForm.get('managerId')?.invalid)) {
-            <p class="manager-error-message">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <span>Please assign an active Sales Manager for this sales representative.</span>
-            </p>
-            } @else {
             <p class="manager-info-hint">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              <span>Sales representatives are required to report directly to an assigned Sales Manager.</span>
+              <span>Someone whose role sees "their team" sees the work of everyone who reports to them.</span>
             </p>
-            }
-            }
           </div>
-          }
         </div>
 
         <div class="modal-footer">
@@ -675,75 +637,54 @@
             }
           </div>
 
-          <!-- Role Selection -->
+          <!-- Role: what this person may do (Settings > Roles & permissions) -->
           <div class="form-group">
-            <label class="form-label">Assigned Role</label>
+            <label class="form-label">Role</label>
+            @if (grantableRoles().length === 0) {
+            <p class="manager-info-hint">No roles are available to give. Ask your workspace owner.</p>
+            } @else {
             <div class="role-selector-grid">
-              <label class="role-option-card" [class.selected]="editForm.get('role')?.value === 'SALES_MANAGER'">
-                <input type="radio" formControlName="role" value="SALES_MANAGER" class="sr-only"
-                  (change)="updateRoleValidators('edit')" />
+              @for (role of grantableRoles(); track role._id) {
+              <label class="role-option-card" [class.selected]="editForm.get('roleId')?.value === role._id">
+                <input type="radio" formControlName="roleId" [value]="role._id" class="sr-only" />
                 <div class="role-card-top">
                   <div class="role-card-title-group">
-                    <div class="role-icon-box box-manager">
+                    <div class="role-icon-box" [class.box-manager]="role.key === 'SALES_MANAGER'"
+                      [class.box-salesperson]="role.key !== 'SALES_MANAGER'">
+                      @if (role.key === 'SALES_MANAGER') {
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2.2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                       </svg>
-                    </div>
-                    <span class="role-title">Sales Manager</span>
-                  </div>
-                  <div class="role-check-indicator"></div>
-                </div>
-                <p class="role-card-desc">Assign leads, view team metrics & manage pipeline.</p>
-              </label>
-
-              <label class="role-option-card" [class.selected]="editForm.get('role')?.value === 'SALESPERSON'">
-                <input type="radio" formControlName="role" value="SALESPERSON" class="sr-only"
-                  (change)="updateRoleValidators('edit')" />
-                <div class="role-card-top">
-                  <div class="role-card-title-group">
-                    <div class="role-icon-box box-salesperson">
+                      } @else {
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2.2">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
+                      }
                     </div>
-                    <span class="role-title">Salesperson</span>
+                    <span class="role-title">{{ role.name }}</span>
                   </div>
                   <div class="role-check-indicator"></div>
                 </div>
-                <p class="role-card-desc">Manage assigned leads, log client calls & send quotes.</p>
+                <p class="role-card-desc">{{ role.description || role.permissions.length + ' permissions' }}</p>
               </label>
+              }
             </div>
+            }
+            @if (permissions.can('settings.roles')) {
+            <a class="role-manage-link" routerLink="/settings/roles">Create or change roles and their permissions</a>
+            }
           </div>
-
-          <!-- Reporting Manager Selection -->
-          @if (editForm.get('role')?.value === 'SALESPERSON') {
-          <div class="form-group manager-select-group animate-fade-in">
+          <!-- Reports to: managers see the work of everyone below them -->
+          <div class="form-group manager-select-group">
             <div class="manager-label-row">
               <label for="edit-manager" class="form-label manager-label">
-                <span class="label-text">Manager</span>
+                <span class="label-text">Reports to <small class="optional-hint">Optional</small></span>
               </label>
             </div>
-
-            @if (managers().length === 0) {
-            <div class="manager-empty-alert">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                class="alert-icon">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <div class="alert-text">
-                <div class="alert-title">No Active Sales Managers Found</div>
-                <div class="alert-desc">Sales representatives must report to a Sales Manager. Please create an active
-                  Sales Manager first.</div>
-              </div>
-            </div>
-            } @else {
-            <div class="manager-select-wrapper"
-              [class.has-error]="editForm.get('managerId')?.touched && (!editForm.get('managerId')?.value || editForm.get('managerId')?.invalid)">
+            <div class="manager-select-wrapper">
               <div class="select-leading-icon">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -753,11 +694,12 @@
                 </svg>
               </div>
               <select id="edit-manager" formControlName="managerId" class="manager-select-field"
-                [class.placeholder-selected]="!editForm.get('managerId')?.value"
-                [class.is-invalid]="editForm.get('managerId')?.touched && (!editForm.get('managerId')?.value || editForm.get('managerId')?.invalid)">
-                <option value="" disabled selected>Select Manager</option>
+                [class.placeholder-selected]="!editForm.get('managerId')?.value">
+                <option value="">Nobody</option>
                 @for (manager of managers(); track manager._id) {
-                <option [value]="manager._id">{{ manager.name }}</option>
+                @if (manager._id !== selectedMember()?._id) {
+                <option [value]="manager._id">{{ manager.name }} · {{ roleName(manager) }}</option>
+                }
                 }
               </select>
               <div class="select-trailing-chevron">
@@ -766,30 +708,15 @@
                 </svg>
               </div>
             </div>
-
-            @if (editForm.get('managerId')?.touched && (!editForm.get('managerId')?.value ||
-            editForm.get('managerId')?.invalid)) {
-            <p class="manager-error-message">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <span>Please assign an active Sales Manager for this sales representative.</span>
-            </p>
-            } @else {
             <p class="manager-info-hint">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              <span>Sales representatives are required to report directly to an assigned Sales Manager.</span>
+              <span>Someone whose role sees "their team" sees the work of everyone who reports to them.</span>
             </p>
-            }
-            }
           </div>
-          }
         </div>
 
         <div class="modal-footer">

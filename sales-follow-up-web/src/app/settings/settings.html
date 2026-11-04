@@ -19,7 +19,7 @@
     <div class="account-context" aria-label="Signed-in account">
       <span class="status-dot" aria-hidden="true"></span>
       <span class="account-email">{{ currentSettings.profile.email }}</span>
-      <span class="account-role">{{ roleLabels[currentSettings.profile.role] || currentSettings.profile.role }}</span>
+      <span class="account-role">{{ roleName() }}</span>
     </div>
     }
   </header>
@@ -65,7 +65,7 @@
             <p>Your firm's name and logo. Everyone in this workspace sees them in the sidebar.</p>
           </div>
         </div>
-        @if (isOwner()) {
+        @if (canManageBusiness()) {
         <span class="section-badge owner-badge">Owner controls</span>
         }
       </div>
@@ -96,7 +96,7 @@
           </div>
         </figure>
 
-        @if (isOwner()) {
+        @if (canManageBusiness()) {
         <form class="brand-form" (ngSubmit)="saveBranding()">
           <label class="field" for="brand-name">
             <span>Firm name</span>
@@ -204,7 +204,7 @@
         </div>
         <div>
           <dt>Access level</dt>
-          <dd>{{ roleLabels[s.profile.role] || s.profile.role }}</dd>
+          <dd>{{ roleName() }}</dd>
         </div>
       </dl>
 
@@ -319,12 +319,12 @@
             <p>Information used across CRM records and documents.</p>
           </div>
         </div>
-        @if (isOwner()) {
+        @if (canManageBusiness()) {
         <span class="section-badge owner-badge">Owner controls</span>
         }
       </div>
 
-      @if (isOwner()) {
+      @if (canManageBusiness()) {
       <form id="business-form" class="business-form" (ngSubmit)="saveBusiness()">
         <label class="field" for="business-email">
           <span>Business email <small class="optional">Optional</small></span>
@@ -380,7 +380,32 @@
       }
     </section>
 
-    @if (s.features.admissions && isOwner()) {
+    @if (permissions.can('settings.roles')) {
+    <section class="card wide link-card">
+      <div class="card-title-lockup">
+        <span class="card-icon icon-roles" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="m9 12 2 2 4-4"></path>
+          </svg>
+        </span>
+        <div>
+          <h2>Roles &amp; permissions</h2>
+          <p>Create roles such as Receptionist or Accountant, and choose exactly what each one can see and do.</p>
+        </div>
+      </div>
+      <a class="btn link-button" routerLink="/settings/roles">
+        <span>Manage roles</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6"></path>
+        </svg>
+      </a>
+    </section>
+    }
+
+    @if (s.features.admissions && permissions.can('admissions.settings')) {
     <section class="card wide link-card">
       <div class="card-title-lockup">
         <span class="card-icon icon-admissions" aria-hidden="true">

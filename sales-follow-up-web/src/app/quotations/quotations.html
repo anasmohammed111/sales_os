@@ -12,7 +12,7 @@
 
             <div class="header-actions">
 
-                <button type="button" class="btn btn-primary" (click)="openCreateForm()">
+                <button *ktCan="'quotations.create'" type="button" class="btn btn-primary" (click)="openCreateForm()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -330,7 +330,7 @@
                                     </button>
 
                                     @if (quote.status === 'DRAFT') {
-                                    <button type="button" class="btn-action-icon" (click)="openEditForm(quote)"
+                                    <button *ktCan="'quotations.edit'" type="button" class="btn-action-icon" (click)="openEditForm(quote)"
                                         title="Edit Draft">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -339,7 +339,7 @@
                                         </svg>
                                     </button>
 
-                                    <button type="button" class="btn-action-icon btn-action-send"
+                                    <button *ktCan="'quotations.status'" type="button" class="btn-action-icon btn-action-send"
                                         (click)="openStatusModal(quote, 'SENT')" title="Send to Customer">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -348,7 +348,7 @@
                                         </svg>
                                     </button>
 
-                                    <button type="button" class="btn-action-icon btn-action-danger"
+                                    <button *ktCan="'quotations.delete'" type="button" class="btn-action-icon btn-action-danger"
                                         (click)="openDeleteModal(quote)" title="Delete Draft">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -361,14 +361,14 @@
                                     }
 
                                     @if (quote.status === 'SENT') {
-                                    <button type="button" class="btn-action-icon btn-action-success"
+                                    <button *ktCan="'quotations.status'" type="button" class="btn-action-icon btn-action-success"
                                         (click)="openStatusModal(quote, 'ACCEPTED')" title="Mark Accepted">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2.2">
                                             <polyline points="20 6 9 17 4 12"></polyline>
                                         </svg>
                                     </button>
-                                    <button type="button" class="btn-action-icon btn-action-danger"
+                                    <button *ktCan="'quotations.status'" type="button" class="btn-action-icon btn-action-danger"
                                         (click)="openStatusModal(quote, 'REJECTED')" title="Mark Rejected">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -457,7 +457,7 @@
                         </svg>
                         <span>{{ isSubmitting() ? 'Saving...' : 'Save as Draft' }}</span>
                     </button>
-                    <button type="button" class="btn btn-primary" (click)="saveQuotation(true)"
+                    <button *ktCan="'quotations.status'" type="button" class="btn btn-primary" (click)="saveQuotation(true)"
                         [disabled]="isSubmitting()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -877,7 +877,7 @@
 
                         <!-- Actions Stack -->
                         <div class="sidebar-actions-stack">
-                            <button type="button" class="btn btn-primary btn-block" (click)="saveQuotation(true)"
+                            <button *ktCan="'quotations.status'" type="button" class="btn btn-primary btn-block" (click)="saveQuotation(true)"
                                 [disabled]="isSubmitting()">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -966,7 +966,7 @@
                 <!-- ACTION CONTROLS -->
                 <div class="detail-actions-cluster">
                     @if (canEdit(selectedQuotation()!)) {
-                    <button type="button" class="btn btn-secondary" (click)="openEditForm(selectedQuotation()!)"
+                    <button *ktCan="'quotations.edit'" type="button" class="btn btn-secondary" (click)="openEditForm(selectedQuotation()!)"
                         title="Edit draft quotation">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -976,7 +976,7 @@
                         <span>Edit</span>
                     </button>
 
-                    <button type="button" class="btn btn-primary"
+                    <button *ktCan="'quotations.status'" type="button" class="btn btn-primary"
                         (click)="openStatusModal(selectedQuotation()!, 'SENT')" title="Send to client">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -986,7 +986,7 @@
                         <span>Send Quotation</span>
                     </button>
 
-                    <button type="button" class="btn btn-secondary btn-danger-hover"
+                    <button *ktCan="'quotations.delete'" type="button" class="btn btn-secondary btn-danger-hover"
                         (click)="openDeleteModal(selectedQuotation()!)" title="Delete draft">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -999,7 +999,7 @@
                     }
 
                     @if (canAcceptOrReject(selectedQuotation()!)) {
-                    <button type="button" class="btn btn-secondary btn-success-hover"
+                    <button *ktCan="'quotations.status'" type="button" class="btn btn-secondary btn-success-hover"
                         (click)="openStatusModal(selectedQuotation()!, 'ACCEPTED')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.2">
@@ -1008,7 +1008,7 @@
                         <span>Accept</span>
                     </button>
 
-                    <button type="button" class="btn btn-secondary btn-danger-hover"
+                    <button *ktCan="'quotations.status'" type="button" class="btn btn-secondary btn-danger-hover"
                         (click)="openStatusModal(selectedQuotation()!, 'REJECTED')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">

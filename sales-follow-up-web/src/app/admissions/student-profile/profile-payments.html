@@ -19,7 +19,7 @@
     } @else {
       <p class="adm-muted">No fees recorded yet. Add the agency, university or nostrification fee when it's agreed.</p>
     }
-    <button type="button" class="adm-btn adm-btn--primary" (click)="addingFee.set(true)">Add fee</button>
+    <button *ktCan="'admissions.record_payments'" type="button" class="adm-btn adm-btn--primary" (click)="addingFee.set(true)">Add fee</button>
   </div>
 
   <ul class="fees">
@@ -62,7 +62,7 @@
                     <button type="button" class="adm-link" (click)="openReceipt(fee, tx)">Receipt</button>
                   }
                   @if (!tx.isVoided) {
-                    <button type="button" class="adm-link void" (click)="voiding.set({ fee, tx }); voidReason = ''">Void</button>
+                    <button *ktCan="'admissions.record_payments'" type="button" class="adm-link void" (click)="voiding.set({ fee, tx }); voidReason = ''">Void</button>
                   }
                 </span>
               </li>
@@ -72,7 +72,7 @@
 
         @if (fee.outstandingMinor > 0) {
           <div class="fee-foot">
-            <button type="button" class="adm-btn adm-btn--sm" (click)="startPayment(fee)">Record payment</button>
+            <button *ktCan="'admissions.record_payments'" type="button" class="adm-btn adm-btn--sm" (click)="startPayment(fee)">Record payment</button>
           </div>
         }
       </li>
@@ -126,7 +126,7 @@
 }
 
 @if (payingFee(); as fee) {
-  <div class="adm-dialog-backdrop" (click)="payingFee.set(null)" role="presentation">
+  <div *ktCan="'admissions.record_payments'" class="adm-dialog-backdrop" (click)="payingFee.set(null)" role="presentation">
     <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="pay-title" (click)="$event.stopPropagation()" (ngSubmit)="recordPayment()">
       <div class="adm-dialog__head">
         <div>
@@ -161,7 +161,7 @@
         </label>
       </div>
       <div class="adm-dialog__foot">
-        <button type="button" class="adm-btn" (click)="payingFee.set(null)">Cancel</button>
+        <button *ktCan="'admissions.record_payments'" type="button" class="adm-btn" (click)="payingFee.set(null)">Cancel</button>
         <button type="submit" class="adm-btn adm-btn--primary" [disabled]="saving() || !payAmount.trim() || !payDate">Record payment</button>
       </div>
     </form>
@@ -169,7 +169,7 @@
 }
 
 @if (voiding(); as target) {
-  <div class="adm-dialog-backdrop" (click)="voiding.set(null)" role="presentation">
+  <div *ktCan="'admissions.record_payments'" class="adm-dialog-backdrop" (click)="voiding.set(null)" role="presentation">
     <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="void-title" (click)="$event.stopPropagation()" (ngSubmit)="confirmVoid()">
       <div class="adm-dialog__head">
         <div>
@@ -184,7 +184,7 @@
         </label>
       </div>
       <div class="adm-dialog__foot">
-        <button type="button" class="adm-btn" (click)="voiding.set(null)">Cancel</button>
+        <button *ktCan="'admissions.record_payments'" type="button" class="adm-btn" (click)="voiding.set(null)">Cancel</button>
         <button type="submit" class="adm-btn adm-btn--danger" [disabled]="saving() || voidReason.trim().length < 3">Void payment</button>
       </div>
     </form>

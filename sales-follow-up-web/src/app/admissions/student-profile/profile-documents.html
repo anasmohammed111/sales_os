@@ -16,10 +16,10 @@
           <span class="spacer"></span>
           <label class="adm-btn adm-btn--sm upload" [class.is-busy]="busyId() === group.type.key">
             {{ busyId() === group.type.key ? 'Uploading…' : group.docs.length ? 'Upload another' : 'Upload' }}
-            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="upload($event, group.type)" />
+            <input *ktCan="'admissions.documents'" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="upload($event, group.type)" />
           </label>
           @if (!group.docs.length) {
-            <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="addRecord(group.type)"
+            <button *ktCan="'admissions.documents'" type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="addRecord(group.type)"
               title="Track this document without a file, for example an original seen in the office">Track without file</button>
           }
         </div>
@@ -47,7 +47,7 @@
               @if (group.type.hasExpiry) {
                 <label class="expiry">
                   <span>Expiry date</span>
-                  <input type="date" [value]="toDateInput(doc.expiresAt)" (change)="setExpiry(doc, $any($event.target).value)" />
+                  <input *ktCan="'admissions.documents'" type="date" [value]="toDateInput(doc.expiresAt)" (change)="setExpiry(doc, $any($event.target).value)" />
                   @if (doc.expiresAt) {
                     <small [class.is-warn]="isExpiringSoon(doc)">{{ expiryNote(doc) }}</small>
                   }
@@ -56,15 +56,15 @@
             </div>
             <div class="doc-actions">
               @if (doc.status !== 'VERIFIED') {
-                <button type="button" class="adm-btn adm-btn--sm" [disabled]="busyId() === doc.id" (click)="verify(doc)">Verify</button>
+                <button *ktCan="'admissions.documents'" type="button" class="adm-btn adm-btn--sm" [disabled]="busyId() === doc.id" (click)="verify(doc)">Verify</button>
               }
               @if (doc.status !== 'REJECTED') {
-                <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyId() === doc.id"
+                <button *ktCan="'admissions.documents'" type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyId() === doc.id"
                   (click)="rejecting.set(doc); rejectReason = ''">Reject</button>
               }
               <label class="adm-btn adm-btn--sm adm-btn--ghost upload">
                 Replace file
-                <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="upload($event, group.type, doc)" />
+                <input *ktCan="'admissions.documents'" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="upload($event, group.type, doc)" />
               </label>
             </div>
           </div>
@@ -75,7 +75,7 @@
 }
 
 @if (rejecting(); as doc) {
-  <div class="adm-dialog-backdrop" (click)="rejecting.set(null)" role="presentation">
+  <div *ktCan="'admissions.documents'" class="adm-dialog-backdrop" (click)="rejecting.set(null)" role="presentation">
     <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="reject-title" (click)="$event.stopPropagation()"
       (ngSubmit)="confirmReject()">
       <div class="adm-dialog__head">
@@ -91,7 +91,7 @@
         </label>
       </div>
       <div class="adm-dialog__foot">
-        <button type="button" class="adm-btn" (click)="rejecting.set(null)">Cancel</button>
+        <button *ktCan="'admissions.documents'" type="button" class="adm-btn" (click)="rejecting.set(null)">Cancel</button>
         <button type="submit" class="adm-btn adm-btn--danger" [disabled]="rejectReason.trim().length < 3">Reject</button>
       </div>
     </form>

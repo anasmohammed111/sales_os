@@ -4,6 +4,8 @@ import { forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { FollowUp, FollowUpService } from '../core/services/follow-up.service';
 import { Lead, LeadService } from '../core/services/lead.service';
 import { formatMoney, SettingsService } from '../core/services/settings.service';
+import { PermissionService } from '../core/services/permission.service';
+import { CanDirective } from '../shared/can/can.directive';
 
 type ReportPeriod = 7 | 30 | 90;
 
@@ -72,12 +74,14 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 @Component({
-  imports: [CommonModule],
+  imports: [CommonModule, CanDirective],
   selector: 'app-reports',
   styleUrl: './reports.scss',
   templateUrl: './reports.html',
 })
 export class Reports implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly leadService = inject(LeadService);
   private readonly followUpService = inject(FollowUpService);
   private readonly settingsService = inject(SettingsService);

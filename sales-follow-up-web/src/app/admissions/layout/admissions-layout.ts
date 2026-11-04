@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AdmissionsService } from '../../core/services/admissions.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'adm-layout',
@@ -9,6 +10,8 @@ import { AdmissionsService } from '../../core/services/admissions.service';
   styleUrl: './admissions-layout.scss',
 })
 export class AdmissionsLayout implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly state = this.admissions.contextState;
@@ -20,8 +23,8 @@ export class AdmissionsLayout implements OnInit {
     { path: 'students', label: 'Students' },
     { path: 'assessments', label: 'Interviews & exams' },
     { path: 'tasks', label: 'My tasks' },
-    { path: 'payments', label: 'Payments' },
-    ...(this.context()?.isAdmin ? [{ path: 'settings', label: 'Settings' }] : []),
+    ...(this.permissions.can('admissions.payments') ? [{ path: 'payments', label: 'Payments' }] : []),
+    ...(this.permissions.can('admissions.settings') ? [{ path: 'settings', label: 'Settings' }] : []),
   ]);
 
   ngOnInit(): void {

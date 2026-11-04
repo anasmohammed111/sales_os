@@ -66,7 +66,7 @@
         </button>
       </div>
 
-      <button type="button" class="btn btn-primary" (click)="openScheduleModal()"
+      <button *ktCan="'followups.create'" type="button" class="btn btn-primary" (click)="openScheduleModal()"
         title="Schedule a new follow-up interaction">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -494,7 +494,7 @@
               <div class="row-actions">
                 <!-- Quick Complete button (if pending) -->
                 @if (item.status === 'PENDING' && !showArchived()) {
-                <button type="button" class="btn-table-action complete" (click)="markAsCompleted(item, $event)"
+                <button *ktCan="'followups.edit'" type="button" class="btn-table-action complete" (click)="markAsCompleted(item, $event)"
                   title="Mark follow-up as completed" aria-label="Mark completed">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12"></polyline>
@@ -511,7 +511,7 @@
                   </svg>
                 </button>
                 <!-- Edit Follow-up -->
-                <button type="button" class="btn-table-action" (click)="openEditModal(item, $event)"
+                <button *ktCan="'followups.edit'" type="button" class="btn-table-action" (click)="openEditModal(item, $event)"
                   title="Edit follow-up" aria-label="Edit follow-up">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -522,7 +522,7 @@
 
                 <!-- Archive button (if not archived) -->
                 @if (!showArchived()) {
-                <button type="button" class="btn-table-action delete" (click)="openArchiveConfirmation(item, $event)"
+                <button *ktCan="'followups.archive'" type="button" class="btn-table-action delete" (click)="openArchiveConfirmation(item, $event)"
                   title="Archive follow-up" aria-label="Archive">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="21 8 21 21 3 21 3 8"></polyline>
@@ -534,7 +534,7 @@
 
                 <!-- Permanent Delete button (Only for archived records AND Owner role) -->
                 @if (showArchived() && isOwner()) {
-                <button type="button" class="btn-table-action delete" (click)="openDeleteConfirmation(item, $event)"
+                <button *ktCan="'followups.delete'" type="button" class="btn-table-action delete" (click)="openDeleteConfirmation(item, $event)"
                   title="Permanently delete follow-up" aria-label="Permanently delete">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -685,7 +685,7 @@
             </div>
 
             <!-- Assigned Salesperson -->
-            <div class="form-group">
+            <div *ktCan="'followups.assign'" class="form-group">
               <label for="sched-assigned-select" class="form-label">Assigned Salesperson (Optional)</label>
               <div class="select-wrapper">
                 <select id="sched-assigned-select" formControlName="assignedTo" class="form-control select-control">
@@ -800,7 +800,7 @@
         </div>
 
         <div class="drawer-header-actions">
-          <button type="button" class="btn btn-secondary btn-sm" (click)="openEditModal(selectedFollowUp()!)"
+          <button *ktCan="'followups.edit'" type="button" class="btn btn-secondary btn-sm" (click)="openEditModal(selectedFollowUp()!)"
             title="Edit follow-up">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -810,7 +810,7 @@
           </button>
 
           @if (!selectedFollowUp()!.isArchived) {
-          <button type="button" class="btn btn-archive-outline btn-sm"
+          <button *ktCan="'followups.archive'" type="button" class="btn btn-archive-outline btn-sm"
             (click)="openArchiveConfirmation(selectedFollowUp()!)" title="Move follow-up to archive">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="21 8 21 21 3 21 3 8"></polyline>
@@ -820,7 +820,7 @@
             <span>Archive</span>
           </button>
           } @else if (isOwner()) {
-          <button type="button" class="btn btn-danger btn-sm" (click)="openDeleteConfirmation(selectedFollowUp()!)"
+          <button *ktCan="'followups.delete'" type="button" class="btn btn-danger btn-sm" (click)="openDeleteConfirmation(selectedFollowUp()!)"
             title="Permanently delete this archived follow-up">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"></polyline>
@@ -969,7 +969,7 @@
       <footer class="drawer-footer">
         <div class="drawer-action-buttons">
           @if (selectedFollowUp()!.status === 'PENDING' && !selectedFollowUp()!.isArchived) {
-          <button type="button" class="btn btn-secondary btn-sm" (click)="markAsCompleted(selectedFollowUp()!)"
+          <button *ktCan="'followups.edit'" type="button" class="btn btn-secondary btn-sm" (click)="markAsCompleted(selectedFollowUp()!)"
             title="Mark this follow-up as complete">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <polyline points="20 6 9 17 4 12"></polyline>
@@ -977,7 +977,7 @@
             <span>Mark Completed</span>
           </button>
 
-          <button type="button" class="btn btn-secondary btn-sm" (click)="markAsCancelled(selectedFollowUp()!)"
+          <button *ktCan="'followups.edit'" type="button" class="btn btn-secondary btn-sm" (click)="markAsCancelled(selectedFollowUp()!)"
             title="Cancel this interaction task">
             <span>Cancel Task</span>
           </button>

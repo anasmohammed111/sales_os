@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { ownerGuard } from './core/guards/owner.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
   {
@@ -11,49 +11,49 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     title: 'Dashboard | Kelto',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('dashboard.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'leads',
     title: 'Leads | Kelto',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('leads.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'follow-ups',
     title: 'Follow-ups | Kelto',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('followups.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'reports',
     title: 'Reports | Kelto',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('reports.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'team',
     title: 'Team | Kelto',
-    canActivate: [authGuard, ownerGuard],
+    canActivate: [authGuard, permissionGuard('team.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'pipeline',
     title: 'Sales pipeline | Kelto',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('pipeline.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'quotations',
     title: 'Quotations | Kelto',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('quotations.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
@@ -65,10 +65,17 @@ export const routes: Routes = [
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
+    path: 'settings/roles',
+    title: 'Roles & permissions | Kelto',
+    canActivate: [authGuard, permissionGuard('settings.roles')],
+    loadComponent: () =>
+      import('./dashboard/dashboard').then((m) => m.Dashboard),
+  },
+  {
     // SYB admissions: rendered inside the app shell's outlet
     path: 'admissions',
     title: 'Admissions | Kelto',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('admissions.view')],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
     children: [

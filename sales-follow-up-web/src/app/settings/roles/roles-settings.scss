@@ -1,0 +1,588 @@
+:host {
+  display: block;
+}
+
+.roles-page {
+  display: grid;
+  gap: 18px;
+  max-width: 1180px;
+}
+
+/* ---- Header ------------------------------------------------------------- */
+
+.roles-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+
+  h1 {
+    margin: 6px 0 0;
+    color: var(--kelto-text);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+  }
+
+  p {
+    max-width: 640px;
+    margin: 4px 0 0;
+    color: var(--kelto-text-subtle);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--kelto-brand-600);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--kelto-brand-700);
+  }
+}
+
+/* ---- Shared bits -------------------------------------------------------- */
+
+.card {
+  border: 1px solid var(--kelto-border);
+  border-radius: 14px;
+  background: var(--kelto-bg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.state-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  color: var(--kelto-text-subtle);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--kelto-border-strong);
+  border-radius: 9px;
+  background: var(--kelto-bg);
+  color: var(--kelto-text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--kelto-bg-subtle);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.btn-sm {
+  height: 32px;
+  padding: 0 11px;
+  font-size: 12.5px;
+}
+
+.btn-primary {
+  border-color: var(--kelto-primary);
+  background: var(--kelto-primary);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    border-color: var(--kelto-primary-hover);
+    background: var(--kelto-primary-hover);
+  }
+}
+
+.btn-danger {
+  border-color: var(--kelto-danger-600);
+  background: var(--kelto-danger-600);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: var(--kelto-danger-700);
+  }
+}
+
+.btn-danger-text {
+  border-color: transparent;
+  color: var(--kelto-danger-600);
+
+  &:hover:not(:disabled) {
+    border-color: var(--kelto-danger-100);
+    background: var(--kelto-danger-50);
+  }
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+
+  > span {
+    color: var(--kelto-neutral-700);
+    font-size: 12.5px;
+    font-weight: 650;
+
+    small {
+      color: var(--kelto-neutral-400);
+      font-weight: 500;
+    }
+  }
+
+  input,
+  select {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--kelto-border-strong);
+    border-radius: 9px;
+    background: var(--kelto-bg);
+    color: var(--kelto-text);
+    font: inherit;
+    font-size: 14px;
+
+    &:focus {
+      outline: none;
+      border-color: var(--kelto-brand-500);
+      box-shadow: var(--focus-ring);
+    }
+
+    &:disabled {
+      background: var(--kelto-bg-subtle);
+      color: var(--kelto-neutral-600);
+    }
+  }
+}
+
+.spinner,
+.button-spinner {
+  display: inline-block;
+  border-radius: 50%;
+  animation: roles-spin 0.7s linear infinite;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--kelto-brand-100);
+  border-top-color: var(--kelto-brand-500);
+}
+
+.button-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+}
+
+@keyframes roles-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Layout ------------------------------------------------------------- */
+
+.roles-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* ---- Role list ---------------------------------------------------------- */
+
+.role-list {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+}
+
+.role-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--kelto-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--kelto-bg-subtle);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &.is-active {
+    border-color: var(--kelto-brand-200);
+    background: var(--kelto-brand-50);
+
+    .role-item-name {
+      color: var(--kelto-brand-700);
+    }
+
+    .role-item-chevron {
+      color: var(--kelto-brand-500);
+    }
+  }
+
+  &.is-draft {
+    border-style: dashed;
+  }
+}
+
+.role-item-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.role-item-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  svg {
+    flex-shrink: 0;
+    color: var(--kelto-neutral-400);
+  }
+}
+
+.role-item-meta {
+  color: var(--kelto-text-subtle);
+  font-size: 12px;
+}
+
+.role-item-chevron {
+  flex-shrink: 0;
+  color: var(--kelto-neutral-300);
+}
+
+/* ---- Editor ------------------------------------------------------------- */
+
+.role-editor {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.editor-head {
+  display: grid;
+  gap: 12px;
+}
+
+.editor-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+}
+
+.editor-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.count-badge {
+  margin-right: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--kelto-bg-muted);
+  color: var(--kelto-neutral-700);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--kelto-warning-100);
+  border-radius: 10px;
+  background: var(--kelto-warning-50);
+  color: var(--kelto-warning-700);
+  font-size: 13px;
+  font-weight: 600;
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.hint {
+  margin: 0;
+  color: var(--kelto-text-subtle);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.modules {
+  display: grid;
+  gap: 10px;
+}
+
+.module {
+  border: 1px solid var(--kelto-border);
+  border-radius: 12px;
+  background: var(--kelto-bg);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &.is-off {
+    background: var(--kelto-bg-subtle);
+  }
+}
+
+.module-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--kelto-neutral-100);
+}
+
+.module-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--kelto-text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--kelto-primary);
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Own / Their team / Everything */
+.scope-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 9px;
+  background: var(--kelto-bg-subtle);
+
+  .scope-label {
+    padding: 0 8px 0 6px;
+    color: var(--kelto-text-subtle);
+    font-size: 11.5px;
+    font-weight: 650;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  button {
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--kelto-neutral-600);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover:not(:disabled):not(.is-active) {
+      color: var(--kelto-text);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+
+    &.is-active {
+      background: var(--kelto-bg);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+      color: var(--kelto-brand-700);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+  }
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 2px 12px;
+  padding: 8px 10px 10px;
+}
+
+.perm {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 7px 6px;
+  border-radius: 8px;
+  color: var(--kelto-neutral-600);
+  font-size: 13px;
+  line-height: 1.35;
+  cursor: pointer;
+
+  input {
+    margin-top: 1px;
+  }
+
+  &:hover {
+    background: var(--kelto-bg-subtle);
+  }
+
+  &.is-on {
+    color: var(--kelto-text);
+    font-weight: 550;
+  }
+}
+
+/* Save bar stays in view while scrolling a long role */
+.editor-foot {
+  position: sticky;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(6px);
+
+  &.is-dirty {
+    border-color: var(--kelto-brand-200);
+  }
+}
+
+.foot-hint {
+  margin-right: auto;
+  color: var(--kelto-text-subtle);
+  font-size: 13px;
+}
+
+/* ---- Reassign dialog ---------------------------------------------------- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.dialog {
+  display: grid;
+  gap: 14px;
+  width: min(440px, 100%);
+  padding: 22px;
+  border-radius: 16px;
+  background: var(--kelto-bg);
+  box-shadow: 0 24px 60px -20px rgba(15, 23, 42, 0.45);
+
+  h2 {
+    margin: 0;
+    color: var(--kelto-text);
+    font-size: 18px;
+    font-weight: 750;
+  }
+
+  p {
+    margin: 0;
+    color: var(--kelto-text-subtle);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
+
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---- Smaller screens ---------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .roles-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .role-list {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .role-item {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .role-item-chevron {
+    display: none;
+  }
+
+  .editor-fields {
+    grid-template-columns: 1fr;
+  }
+}

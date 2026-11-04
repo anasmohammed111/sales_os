@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { Settings } from './settings';
+import { AuthService } from '../core/services/auth.service';
 
 const settingsFor = (role: string) => ({
   success: true,
@@ -30,7 +31,18 @@ describe('Settings', () => {
 
   afterEach(() => http.verify());
 
+  // What each role may do; Settings follows "settings.business" and "settings.roles"
+  const accessFor = (role: string) => ({
+    roleId: role,
+    roleKey: role,
+    roleName: role === 'OWNER' ? 'Owner' : 'Salesperson',
+    isOwner: role === 'OWNER',
+    permissions: role === 'OWNER' ? ['settings.business', 'settings.roles', 'team.view', 'admissions.settings'] : [],
+    scopes: {},
+  });
+
   const load = async (role: string) => {
+    TestBed.inject(AuthService).access.set(accessFor(role));
     fixture.detectChanges();
     http.expectOne((r) => r.url.endsWith('/settings')).flush(settingsFor(role));
     await fixture.whenStable();

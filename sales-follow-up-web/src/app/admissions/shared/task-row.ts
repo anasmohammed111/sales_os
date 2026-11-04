@@ -14,15 +14,19 @@ import {
   TASK_TYPE_LABELS,
   toLocalInput,
 } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 /** One follow-up with complete / reschedule / cancel. Used by My tasks and the profile. */
 @Component({
   selector: 'adm-task-row',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, CanDirective],
   templateUrl: './task-row.html',
   styleUrl: './task-row.scss',
 })
 export class TaskRow {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly task = input.required<Task>();

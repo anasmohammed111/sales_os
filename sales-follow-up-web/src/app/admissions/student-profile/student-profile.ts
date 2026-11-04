@@ -24,6 +24,8 @@ import { ProfileDocuments } from './profile-documents';
 import { ProfilePayments } from './profile-payments';
 import { ProfileTasks } from './profile-tasks';
 import { ProfileActivity } from './profile-activity';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 type Tab = 'overview' | 'checklist' | 'documents' | 'payments' | 'tasks' | 'activity';
 
@@ -39,12 +41,13 @@ type Tab = 'overview' | 'checklist' | 'documents' | 'payments' | 'tasks' | 'acti
     ProfileDocuments,
     ProfilePayments,
     ProfileTasks,
-    ProfileActivity,
-  ],
+    ProfileActivity, CanDirective],
   templateUrl: './student-profile.html',
   styleUrl: './student-profile.scss',
 })
 export class StudentProfile implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -52,7 +55,8 @@ export class StudentProfile implements OnInit {
 
   readonly ctx = this.admissions.context;
   readonly tz = computed(() => this.ctx()?.config.timezone);
-  readonly canAssign = computed(() => this.ctx()?.role !== 'SALESPERSON');
+  /** Choosing someone else's name follows "admissions.assign" */
+  readonly canAssign = computed(() => this.permissions.can('admissions.assign'));
 
   readonly app = signal<ApplicationDetail | null>(null);
   readonly loading = signal(true);
@@ -72,6 +76,9 @@ export class StudentProfile implements OnInit {
     { key: 'tasks', label: 'Follow-ups' },
     { key: 'activity', label: 'Notes & history' },
   ];
+
+  /** Tabs this person may open; Payments needs "admissions.payments" */
+  readonly visibleTabs = computed(() => this.tabs.filter((t) => t.key !== 'payments' || this.permissions.can('admissions.payments')));
 
   readonly rail = computed<RailStage[]>(() => this.app()?.stageProgress ?? []);
   readonly outstanding = computed(() => outstandingLine(this.app()?.paymentSummary?.byCurrency));
@@ -96,7 +103,7 @@ export class StudentProfile implements OnInit {
     });
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const tab = params.get('tab') as Tab | null;
-      if (tab && this.tabs.some((t) => t.key === tab)) this.tab.set(tab);
+      if (tab && this.visibleTabs().some((t) => t.key === tab)) this.tab.set(tab);
     });
   }
 

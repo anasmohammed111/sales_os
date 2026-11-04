@@ -9,6 +9,9 @@ import { toast } from 'ngx-sonner';
 import { Lead, LeadPriority, LeadStatus, LeadService, LEAD_STATUS_LABELS } from '../core/services/lead.service';
 import { AdmissionsService } from '../core/services/admissions.service';
 import { menuOpensUp } from '../core/utils/menu-placement';
+import { PermissionService } from '../core/services/permission.service';
+import { RoleService } from '../core/services/role.service';
+import { CanDirective } from '../shared/can/can.directive';
 import { AuthService, AuthUser } from '../core/services/auth.service';
 import { TeamMember, TeamService } from '../core/services/team.service';
 import {
@@ -60,7 +63,7 @@ const ALLOWED_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
 @Component({
   selector: 'app-pipeline',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, DatePipe, CurrencyPipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, DatePipe, CurrencyPipe, CanDirective],
   templateUrl: './pipeline.html',
   styleUrl: './pipeline.scss',
 })
@@ -157,10 +160,12 @@ export class Pipeline implements OnInit {
   dragOverStageId = signal<LeadStatus | null>(null);
 
   // Computed Properties
-  canManageTeam = computed(() => {
-    const role = this.currentUser()?.role;
-    return role === 'OWNER' || role === 'SALES_MANAGER';
-  });
+  readonly permissions = inject(PermissionService);
+  private readonly roleService = inject(RoleService);
+  /** Filtering by team member makes sense when the person sees more than their own leads */
+  canManageTeam = computed(() => this.permissions.scope('leads') !== 'own');
+  /** Moving cards (drag, arrow or menu) follows "pipeline.move" */
+  readonly canMove = computed(() => this.permissions.can('pipeline.move'));
 
   hasActiveFilters = computed(() => {
     return (
@@ -182,10 +187,8 @@ export class Pipeline implements OnInit {
 
   loadTeamMembers(): void {
     if (!this.canManageTeam()) return;
-    this.teamService.getTeamMembers({ status: 'ACTIVE', limit: 100 }).subscribe({
-      next: (res) => {
-        this.teamMembers.set(res.data || []);
-      },
+    this.roleService.assignable('leads').subscribe({
+      next: (people) => this.teamMembers.set(people as unknown as TeamMember[]),
       error: () => { },
     });
   }
@@ -308,6 +311,10 @@ export class Pipeline implements OnInit {
 
   // Drag and Drop
   onDragStart(event: DragEvent, lead: Lead): void {
+    if (!this.canMove()) {
+      event.preventDefault();
+      return;
+    }
     this.draggedLead = lead;
     if (event.dataTransfer) {
       event.dataTransfer.setData('text/plain', lead._id);

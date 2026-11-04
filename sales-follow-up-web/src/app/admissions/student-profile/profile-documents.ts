@@ -14,14 +14,18 @@ import {
   relativeDay,
   toDateInput,
 } from '../admissions.utils';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 @Component({
   selector: 'adm-profile-documents',
-  imports: [FormsModule],
+  imports: [FormsModule, CanDirective],
   templateUrl: './profile-documents.html',
   styleUrl: './profile-documents.scss',
 })
 export class ProfileDocuments {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
 
   readonly application = input.required<ApplicationDetail>();

@@ -15,6 +15,8 @@ import {
 } from '../admissions.utils';
 import { MoveRequest, StageMoveDialog } from '../shared/stage-move-dialog';
 import { menuOpensUp } from '../../core/utils/menu-placement';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 interface Column extends StageRef {
   order: number;
@@ -31,11 +33,13 @@ const WARNING_PRIORITY: Warning[] = ['NEEDS_REVIEW', 'PAYMENT_OVERDUE', 'STUCK',
 
 @Component({
   selector: 'adm-pipeline-board',
-  imports: [StageMoveDialog, NgTemplateOutlet],
+  imports: [StageMoveDialog, NgTemplateOutlet, CanDirective],
   templateUrl: './pipeline-board.html',
   styleUrl: './pipeline-board.scss',
 })
 export class PipelineBoard implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
   private readonly router = inject(Router);
 

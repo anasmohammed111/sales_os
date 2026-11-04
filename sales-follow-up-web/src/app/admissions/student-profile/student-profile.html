@@ -45,11 +45,11 @@
       <div class="hero-actions">
         @if (a.status === 'ACTIVE') {
           @if (a.canAdvance) {
-            <button type="button" class="adm-btn adm-btn--route" (click)="moveNext()">
+            <button *ktCan="'admissions.move'" type="button" class="adm-btn adm-btn--route" (click)="moveNext()">
               Move to {{ a.nextStage?.name }}
             </button>
           }
-          <label class="stage-select">
+          <label *ktCan="'admissions.move'" class="stage-select">
             <span class="adm-visually-hidden">Change stage</span>
             <select (change)="changeStage($any($event.target).value); $any($event.target).value = ''">
               <option value="">Change stage…</option>
@@ -60,14 +60,14 @@
               }
             </select>
           </label>
-          <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="closing.set(true)">Close</button>
-          <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="withdrawing.set(true)">No Longer Required / Withdraw</button>
+          <button *ktCan="'admissions.close'" type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="closing.set(true)">Close</button>
+          <button *ktCan="'admissions.close'" type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="withdrawing.set(true)">No Longer Required / Withdraw</button>
         } @else if (a.status === 'WITHDRAWN') {
           <span class="adm-chip adm-chip--muted">Withdrawn / Not required: {{ a.withdrawnReason }}</span>
-          <button type="button" class="adm-btn adm-btn--sm" (click)="reactivate()">Reactivate</button>
+          <button *ktCan="'admissions.close'" type="button" class="adm-btn adm-btn--sm" (click)="reactivate()">Reactivate</button>
         } @else if (a.status === 'CLOSED') {
           <span class="adm-chip adm-chip--muted">Closed: {{ a.withdrawnReason || 'Complete' }}</span>
-          <button type="button" class="adm-btn adm-btn--sm" (click)="reactivate()">Reopen / Reactivate</button>
+          <button *ktCan="'admissions.close'" type="button" class="adm-btn adm-btn--sm" (click)="reactivate()">Reopen / Reactivate</button>
         }
       </div>
     </header>
@@ -104,7 +104,7 @@
         <dt>Outstanding</dt>
         <dd>
           @if (outstanding()) {
-            <button type="button" class="adm-link" (click)="selectTab('payments')">{{ outstanding() }}</button>
+            <button *ktCan="'admissions.payments'" type="button" class="adm-link" (click)="selectTab('payments')">{{ outstanding() }}</button>
           } @else {
             {{ a.paymentSummary.status === 'NONE' ? 'No fees yet' : 'Nothing due' }}
           }
@@ -119,7 +119,7 @@
         <dd>
           @if (canAssign()) {
             <select class="assign" aria-label="Counsellor" [value]="a.counsellorId || ''" (change)="assign($any($event.target).value)">
-              @if (ctx()?.isAdmin) {
+              @if (permissions.scope('admissions') === 'all') {
                 <option value="">Unassigned</option>
               }
               <!-- Options come from @for/@if, which render after the select's [value], so each marks itself -->
@@ -150,7 +150,7 @@
     }
 
     <div class="adm-tabs" role="tablist" aria-label="Student sections">
-      @for (t of tabs; track t.key) {
+      @for (t of visibleTabs(); track t.key) {
         <button type="button" role="tab" [attr.aria-selected]="tab() === t.key" (click)="selectTab(t.key)">
           {{ t.label }}
           @if (t.key === 'checklist' && a.pendingRequirements && a.status === 'ACTIVE') {
@@ -233,6 +233,6 @@
     </div>
   }
 
-  <adm-stage-move-dialog [request]="moveRequest()" [isAdmin]="!!ctx()?.isAdmin" (moved)="onMoved($event)"
+  <adm-stage-move-dialog [request]="moveRequest()" [isAdmin]="permissions.can('admissions.override')" (moved)="onMoved($event)"
     (closed)="moveRequest.set(null)" (stale)="load()" />
 }

@@ -17,6 +17,8 @@ import {
   WARNING_TONE,
 } from '../admissions.utils';
 import { AddStudent } from './add-student';
+import { PermissionService } from '../../core/services/permission.service';
+import { CanDirective } from '../../shared/can/can.directive';
 
 const PAGE_SIZE = 50;
 
@@ -44,11 +46,13 @@ const FILTER_KEYS = [
 
 @Component({
   selector: 'adm-students',
-  imports: [FormsModule, AddStudent],
+  imports: [FormsModule, AddStudent, CanDirective],
   templateUrl: './students.html',
   styleUrl: './students.scss',
 })
 export class Students implements OnInit {
+  /** What the signed-in person may do (see *ktCan in the template) */
+  readonly permissions = inject(PermissionService);
   private readonly admissions = inject(AdmissionsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

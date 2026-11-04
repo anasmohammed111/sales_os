@@ -5,7 +5,7 @@
       <div class="adm-eyebrow">
         <span class="adm-eyebrow-dot" aria-hidden="true"></span>
         <span>Admissions Workspace</span>
-        @if (ctx()?.isAdmin) {
+        @if (permissions.scope('admissions') === 'all') {
           <span class="adm-scope-badge">All Students</span>
         } @else {
           <span class="adm-scope-badge">My Students</span>

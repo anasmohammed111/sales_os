@@ -1,11 +1,14 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { toast } from 'ngx-sonner';
 
 import { AuthService } from '../core/services/auth.service';
+import { PermissionService } from '../core/services/permission.service';
+import { RoleRecord, RoleService } from '../core/services/role.service';
+import { CanDirective } from '../shared/can/can.directive';
 import {
   TeamService,
   TeamMember,
@@ -18,7 +21,7 @@ import {
 @Component({
   selector: 'app-team',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, RouterLink, CanDirective],
   templateUrl: './team.html',
   styleUrl: './team.scss',
 })
@@ -29,7 +32,15 @@ export class Team implements OnInit {
   private router = inject(Router);
 
   currentUser = signal(this.authService.getUser());
-  isOwner = computed(() => this.currentUser()?.role === 'OWNER');
+  readonly permissions = inject(PermissionService);
+  private readonly roleService = inject(RoleService);
+
+  /** Every role in the business, from Settings > Roles & permissions */
+  roles = signal<RoleRecord[]>([]);
+  /** Roles I may give someone (never Owner, never more access than mine) */
+  grantableRoles = computed(() => this.roles().filter((r) => r.key !== 'OWNER' && r.grantable !== false));
+  /** Roles members can have, for the role filter */
+  memberRoles = computed(() => this.roles().filter((r) => r.key !== 'OWNER'));
 
   teamMembers = signal<TeamMember[]>([]);
   managers = signal<TeamMember[]>([]);
@@ -47,28 +58,28 @@ export class Team implements OnInit {
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
-    role: ['SALESPERSON', Validators.required],
-    managerId: ['', Validators.required],
+    roleId: ['', Validators.required],
+    managerId: [''],
   });
 
   // Edit Form
   editForm = this.fb.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    role: ['SALESPERSON', Validators.required],
-    managerId: ['', Validators.required],
+    roleId: ['', Validators.required],
+    managerId: [''],
   });
 
   // Filter State
   filters = signal<MemberFilters>({
     search: '',
-    role: 'ALL',
+    roleId: 'ALL',
     status: 'ALL',
   });
 
   hasActiveFilters = computed(() => {
     const f = this.filters();
-    return !!f.search?.trim() || f.role !== 'ALL' || f.status !== 'ALL';
+    return !!f.search?.trim() || (!!f.roleId && f.roleId !== 'ALL') || f.status !== 'ALL';
   });
 
   pagination = signal<MemberPagination>({
@@ -87,12 +98,16 @@ export class Team implements OnInit {
   });
 
   ngOnInit(): void {
-    if (!this.isOwner()) {
-      this.router.navigate(['/dashboard']);
-      return;
-    }
     this.loadMembers();
     this.loadManagers();
+    this.loadRoles();
+  }
+
+  loadRoles(): void {
+    this.roleService.list().subscribe({
+      next: (roles) => this.roles.set(roles),
+      error: () => { },
+    });
   }
 
   loadManagers(): void {
@@ -139,8 +154,8 @@ export class Team implements OnInit {
   }
 
   onRoleChange(event: Event): void {
-    const role = (event.target as HTMLSelectElement).value as MemberFilters['role'];
-    this.filters.update((f) => ({ ...f, role }));
+    const roleId = (event.target as HTMLSelectElement).value;
+    this.filters.update((f) => ({ ...f, roleId }));
     this.pagination.update((p) => ({ ...p, page: 1 }));
     this.loadMembers();
   }
@@ -153,7 +168,7 @@ export class Team implements OnInit {
   }
 
   resetFilters(): void {
-    this.filters.set({ search: '', role: 'ALL', status: 'ALL' });
+    this.filters.set({ search: '', roleId: 'ALL', status: 'ALL' });
     this.pagination.update((p) => ({ ...p, page: 1 }));
     this.loadMembers();
   }
@@ -170,45 +185,26 @@ export class Team implements OnInit {
     this.loadMembers();
   }
 
-  updateRoleValidators(type: 'add' | 'edit'): void {
-    const roleControl = type === 'add' ? this.addForm.controls.role : this.editForm.controls.role;
-    const managerControl = type === 'add' ? this.addForm.controls.managerId : this.editForm.controls.managerId;
-
-    if (roleControl.value === 'SALESPERSON') {
-      managerControl.setValidators([Validators.required]);
-    } else {
-      managerControl.clearValidators();
-      managerControl.setValue('');
-    }
-    managerControl.updateValueAndValidity();
-  }
-
   // --- Add Member ---
   openAddModal(): void {
     this.loadManagers();
+    this.loadRoles();
+    const grantable = this.grantableRoles();
+    const defaultRole = grantable.find((r) => r.key === 'SALESPERSON') ?? grantable[0];
     this.addForm.reset({
       name: '',
       email: '',
       password: '',
-      role: 'SALESPERSON',
+      roleId: defaultRole?._id ?? '',
       managerId: '',
     });
-    this.updateRoleValidators('add');
     this.isAddModalOpen.set(true);
   }
 
   submitAdd(): void {
-    const roleVal = this.addForm.get('role')?.value;
-    const managerVal = this.addForm.get('managerId')?.value;
-    if (roleVal === 'SALESPERSON' && (!managerVal || !managerVal.trim())) {
-      this.addForm.get('managerId')?.setErrors({ required: true });
-      this.addForm.get('managerId')?.markAsTouched();
-      toast.error('Please select a sales manager for this sales representative.');
-      return;
-    }
-
     if (this.addForm.invalid || this.isSubmitting()) {
       this.addForm.markAllAsTouched();
+      if (!this.addForm.get('roleId')?.value) toast.error('Choose a role for this person.');
       return;
     }
 
@@ -217,8 +213,8 @@ export class Team implements OnInit {
       name: value.name!.trim(),
       email: value.email!.trim(),
       password: value.password!,
-      role: value.role as MemberPayload['role'],
-      managerId: value.role === 'SALESPERSON' && value.managerId ? value.managerId : null,
+      roleId: value.roleId!,
+      managerId: value.managerId || null,
     };
 
     this.isSubmitting.set(true);
@@ -230,6 +226,7 @@ export class Team implements OnInit {
           this.isAddModalOpen.set(false);
           this.loadMembers();
           this.loadManagers();
+          this.loadRoles();
         },
         error: (err) => {
           toast.error(err?.error?.message || 'Failed to create team member.');
@@ -240,6 +237,7 @@ export class Team implements OnInit {
   // --- Edit Member ---
   openEditModal(member: TeamMember): void {
     this.loadManagers();
+    this.loadRoles();
     this.selectedMember.set(member);
     const currentManagerId = typeof member.managerId === 'object' && member.managerId
       ? member.managerId._id
@@ -248,22 +246,13 @@ export class Team implements OnInit {
     this.editForm.setValue({
       name: member.name,
       email: member.email,
-      role: member.role,
+      roleId: this.roleIdOf(member),
       managerId: currentManagerId || '',
     });
     this.isEditModalOpen.set(true);
   }
 
   submitEdit(): void {
-    const roleVal = this.editForm.get('role')?.value;
-    const managerVal = this.editForm.get('managerId')?.value;
-    if (roleVal === 'SALESPERSON' && (!managerVal || !managerVal.trim())) {
-      this.editForm.get('managerId')?.setErrors({ required: true });
-      this.editForm.get('managerId')?.markAsTouched();
-      toast.error('Please select a sales manager for this sales representative.');
-      return;
-    }
-
     if (this.editForm.invalid || this.isSubmitting()) {
       this.editForm.markAllAsTouched();
       return;
@@ -276,9 +265,10 @@ export class Team implements OnInit {
     const payload: Partial<MemberPayload> = {
       name: value.name!.trim(),
       email: value.email!.trim(),
-      role: value.role as MemberPayload['role'],
-      managerId: value.role === 'SALESPERSON' && value.managerId ? value.managerId : null,
+      managerId: value.managerId || null,
     };
+    // Only send the role when it changed
+    if (value.roleId && value.roleId !== this.roleIdOf(member)) payload.roleId = value.roleId;
 
     this.isSubmitting.set(true);
     this.teamService.updateMember(member._id, payload)
@@ -289,6 +279,7 @@ export class Team implements OnInit {
           this.isEditModalOpen.set(false);
           this.loadMembers();
           this.loadManagers();
+          this.loadRoles();
         },
         error: (err) => {
           toast.error(err?.error?.message || 'Failed to update team member.');
@@ -347,6 +338,24 @@ export class Team implements OnInit {
         toast.error(err?.error?.message || 'Failed to update status.');
       },
     });
+  }
+
+  roleIdOf(member: TeamMember): string {
+    if (!member.roleId) return this.roles().find((r) => r.key === member.role)?._id ?? '';
+    return typeof member.roleId === 'object' ? member.roleId._id : member.roleId;
+  }
+
+  /** The name of a member's role, built-in or custom */
+  roleName(member: TeamMember): string {
+    if (member.roleId && typeof member.roleId === 'object' && member.roleId.name) return member.roleId.name;
+    const role = this.roles().find((r) => r._id === this.roleIdOf(member));
+    if (role) return role.name;
+    return member.role === 'SALES_MANAGER' ? 'Sales manager' : 'Salesperson';
+  }
+
+  roleKey(member: TeamMember): string | null {
+    if (member.roleId && typeof member.roleId === 'object') return member.roleId.key ?? null;
+    return this.roles().find((r) => r._id === this.roleIdOf(member))?.key ?? null;
   }
 
   getManagerName(member: TeamMember): string | null {

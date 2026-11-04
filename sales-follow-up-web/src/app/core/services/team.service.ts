@@ -14,7 +14,11 @@ export interface MemberPayload {
     name: string;
     email: string;
     password?: string;
-    role: 'SALES_MANAGER' | 'SALESPERSON';
+    /** The role that decides what this person may do */
+    roleId?: string;
+    /** Built-in role type, for older callers */
+    role?: 'SALES_MANAGER' | 'SALESPERSON';
+    /** Who they report to; null for nobody */
     managerId?: string | null;
 }
 
@@ -23,6 +27,7 @@ export interface TeamMember {
     name: string;
     email: string;
     role: 'SALES_MANAGER' | 'SALESPERSON';
+    roleId?: { _id: string; name: string; key?: string | null; isSystem?: boolean } | string | null;
     managerId?: { _id: string; name: string; email: string; role?: string } | string | null;
     isActive: boolean;
     createdAt?: string;
@@ -41,6 +46,8 @@ export interface MemberSummaryCounts {
     inactiveMembers: number;
     salesManagers: number;
     salespersons: number;
+    /** Members per role, including custom roles */
+    byRole?: { roleId: string; name: string; count: number }[];
 }
 
 export interface MemberListResponse {
@@ -54,6 +61,8 @@ export interface MemberListResponse {
 export interface MemberFilters {
     search?: string;
     role?: 'SALES_MANAGER' | 'SALESPERSON' | 'ALL';
+    /** Filter by a role (built-in or custom) */
+    roleId?: string;
     status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
     page?: number;
     limit?: number;
@@ -81,7 +90,9 @@ export class TeamService {
             params = params.set('search', filters.search.trim());
         }
 
-        if (filters.role && filters.role !== 'ALL') {
+        if (filters.roleId && filters.roleId !== 'ALL') {
+            params = params.set('roleId', filters.roleId);
+        } else if (filters.role && filters.role !== 'ALL') {
             params = params.set('role', filters.role);
         }
 
@@ -95,8 +106,9 @@ export class TeamService {
         return this.http.get<MemberListResponse>(this.apiUrl, { params });
     }
 
+    /** Active members someone can report to (any role) */
     getManagers(): Observable<TeamMember[]> {
-        return this.getTeamMembers({ role: 'SALES_MANAGER', status: 'ACTIVE', limit: 100 })
+        return this.getTeamMembers({ status: 'ACTIVE', limit: 100 })
             .pipe(map((res) => res.data));
     }
 

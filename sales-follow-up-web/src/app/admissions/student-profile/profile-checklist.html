@@ -37,7 +37,7 @@
       @if (isOpen) {
         <div class="stage-body" [id]="'stage-' + stage.key">
           @if (hasRule(stage.key, 'ASSESSMENT')) {
-            <form class="side-form" (ngSubmit)="saveAssessment()">
+            <form class="side-form" [attr.inert]="permissions.can('admissions.edit') ? null : ''" (ngSubmit)="saveAssessment()">
               <h4>Interview and entrance exam</h4>
               <div class="assess-grid">
                 <fieldset>
@@ -86,7 +86,7 @@
                 </fieldset>
               </div>
               <div class="side-actions">
-                <button type="submit" class="adm-btn adm-btn--sm" [disabled]="savingAssessment()">
+                <button *ktCan="'admissions.edit'" type="submit" class="adm-btn adm-btn--sm" [disabled]="savingAssessment()">
                   {{ savingAssessment() ? 'Saving…' : 'Save interview and exam' }}
                 </button>
               </div>
@@ -101,25 +101,25 @@
                   {{ app.visa.outcome === 'APPROVED' ? 'Visa approved' : 'Visa rejected' }}
                   on {{ formatDateTime(app.visa.outcomeAt, tz()) }}.
                 </p>
-                @if (ctx()?.isAdmin) {
-                  <button type="button" class="adm-link"
+                @if (permissions.can('admissions.override')) {
+                  <button *ktCan="'admissions.edit'" type="button" class="adm-link"
                     (click)="confirmOutcome.set(app.visa.outcome === 'APPROVED' ? 'REJECTED' : 'APPROVED')">
                     Correct this result
                   </button>
                 }
               } @else {
-                <form class="visa-row" (ngSubmit)="saveVisaDate()">
+                <form class="visa-row" [attr.inert]="permissions.can('admissions.edit') ? null : ''" (ngSubmit)="saveVisaDate()">
                   <label class="adm-field">
                     <span>Appointment date and time</span>
                     <input type="datetime-local" name="visaAt" [(ngModel)]="visaAt" />
                   </label>
-                  <button type="submit" class="adm-btn adm-btn--sm" [disabled]="savingVisa()">Save date</button>
+                  <button *ktCan="'admissions.edit'" type="submit" class="adm-btn adm-btn--sm" [disabled]="savingVisa()">Save date</button>
                 </form>
                 @if (state === 'current') {
                   <div class="outcome-actions">
                     <span>When the embassy decides:</span>
-                    <button type="button" class="adm-btn adm-btn--sm" (click)="confirmOutcome.set('APPROVED')">Visa approved</button>
-                    <button type="button" class="adm-btn adm-btn--sm adm-btn--danger" (click)="confirmOutcome.set('REJECTED')">Visa rejected</button>
+                    <button *ktCan="'admissions.edit'" type="button" class="adm-btn adm-btn--sm" (click)="confirmOutcome.set('APPROVED')">Visa approved</button>
+                    <button *ktCan="'admissions.edit'" type="button" class="adm-btn adm-btn--sm adm-btn--danger" (click)="confirmOutcome.set('REJECTED')">Visa rejected</button>
                   </div>
                 }
               }
@@ -162,7 +162,7 @@
                   }
 
                   @if (naFor() === entry.itemKey) {
-                    <form class="na-form" (ngSubmit)="setStatus(entry, 'NOT_APPLICABLE', naReason)">
+                    <form *ktCan="'admissions.edit'" class="na-form" (ngSubmit)="setStatus(entry, 'NOT_APPLICABLE', naReason)">
                       <input name="naReason" [(ngModel)]="naReason" placeholder="Why doesn't this apply?" aria-label="Reason" />
                       <button type="submit" class="adm-btn adm-btn--sm" [disabled]="naReason.trim().length < 3">Save</button>
                       <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="naFor.set(null)">Cancel</button>
@@ -173,12 +173,12 @@
                 @if (isActive() && naFor() !== entry.itemKey) {
                   <div class="item-actions">
                     @if (entry.status === 'PENDING') {
-                      <button type="button" class="adm-btn adm-btn--sm" [disabled]="busyKey() === entry.itemKey || !!entry.blockedBy"
+                      <button *ktCan="'admissions.edit'" type="button" class="adm-btn adm-btn--sm" [disabled]="busyKey() === entry.itemKey || !!entry.blockedBy"
                         (click)="setStatus(entry, 'COMPLETED')">Done</button>
-                      <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyKey() === entry.itemKey"
+                      <button *ktCan="'admissions.edit'" type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyKey() === entry.itemKey"
                         (click)="startNa(entry)">Not applicable</button>
                     } @else {
-                      <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyKey() === entry.itemKey"
+                      <button *ktCan="'admissions.edit'" type="button" class="adm-btn adm-btn--sm adm-btn--ghost" [disabled]="busyKey() === entry.itemKey"
                         (click)="setStatus(entry, 'PENDING')">Undo</button>
                     }
                   </div>
@@ -191,7 +191,7 @@
             <div class="stage-foot">
               @if (app.canAdvance) {
                 <span>Everything required here is done.</span>
-                <button type="button" class="adm-btn adm-btn--route" (click)="moveNext.emit()">Move to {{ app.nextStage?.name }}</button>
+                <button *ktCan="'admissions.move'" type="button" class="adm-btn adm-btn--route" (click)="moveNext.emit()">Move to {{ app.nextStage?.name }}</button>
               } @else if (app.nextStage) {
                 <span class="adm-num">
                   {{ app.currentRequirements.missing.length }}
@@ -207,8 +207,8 @@
 </ol>
 
 @if (confirmOutcome(); as outcome) {
-  <div class="adm-dialog-backdrop" (click)="confirmOutcome.set(null)" role="presentation">
-    <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="outcome-title" (click)="$event.stopPropagation()"
+  <div *ktCan="'admissions.edit'" class="adm-dialog-backdrop" (click)="confirmOutcome.set(null)" role="presentation">
+    <form *ktCan="'admissions.edit'" class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="outcome-title" (click)="$event.stopPropagation()"
       (ngSubmit)="recordOutcome()">
       <div class="adm-dialog__head">
         <div>
@@ -225,7 +225,7 @@
         </div>
       }
       <div class="adm-dialog__foot">
-        <button type="button" class="adm-btn" (click)="confirmOutcome.set(null)">Cancel</button>
+        <button *ktCan="'admissions.edit'" type="button" class="adm-btn" (click)="confirmOutcome.set(null)">Cancel</button>
         <button type="submit" class="adm-btn" [class.adm-btn--primary]="outcome === 'APPROVED'" [class.adm-btn--danger]="outcome === 'REJECTED'"
           [disabled]="savingVisa() || (app.status === 'CLOSED' && correctionReason.trim().length < 5)">
           {{ outcome === 'APPROVED' ? 'Record approval' : 'Record rejection' }}
