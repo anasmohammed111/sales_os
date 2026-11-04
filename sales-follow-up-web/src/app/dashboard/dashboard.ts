@@ -218,11 +218,11 @@ export class Dashboard {
   currency = this.settingsService.currency;
 
   private readonly stageColors: Record<string, string> = {
-    NEW: '#3b82f6',
-    CONTACTED: '#6366f1',
-    QUALIFIED: '#8b5cf6',
-    QUOTATION_SENT: '#f59e0b',
-    NEGOTIATION: '#10b981',
+    NEW: 'var(--kelto-stage-new-lead)',
+    CONTACTED: 'var(--kelto-stage-contacted)',
+    QUALIFIED: 'var(--kelto-stage-qualified)',
+    QUOTATION_SENT: 'var(--kelto-stage-proposal)',
+    NEGOTIATION: 'var(--kelto-stage-negotiation)',
   };
 
   // Quick log: a real follow-up for an existing lead
@@ -251,7 +251,7 @@ export class Dashboard {
     return pipeline.byStatus.map((s) => ({
       ...s,
       percent: pipeline.openValue ? Math.round((s.value / pipeline.openValue) * 100) : 0,
-      color: this.stageColors[s.status] || '#64748b',
+      color: this.stageColors[s.status] || 'var(--kelto-chart-8)',
     }));
   });
 

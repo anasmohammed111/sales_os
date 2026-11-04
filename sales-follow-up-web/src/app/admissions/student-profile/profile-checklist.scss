@@ -17,7 +17,7 @@
   overflow: hidden;
 
   &.stage--current {
-    border-color: #93c5fd;
+    border-color: var(--kelto-brand-300);
     box-shadow: 0 0 0 3px var(--adm-route-soft);
   }
 }

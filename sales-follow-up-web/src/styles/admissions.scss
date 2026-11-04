@@ -4,26 +4,31 @@
    ========================================================================== */
 
 :root {
-  --adm-ink: #111827;
-  --adm-ink-2: #374151;
-  --adm-muted: #6b7280;
-  --adm-faint: #9ca3af;
-  --adm-line: #e5e7eb;
-  --adm-line-strong: #d1d5db;
-  --adm-surface: #ffffff;
-  --adm-page: #f8fafc;
-  --adm-route: #2563eb;
-  --adm-route-ink: #1d4ed8;
-  --adm-route-soft: #eff6ff;
-  --adm-warn: #b45309;
-  --adm-warn-soft: #fffbeb;
-  --adm-warn-line: #fde68a;
-  --adm-bad: #be123c;
-  --adm-bad-soft: #fff1f2;
-  --adm-bad-line: #fecdd3;
-  --adm-ok: #047857;
-  --adm-ok-soft: #ecfdf5;
-  --adm-ok-line: #a7f3d0;
+  /* Mapped onto the Kelto tokens (styles/kelto-colors.css) */
+  --adm-ink: var(--kelto-neutral-900);
+  --adm-ink-2: var(--kelto-neutral-700);
+  --adm-muted: var(--kelto-neutral-500);
+  --adm-faint: var(--kelto-neutral-400);
+  --adm-line: var(--kelto-border);
+  --adm-line-strong: var(--kelto-border-strong);
+  --adm-surface: var(--kelto-bg);
+  --adm-page: var(--kelto-bg-subtle);
+  --adm-route: var(--kelto-brand-600);
+  --adm-route-ink: var(--kelto-brand-700);
+  --adm-route-soft: var(--kelto-brand-50);
+  --adm-route-line: var(--kelto-brand-200);
+  --adm-info-ink: var(--kelto-info-700);
+  --adm-info-soft: var(--kelto-info-50);
+  --adm-info-line: var(--kelto-info-100);
+  --adm-warn: var(--kelto-warning-700);
+  --adm-warn-soft: var(--kelto-warning-50);
+  --adm-warn-line: var(--kelto-warning-100);
+  --adm-bad: var(--kelto-danger-700);
+  --adm-bad-soft: var(--kelto-danger-50);
+  --adm-bad-line: var(--kelto-danger-100);
+  --adm-ok: var(--kelto-success-700);
+  --adm-ok-soft: var(--kelto-success-50);
+  --adm-ok-line: var(--kelto-success-100);
   --adm-radius: var(--radius-md, 10px);
   --adm-radius-lg: 14px;
 }
@@ -115,13 +120,13 @@
 }
 
 .adm-btn--primary {
-  border-color: var(--adm-ink);
-  background: var(--adm-ink);
-  color: #fff;
+  border-color: var(--kelto-primary);
+  background: var(--kelto-primary);
+  color: var(--kelto-text-on-brand);
 
   &:hover:not(:disabled) {
-    background: #1f2937;
-    border-color: #1f2937;
+    background: var(--kelto-primary-hover);
+    border-color: var(--kelto-primary-hover);
   }
 }
 
@@ -137,12 +142,13 @@
 }
 
 .adm-btn--danger {
-  border-color: var(--adm-bad-line);
-  color: var(--adm-bad);
+  border-color: var(--kelto-danger-600);
+  background: var(--kelto-danger-600);
+  color: var(--kelto-neutral-0);
 
   &:hover:not(:disabled) {
-    background: var(--adm-bad-soft);
-    border-color: var(--adm-bad);
+    background: var(--kelto-danger-700);
+    border-color: var(--kelto-danger-700);
   }
 }
 
@@ -193,7 +199,7 @@
   white-space: nowrap;
 }
 
-.adm-chip--route { background: var(--adm-route-soft); border-color: #bfdbfe; color: var(--adm-route-ink); }
+.adm-chip--route { background: var(--adm-route-soft); border-color: var(--adm-route-line); color: var(--adm-route-ink); }
 .adm-chip--warn { background: var(--adm-warn-soft); border-color: var(--adm-warn-line); color: var(--adm-warn); }
 .adm-chip--bad { background: var(--adm-bad-soft); border-color: var(--adm-bad-line); color: var(--adm-bad); }
 .adm-chip--ok { background: var(--adm-ok-soft); border-color: var(--adm-ok-line); color: var(--adm-ok); }
@@ -480,7 +486,8 @@
 
   &--bad { background: var(--adm-bad-soft); border-color: var(--adm-bad-line); color: #881337; }
   &--warn { background: var(--adm-warn-soft); border-color: var(--adm-warn-line); color: #78350f; }
-  &--route { background: var(--adm-route-soft); border-color: #bfdbfe; color: #1e3a8a; }
+  // Informational notes stay Kelto info blue
+  &--route { background: var(--adm-info-soft); border-color: var(--adm-info-line); color: var(--adm-info-ink); }
   &--ok { background: var(--adm-ok-soft); border-color: var(--adm-ok-line); color: #065f46; }
 
   ul {

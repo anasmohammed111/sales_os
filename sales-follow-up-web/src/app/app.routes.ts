@@ -10,49 +10,49 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    title: 'Dashboard | SalesOS',
+    title: 'Dashboard | Kelto',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'leads',
-    title: 'Leads | SalesOS',
+    title: 'Leads | Kelto',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'follow-ups',
-    title: 'Follow-ups | SalesOS',
+    title: 'Follow-ups | Kelto',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'team',
-    title: 'Team | SalesOS',
+    title: 'Team | Kelto',
     canActivate: [authGuard, ownerGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'pipeline',
-    title: 'Sales pipeline | SalesOS',
+    title: 'Sales pipeline | Kelto',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'quotations',
-    title: 'Quotations | SalesOS',
+    title: 'Quotations | Kelto',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'settings',
-    title: 'Settings | SalesOS',
+    title: 'Settings | Kelto',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
@@ -60,7 +60,7 @@ export const routes: Routes = [
   {
     // SYB admissions: rendered inside the app shell's outlet
     path: 'admissions',
-    title: 'Admissions | SalesOS',
+    title: 'Admissions | Kelto',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
@@ -69,7 +69,7 @@ export const routes: Routes = [
   },
   {
     path: 'auth',
-    title: 'Account | SalesOS',
+    title: 'Account | Kelto',
     loadChildren: () =>
       import('./auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },

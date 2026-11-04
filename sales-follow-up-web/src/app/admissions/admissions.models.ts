@@ -388,6 +388,25 @@ export interface DashboardData {
   conversion: { cohort: number; approved: number; rate: number | null; definition: string; query: Query };
 }
 
+export type AssessmentType = 'INTERVIEW' | 'EXAM';
+
+export interface AssessmentEvent {
+  applicationId: string;
+  studentId: string;
+  student: { name: string; phone: string };
+  counsellor: string | null;
+  currentStage: { key: string; name: string };
+  type: AssessmentType;
+  at: string;
+  result: AssessmentResult;
+}
+
+export interface AssessmentsData {
+  upcoming: AssessmentEvent[];
+  awaitingResult: AssessmentEvent[];
+  timezone: string;
+}
+
 export interface AppNotification {
   id: string;
   type: string;

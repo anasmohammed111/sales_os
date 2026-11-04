@@ -28,6 +28,11 @@ export const ADMISSIONS_ROUTES: Routes = [
         loadComponent: () => import('./student-profile/student-profile').then((m) => m.StudentProfile),
       },
       {
+        path: 'assessments',
+        title: 'Interviews & exams',
+        loadComponent: () => import('./assessments/assessments').then((m) => m.Assessments),
+      },
+      {
         path: 'tasks',
         title: 'My tasks',
         loadComponent: () => import('./my-tasks/my-tasks').then((m) => m.MyTasks),

@@ -143,7 +143,7 @@ button.station {
   }
 
   .stop--current::after {
-    background: #bfdbfe;
+    background: var(--kelto-brand-200);
   }
 
   .stop--ahead .dot {

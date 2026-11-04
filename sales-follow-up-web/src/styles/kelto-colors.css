@@ -1,0 +1,110 @@
+:root {
+  /* Kelto CRM color tokens */
+
+  /* brand */
+  --kelto-brand-50: #FEF4F1;
+  --kelto-brand-100: #FDE6DF;
+  --kelto-brand-200: #FBCBBD;
+  --kelto-brand-300: #F6A68F;
+  --kelto-brand-400: #EE7D5F;
+  --kelto-brand-500: #E5603E;
+  --kelto-brand-600: #CC4626;
+  --kelto-brand-700: #AA3920;
+  --kelto-brand-800: #8A311E;
+  --kelto-brand-900: #722C1D;
+  --kelto-brand-950: #3E140B;
+
+  /* neutral */
+  --kelto-neutral-0: #FFFFFF;
+  --kelto-neutral-50: #F8FAFC;
+  --kelto-neutral-100: #F1F5F9;
+  --kelto-neutral-200: #E2E8F0;
+  --kelto-neutral-300: #CBD5E1;
+  --kelto-neutral-400: #94A3B8;
+  --kelto-neutral-500: #64748B;
+  --kelto-neutral-600: #475569;
+  --kelto-neutral-700: #334155;
+  --kelto-neutral-800: #1E293B;
+  --kelto-neutral-900: #0F172A;
+  --kelto-neutral-950: #020617;
+
+  /* success */
+  --kelto-success-50: #ECFDF5;
+  --kelto-success-100: #D1FAE5;
+  --kelto-success-500: #10B981;
+  --kelto-success-600: #059669;
+  --kelto-success-700: #047857;
+
+  /* warning */
+  --kelto-warning-50: #FFFBEB;
+  --kelto-warning-100: #FEF3C7;
+  --kelto-warning-500: #F59E0B;
+  --kelto-warning-600: #D97706;
+  --kelto-warning-700: #B45309;
+
+  /* danger */
+  --kelto-danger-50: #FEF2F2;
+  --kelto-danger-100: #FEE2E2;
+  --kelto-danger-500: #EF4444;
+  --kelto-danger-600: #DC2626;
+  --kelto-danger-700: #B91C1C;
+
+  /* info */
+  --kelto-info-50: #EFF6FF;
+  --kelto-info-100: #DBEAFE;
+  --kelto-info-500: #3B82F6;
+  --kelto-info-600: #2563EB;
+  --kelto-info-700: #1D4ED8;
+
+  /* semantic aliases */
+  --kelto-bg: var(--kelto-neutral-0);
+  --kelto-bg-subtle: var(--kelto-neutral-50);
+  --kelto-bg-muted: var(--kelto-neutral-100);
+  --kelto-border: var(--kelto-neutral-200);
+  --kelto-border-strong: var(--kelto-neutral-300);
+  --kelto-text: var(--kelto-neutral-900);
+  --kelto-text-muted: var(--kelto-neutral-600);
+  --kelto-text-subtle: var(--kelto-neutral-500);
+  --kelto-text-on-brand: var(--kelto-neutral-0);
+  --kelto-primary: var(--kelto-brand-600);
+  --kelto-primary-hover: var(--kelto-brand-700);
+  --kelto-primary-subtle: var(--kelto-brand-50);
+  --kelto-accent: var(--kelto-brand-500);
+  --kelto-focus-ring: var(--kelto-brand-400);
+  --kelto-sidebar-bg: var(--kelto-neutral-900);
+  --kelto-sidebar-text: var(--kelto-neutral-300);
+  --kelto-sidebar-active: var(--kelto-brand-500);
+
+  /* pipeline stages: dot / badge text / badge background */
+  --kelto-stage-new-lead: #64748B;
+  --kelto-stage-new-lead-text: #475569;
+  --kelto-stage-new-lead-bg: #F1F5F9;
+  --kelto-stage-contacted: #2563EB;
+  --kelto-stage-contacted-text: #1D4ED8;
+  --kelto-stage-contacted-bg: #DBEAFE;
+  --kelto-stage-qualified: #7C3AED;
+  --kelto-stage-qualified-text: #6D28D9;
+  --kelto-stage-qualified-bg: #EDE9FE;
+  --kelto-stage-proposal: #F59E0B;
+  --kelto-stage-proposal-text: #92400E;
+  --kelto-stage-proposal-bg: #FEF3C7;
+  --kelto-stage-negotiation: #E5603E;
+  --kelto-stage-negotiation-text: #AA3920;
+  --kelto-stage-negotiation-bg: #FDE6DF;
+  --kelto-stage-won: #10B981;
+  --kelto-stage-won-text: #065F46;
+  --kelto-stage-won-bg: #D1FAE5;
+  --kelto-stage-lost: #EF4444;
+  --kelto-stage-lost-text: #B91C1C;
+  --kelto-stage-lost-bg: #FEE2E2;
+
+  /* charts, in order of use */
+  --kelto-chart-1: #E5603E;
+  --kelto-chart-2: #2563EB;
+  --kelto-chart-3: #10B981;
+  --kelto-chart-4: #F59E0B;
+  --kelto-chart-5: #7C3AED;
+  --kelto-chart-6: #0891B2;
+  --kelto-chart-7: #DB2777;
+  --kelto-chart-8: #64748B;
+}

@@ -17,11 +17,14 @@
 /* ==========================================================================
    Sidebar
    ========================================================================== */
+/* ==========================================================================
+   Kelto sidebar: dark navy, light text, coral active marker
+   ========================================================================== */
 .sidebar {
   width: 272px;
   height: 100%;
-  background: rgba(255, 255, 255, 0.98);
-  border-right: 1px solid #e2e8f0;
+  background: var(--kelto-sidebar-bg);
+  border-right: 1px solid var(--kelto-neutral-800);
   display: flex;
   flex-direction: column;
   padding: 18px 14px;
@@ -30,7 +33,7 @@
   overflow: hidden;
   position: relative;
   z-index: 20;
-  box-shadow: 8px 0 30px rgba(15, 23, 42, 0.025);
+  color-scheme: dark;
   transition: width 0.22s ease, padding 0.22s ease;
 
   &.collapsed {
@@ -46,7 +49,7 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 4px 18px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   margin-bottom: 10px;
   flex-shrink: 0;
 }
@@ -56,19 +59,27 @@
   align-items: center;
   gap: 11px;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
+// The Kelto mark: coral rounded square with a white K
 .brand-icon {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
-  background: linear-gradient(145deg, #2563eb, #1d4ed8);
-  color: #ffffff;
+  border-radius: 10px;
+  background: var(--kelto-brand-500);
+  color: var(--kelto-text-on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.22);
+  box-shadow: 0 6px 14px rgba(229, 96, 62, 0.3);
 }
 
 .brand-info {
@@ -79,25 +90,34 @@
 }
 
 .brand-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.2px;
+  font-size: 19px;
+  font-weight: 750;
+  color: var(--kelto-text);
+  letter-spacing: -0.4px;
+  line-height: 1.1;
 }
 
 .brand-tag {
   font-size: 11px;
-  color: #64748b;
+  color: var(--kelto-text-subtle);
   font-weight: 500;
+}
+
+.sidebar .brand-title {
+  color: var(--kelto-neutral-0);
+}
+
+.sidebar .brand-tag {
+  color: var(--kelto-neutral-400);
 }
 
 .sidebar-collapse-btn {
   width: 30px;
   height: 30px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9px;
-  background: #ffffff;
-  color: #64748b;
+  background: transparent;
+  color: var(--kelto-neutral-400);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -106,9 +126,9 @@
   transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 
   &:hover {
-    color: #1d4ed8;
-    border-color: #bfdbfe;
-    background: #eff6ff;
+    color: var(--kelto-neutral-0);
+    border-color: var(--kelto-neutral-700);
+    background: var(--kelto-neutral-800);
   }
 }
 
@@ -130,7 +150,7 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--kelto-neutral-500);
   letter-spacing: 0.075em;
   padding: 14px 10px 6px;
   white-space: nowrap;
@@ -139,7 +159,7 @@
     content: '';
     height: 1px;
     flex: 1;
-    background: #f1f5f9;
+    background: rgba(255, 255, 255, 0.06);
   }
 }
 
@@ -154,9 +174,9 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #475569;
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--kelto-sidebar-text);
+  font-size: 13.5px;
+  font-weight: 550;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
@@ -172,49 +192,47 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: #64748b;
-    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    color: var(--kelto-neutral-400);
+    transition: color 0.15s ease;
   }
 
   &:hover {
-    background: #f1f5f9;
-    color: #0f172a;
+    background: rgba(30, 41, 59, 0.7);
+    color: var(--kelto-neutral-0);
 
     .nav-icon-wrap {
-      color: #0f172a;
+      color: var(--kelto-neutral-0);
     }
   }
 
   &.active {
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: var(--kelto-neutral-800);
+    color: var(--kelto-neutral-0);
 
     &::before {
       content: '';
       position: absolute;
       left: 0;
-      top: 11px;
-      bottom: 11px;
+      top: 6px;
+      bottom: 6px;
       width: 3px;
       border-radius: 0 999px 999px 0;
-      background: #2563eb;
+      background: var(--kelto-sidebar-active);
     }
 
     .nav-icon-wrap {
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+      color: var(--kelto-brand-400);
     }
   }
 
   &.nav-item-disabled {
     cursor: default;
-    color: #94a3b8;
-    opacity: 0.78;
+    color: var(--kelto-neutral-500);
+    opacity: 0.8;
 
     &:hover {
       background: transparent;
-      color: #94a3b8;
+      color: var(--kelto-neutral-500);
     }
   }
 }
@@ -230,29 +248,29 @@
   border-radius: 12px;
 
   &.active-pill {
-    background: #2563eb;
-    color: #ffffff;
+    background: var(--kelto-sidebar-active);
+    color: var(--kelto-text-on-brand);
   }
 
   &.count-pill {
-    background: #e2e8f0;
-    color: #475569;
+    background: var(--kelto-neutral-800);
+    color: var(--kelto-neutral-300);
   }
 
   &.urgent-pill {
     min-width: 22px;
     text-align: center;
-    background: #fff7ed;
-    color: #c2410c;
+    background: rgba(229, 96, 62, 0.18);
+    color: var(--kelto-brand-300);
   }
 }
 
 .nav-soon {
   padding: 2px 7px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--kelto-neutral-700);
   border-radius: 999px;
-  background: #f8fafc;
-  color: #94a3b8;
+  background: transparent;
+  color: var(--kelto-neutral-500);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -263,9 +281,9 @@
 .sidebar-user {
   margin-top: auto;
   padding: 10px;
-  border: 1px solid #e8edf3;
+  border: 1px solid var(--kelto-neutral-800);
   border-radius: 12px;
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.03);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -281,8 +299,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--kelto-brand-600);
+  color: var(--kelto-text-on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -297,9 +315,9 @@
   bottom: -1px;
   width: 10px;
   height: 10px;
-  border: 2px solid #f8fafc;
+  border: 2px solid var(--kelto-sidebar-bg);
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--kelto-success-500);
 }
 
 .user-details {
@@ -312,7 +330,7 @@
 .user-name {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--kelto-neutral-0);
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -320,14 +338,14 @@
 
 .user-role {
   font-size: 11px;
-  color: #64748b;
+  color: var(--kelto-neutral-400);
 }
 
 .btn-logout {
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #94a3b8;
+  color: var(--kelto-neutral-400);
   padding: 6px;
   border-radius: 6px;
   display: flex;
@@ -336,8 +354,8 @@
   transition: all 0.15s ease;
 
   &:hover {
-    color: #ef4444;
-    background: #fee2e2;
+    color: var(--kelto-danger-500);
+    background: rgba(239, 68, 68, 0.14);
   }
 }
 
@@ -404,7 +422,7 @@
   box-sizing: border-box;
   min-width: 0;
   background:
-    radial-gradient(circle at 96% 0%, rgba(37, 99, 235, 0.055), transparent 30%),
+    radial-gradient(circle at 96% 0%, rgba(204, 70, 38, 0.055), transparent 30%),
     #f6f8fb;
   scroll-behavior: smooth;
 }
@@ -491,8 +509,8 @@
   }
 
   &:focus-within {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    border-color: var(--kelto-brand-600);
+    box-shadow: 0 0 0 3px rgba(204, 70, 38, 0.08);
   }
 }
 
@@ -500,7 +518,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #0f172a;
+  background: var(--kelto-primary);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -510,10 +528,10 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 2px 4px rgba(204, 70, 38, 0.1);
 
   &:hover {
-    background: #1e293b;
+    background: var(--kelto-primary-hover);
     transform: translateY(-1px);
   }
 
@@ -637,7 +655,7 @@
 
 .progress-fill {
   height: 100%;
-  background: #2563eb;
+  background: var(--kelto-brand-600);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -736,8 +754,8 @@
     outline: none;
 
     &:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+      border-color: var(--kelto-brand-600);
+      box-shadow: 0 0 0 2px rgba(204, 70, 38, 0.1);
     }
   }
 }
@@ -870,7 +888,7 @@
   transition: all 0.15s ease;
 
   &:hover {
-    border-color: #2563eb;
+    border-color: var(--kelto-brand-600);
   }
 
   &.checked {
@@ -947,8 +965,8 @@
   color: #475569;
 
   &.channel-pill {
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: var(--kelto-brand-50);
+    color: var(--kelto-brand-700);
   }
 
   &.urgent {
@@ -1035,8 +1053,8 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 
   &.highlight-card {
-    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
-    border-color: #bfdbfe;
+    background: linear-gradient(135deg, var(--kelto-brand-50) 0%, #f0fdf4 100%);
+    border-color: var(--kelto-brand-200);
 
     .highlight-icon {
       font-size: 18px;
@@ -1047,14 +1065,14 @@
       margin: 0 0 6px;
       font-size: 14px;
       font-weight: 700;
-      color: #1e3a8a;
+      color: var(--kelto-brand-900);
     }
 
     p {
       margin: 0;
       font-size: 12px;
       line-height: 1.5;
-      color: #1e40af;
+      color: var(--kelto-brand-800);
     }
   }
 }
@@ -1149,7 +1167,7 @@
   }
 
   &.blue {
-    background: #3b82f6;
+    background: var(--kelto-brand-500);
   }
 
   &.purple {
@@ -1276,7 +1294,7 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: linear-gradient(145deg, #2563eb, #1d4ed8);
+        background: linear-gradient(145deg, var(--kelto-brand-600), var(--kelto-brand-700));
         color: #ffffff;
         display: flex;
         align-items: center;
@@ -1325,15 +1343,15 @@
         transition: background 0.15s ease, border-color 0.15s ease;
 
         &:hover, &:active {
-          background: #eff6ff;
-          border-color: #bfdbfe;
+          background: var(--kelto-brand-50);
+          border-color: var(--kelto-brand-200);
         }
 
         .user-avatar-small {
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: #2563eb;
+          background: var(--kelto-brand-600);
           color: #ffffff;
           font-size: 11px;
           font-weight: 700;
@@ -1466,21 +1484,21 @@
       }
 
       &.active {
-        color: #2563eb;
+        color: var(--kelto-brand-600);
 
         .nav-icon-wrap {
           transform: translateY(-2px);
           border-radius: 8px;
-          background: #eff6ff;
+          background: var(--kelto-brand-50);
 
           svg {
-            color: #2563eb;
+            color: var(--kelto-brand-600);
           }
         }
 
         .nav-label {
           font-weight: 700;
-          color: #1d4ed8;
+          color: var(--kelto-brand-700);
         }
       }
 
@@ -1616,7 +1634,7 @@
         width: 42px;
         height: 42px;
         border-radius: 12px;
-        background: #2563eb;
+        background: var(--kelto-brand-600);
         color: #ffffff;
         font-size: 16px;
         font-weight: 700;
@@ -1643,7 +1661,7 @@
         .user-role {
           font-size: 11px;
           font-weight: 600;
-          color: #2563eb;
+          color: var(--kelto-brand-600);
         }
 
         .user-email {
@@ -1689,8 +1707,8 @@
         }
 
         &.active {
-          border-color: #bfdbfe;
-          background: #eff6ff;
+          border-color: var(--kelto-brand-200);
+          background: var(--kelto-brand-50);
         }
 
         &.disabled {
@@ -1715,8 +1733,8 @@
           flex-shrink: 0;
 
           &.icon-deals {
-            background: #eff6ff;
-            color: #2563eb;
+            background: var(--kelto-brand-50);
+            color: var(--kelto-brand-600);
           }
 
           &.icon-quotes {
@@ -1967,14 +1985,6 @@
   }
 }
 
-.sidebar {
-  border-right-color: rgba(148, 163, 184, 0.14);
-  background:
-    radial-gradient(circle at 12% 4%, rgba(59, 130, 246, 0.16), transparent 24%),
-    linear-gradient(180deg, #101a2e 0%, #0b1324 100%);
-  box-shadow: 12px 0 36px rgba(15, 23, 42, 0.1);
-}
-
 .brand-lockup,
 .mobile-brand {
   appearance: none;
@@ -1986,115 +1996,27 @@
   cursor: pointer;
 }
 
+// Kelto sidebar additions; colours come from the Kelto sidebar block at the top
 .sidebar {
-  .brand-row {
-    border-bottom-color: rgba(148, 163, 184, 0.14);
-  }
-
-  .brand-title {
-    color: #f8fafc;
-  }
-
-  .brand-tag {
-    color: #94a3b8;
-  }
-
-  .sidebar-collapse-btn {
-    border-color: rgba(148, 163, 184, 0.22);
-    background: rgba(255, 255, 255, 0.06);
-    color: #94a3b8;
-
-    &:hover {
-      border-color: rgba(96, 165, 250, 0.45);
-      background: rgba(37, 99, 235, 0.18);
-      color: #dbeafe;
-    }
-  }
-
   .nav-list {
     padding-right: 4px;
     scrollbar-color: rgba(148, 163, 184, 0.34) transparent;
   }
 
-  .nav-section-title {
-    color: #64748b;
-
-    &::after {
-      background: rgba(148, 163, 184, 0.13);
-    }
-  }
-
-  .nav-item {
-    color: #b8c4d8;
-
-    .nav-icon-wrap {
-      color: #8fa0b8;
-    }
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.07);
-      color: #ffffff;
-
-      .nav-icon-wrap {
-        color: #dbeafe;
-      }
-    }
-
-    &.active {
-      background: linear-gradient(90deg, rgba(37, 99, 235, 0.34), rgba(37, 99, 235, 0.14));
-      color: #ffffff;
-
-      &::before {
-        top: 8px;
-        bottom: 8px;
-        background: #60a5fa;
-        box-shadow: 0 0 12px rgba(96, 165, 250, 0.55);
-      }
-
-      .nav-icon-wrap {
-        background: #2563eb;
-        color: #ffffff;
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24);
-      }
-    }
-
-    &.nav-item-disabled {
-      color: #64748b;
-
-      &:hover {
-        color: #64748b;
-      }
-    }
-  }
-
-  .nav-pill.urgent-pill {
-    border: 1px solid rgba(251, 146, 60, 0.26);
-    background: rgba(234, 88, 12, 0.16);
-    color: #fdba74;
-  }
-
-  .nav-soon {
-    border-color: rgba(148, 163, 184, 0.2);
-    background: rgba(255, 255, 255, 0.04);
-    color: #64748b;
-  }
-
   .nav-open-hint {
     display: inline-flex;
-    color: #64748b;
+    color: var(--kelto-neutral-500);
     transition: color 0.15s ease, transform 0.15s ease;
   }
 
   .nav-item:hover .nav-open-hint,
   .nav-item.active .nav-open-hint {
-    color: #bfdbfe;
+    color: var(--kelto-brand-300);
     transform: translateX(2px);
   }
 
   .sidebar-user {
     padding: 7px;
-    border-color: rgba(148, 163, 184, 0.16);
-    background: rgba(255, 255, 255, 0.055);
   }
 
   .user-profile-link {
@@ -2115,32 +2037,6 @@
       background: rgba(255, 255, 255, 0.06);
     }
   }
-
-  .user-avatar {
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
-  }
-
-  .online-indicator {
-    border-color: #101a2e;
-  }
-
-  .user-name {
-    color: #f8fafc;
-  }
-
-  .user-role {
-    color: #8fa0b8;
-  }
-
-  .btn-logout {
-    color: #7f8da3;
-
-    &:hover {
-      background: rgba(239, 68, 68, 0.14);
-      color: #fca5a5;
-    }
-  }
 }
 
 .sidebar.collapsed {
@@ -2155,9 +2051,7 @@
 }
 
 .main-content {
-  background:
-    radial-gradient(circle at 94% 2%, rgba(37, 99, 235, 0.065), transparent 26%),
-    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  background: var(--kelto-bg-subtle);
 }
 
 .mobile-menu-chevron {

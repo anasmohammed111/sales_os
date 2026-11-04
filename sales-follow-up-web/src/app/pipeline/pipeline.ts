@@ -25,13 +25,13 @@ export interface StageColumn {
 }
 
 const DEFAULT_STAGES: StageColumn[] = [
-  { id: 'NEW', name: 'New', color: '#3b82f6', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'CONTACTED', name: 'Contacted', color: '#6366f1', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'QUALIFIED', name: 'Qualified', color: '#8b5cf6', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'QUOTATION_SENT', name: 'Quotation Sent', color: '#f59e0b', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'NEGOTIATION', name: 'Negotiation', color: '#06b6d4', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'WON', name: 'Won', color: '#10b981', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
-  { id: 'LOST', name: 'Lost', color: '#f43f5e', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'NEW', name: 'New', color: 'var(--kelto-stage-new-lead)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'CONTACTED', name: 'Contacted', color: 'var(--kelto-stage-contacted)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'QUALIFIED', name: 'Qualified', color: 'var(--kelto-stage-qualified)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'QUOTATION_SENT', name: 'Quotation Sent', color: 'var(--kelto-stage-proposal)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'NEGOTIATION', name: 'Negotiation', color: 'var(--kelto-stage-negotiation)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'WON', name: 'Won', color: 'var(--kelto-stage-won)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'LOST', name: 'Lost', color: 'var(--kelto-stage-lost)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
 ];
 
 const ALLOWED_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {

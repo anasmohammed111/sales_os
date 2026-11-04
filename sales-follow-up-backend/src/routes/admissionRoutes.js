@@ -10,6 +10,7 @@ const documents = require('../controllers/admissions/documentController');
 const payments = require('../controllers/admissions/paymentController');
 const exportsController = require('../controllers/admissions/exportController');
 const { getDashboard } = require('../controllers/admissions/dashboardController');
+const { listAssessments } = require('../controllers/admissions/assessmentController');
 const settings = require('../controllers/admissions/settingsController');
 const { serveFile } = require('../controllers/admissions/fileController');
 const { uploadSingle } = require('../services/storage/uploads');
@@ -62,6 +63,8 @@ router.patch('/fees/:feeId/transactions/:txId/void', payments.voidPayment);
 router.get('/fees/:feeId/transactions/:txId/receipt-url', payments.getReceiptUrl);
 router.get('/payments', payments.listPayments);
 router.get('/payments/export', exportsController.exportPayments);
+
+router.get('/assessments', listAssessments);
 
 router.get('/tasks', tasks.listTasks);
 router.patch('/tasks/:id', tasks.updateTask);

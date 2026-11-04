@@ -11,6 +11,7 @@ import {
   ApiResponse,
   Application,
   ApplicationDetail,
+  AssessmentsData,
   DashboardData,
   DocumentType,
   DuplicateMatch,
@@ -138,6 +139,11 @@ export class AdmissionsService {
 
   addNote(id: string, body: string): Observable<unknown> {
     return this.http.post(`${this.base}/applications/${id}/notes`, { body });
+  }
+
+  // Interviews and entrance exams
+  listAssessments(): Observable<AssessmentsData> {
+    return this.http.get<ApiResponse<AssessmentsData>>(`${this.base}/assessments`).pipe(map((r) => r.data));
   }
 
   // Tasks

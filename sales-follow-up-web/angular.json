@@ -31,6 +31,7 @@
               }
             ],
             "styles": [
+              "src/styles/kelto-colors.css",
               "src/styles.scss",
               "src/styles/admissions.scss"
             ]

@@ -13,7 +13,7 @@ select {
   &:focus {
     outline: none;
     border-color: var(--adm-route);
-    box-shadow: var(--focus-ring, 0 0 0 3px rgba(37, 99, 235, 0.2));
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(204, 70, 38, 0.2));
   }
 }
 

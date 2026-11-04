@@ -82,8 +82,8 @@
 
     &:focus {
       outline: none;
-      border-color: #2563eb;
-      box-shadow: var(--focus-ring, 0 0 0 3px rgba(37, 99, 235, 0.2));
+      border-color: var(--kelto-brand-600);
+      box-shadow: var(--focus-ring, 0 0 0 3px rgba(204, 70, 38, 0.2));
     }
   }
 }
@@ -166,12 +166,12 @@
 }
 
 .btn-primary {
-  border-color: #0f172a;
-  background: #0f172a;
+  border-color: var(--kelto-primary);
+  background: var(--kelto-primary);
   color: #ffffff;
 
   &:hover:not(:disabled) {
-    background: #1e293b;
+    background: var(--kelto-primary-hover);
   }
 }
 

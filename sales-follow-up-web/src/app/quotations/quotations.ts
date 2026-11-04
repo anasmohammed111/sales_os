@@ -249,7 +249,7 @@ export class Quotations implements OnInit {
       subject: '',
       currency: 'INR',
       discount: 0,
-      termsAndConditions: 'Payment due within 30 days of quotation acceptance. Deliverables subject to SalesOS master service agreement.',
+      termsAndConditions: 'Payment due within 30 days of quotation acceptance. Deliverables subject to our master service agreement.',
       customerNotes: 'Thank you for your business. We look forward to partnering with you.',
       internalNotes: '',
     });

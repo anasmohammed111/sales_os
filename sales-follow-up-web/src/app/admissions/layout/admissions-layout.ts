@@ -18,6 +18,7 @@ export class AdmissionsLayout implements OnInit {
     { path: 'overview', label: 'Overview' },
     { path: 'pipeline', label: 'Pipeline' },
     { path: 'students', label: 'Students' },
+    { path: 'assessments', label: 'Interviews & exams' },
     { path: 'tasks', label: 'My tasks' },
     { path: 'payments', label: 'Payments' },
     ...(this.context()?.isAdmin ? [{ path: 'settings', label: 'Settings' }] : []),

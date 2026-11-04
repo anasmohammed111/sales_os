@@ -38,14 +38,14 @@
 }
 
 .btn-primary {
-  background: #0f172a;
+  background: var(--kelto-primary);
   color: #ffffff;
-  border-color: #0f172a;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  border-color: var(--kelto-primary);
+  box-shadow: 0 1px 2px rgba(204, 70, 38, 0.08);
 
   &:hover:not(:disabled) {
-    background: #1e293b;
-    border-color: #1e293b;
+    background: var(--kelto-primary-hover);
+    border-color: var(--kelto-primary-hover);
     transform: translateY(-1px);
   }
 }
@@ -115,9 +115,9 @@
   align-items: center;
   padding: 2px 8px;
   border-radius: 12px;
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #dbeafe;
+  background: var(--kelto-brand-50);
+  color: var(--kelto-brand-600);
+  border: 1px solid var(--kelto-brand-100);
   font-size: 11px;
   font-weight: 600;
 }
@@ -180,9 +180,9 @@
   justify-content: center;
 
   &.today-icon {
-    background: #eff6ff;
-    color: #2563eb;
-    border: 1px solid #dbeafe;
+    background: var(--kelto-brand-50);
+    color: var(--kelto-brand-600);
+    border: 1px solid var(--kelto-brand-100);
   }
 
   &.overdue-icon {
@@ -334,8 +334,8 @@
 
   &:focus {
     background: #ffffff;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    border-color: var(--kelto-brand-600);
+    box-shadow: 0 0 0 3px rgba(204, 70, 38, 0.12);
   }
 }
 
@@ -396,10 +396,10 @@
   }
 
   &.open {
-    border-color: #2563eb;
+    border-color: var(--kelto-brand-600);
     background: #f0f7ff;
-    color: #1d4ed8;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    color: var(--kelto-brand-700);
+    box-shadow: 0 0 0 3px rgba(204, 70, 38, 0.12);
   }
 
   .filter-icon {
@@ -408,7 +408,7 @@
   }
 
   &.open .filter-icon {
-    color: #2563eb;
+    color: var(--kelto-brand-600);
   }
 
   .chevron-arrow {
@@ -418,7 +418,7 @@
 
     &.rotated {
       transform: rotate(180deg);
-      color: #2563eb;
+      color: var(--kelto-brand-600);
     }
   }
 }
@@ -465,7 +465,7 @@
     color: #0f172a;
 
     svg {
-      color: #2563eb;
+      color: var(--kelto-brand-600);
     }
   }
 
@@ -535,8 +535,8 @@
   }
 
   &:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    border-color: var(--kelto-brand-600);
+    box-shadow: 0 0 0 3px rgba(204, 70, 38, 0.12);
   }
 }
 
@@ -583,7 +583,7 @@
     justify-content: center;
     height: 32px;
     padding: 0 16px;
-    background: #2563eb;
+    background: var(--kelto-brand-600);
     color: #ffffff;
     border: none;
     border-radius: 6px;
@@ -593,7 +593,7 @@
     transition: background 0.15s;
 
     &:hover {
-      background: #1d4ed8;
+      background: var(--kelto-brand-700);
     }
   }
 }
@@ -958,8 +958,8 @@
     }
 
     &:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      border-color: var(--kelto-brand-600);
+      box-shadow: 0 0 0 3px rgba(204, 70, 38, 0.12);
     }
 
     &.is-invalid {
@@ -1003,7 +1003,7 @@
   }
 
   &:focus-within .select-arrow {
-    color: #2563eb;
+    color: var(--kelto-brand-600);
   }
 }
 
@@ -1064,14 +1064,14 @@
     }
 
     &.btn-primary {
-      background-color: #2563eb;
+      background-color: var(--kelto-brand-600);
       color: #ffffff;
-      border-color: #2563eb;
-      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+      border-color: var(--kelto-brand-600);
+      box-shadow: 0 1px 2px rgba(204, 70, 38, 0.2);
 
       &:hover:not(:disabled) {
-        background-color: #1d4ed8;
-        border-color: #1d4ed8;
+        background-color: var(--kelto-brand-700);
+        border-color: var(--kelto-brand-700);
       }
     }
   }
@@ -1150,7 +1150,7 @@
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, var(--kelto-brand-500) 100%);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -1301,8 +1301,8 @@
   }
 
   &.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
+    color: var(--kelto-brand-600);
+    border-bottom-color: var(--kelto-brand-600);
   }
 }
 
@@ -1394,8 +1394,8 @@
     flex-shrink: 0;
 
     &.icon-customer {
-      background: #eff6ff;
-      color: #2563eb;
+      background: var(--kelto-brand-50);
+      color: var(--kelto-brand-600);
     }
 
     &.icon-enquiry {
@@ -1466,13 +1466,13 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #2563eb;
+  color: var(--kelto-brand-600);
   font-weight: 500;
   text-decoration: none;
   transition: all 0.15s ease;
 
   &:hover {
-    color: #1d4ed8;
+    color: var(--kelto-brand-700);
     text-decoration: underline;
   }
 }
@@ -1528,13 +1528,13 @@
   }
 
   .btn-primary {
-    background: #2563eb;
+    background: var(--kelto-brand-600);
     color: #ffffff;
-    border: 1px solid #2563eb;
+    border: 1px solid var(--kelto-brand-600);
 
     &:hover:not(:disabled) {
-      background: #1d4ed8;
-      border-color: #1d4ed8;
+      background: var(--kelto-brand-700);
+      border-color: var(--kelto-brand-700);
     }
   }
 }
@@ -1650,7 +1650,7 @@
   cursor: pointer;
 
   &:hover {
-    color: #2563eb;
+    color: var(--kelto-brand-600);
     text-decoration: underline;
   }
 }
@@ -1675,9 +1675,9 @@
   white-space: nowrap;
 
   &.type-call {
-    background: #eff6ff;
-    color: #1d4ed8;
-    border: 1px solid #dbeafe;
+    background: var(--kelto-brand-50);
+    color: var(--kelto-brand-700);
+    border: 1px solid var(--kelto-brand-100);
   }
 
   &.type-whatsapp {
@@ -1903,7 +1903,7 @@
 
 .btn:focus-visible,
 .view-toggle-btn:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline: 3px solid rgba(204, 70, 38, 0.22);
   outline-offset: 2px;
 }
 
@@ -1945,3 +1945,30 @@
   }
 }
 
+
+/* ==========================================================================
+   Kelto status pills
+   ========================================================================== */
+.badge-status-pending {
+  background: var(--kelto-warning-100);
+  color: var(--kelto-warning-700);
+  &::before { background: var(--kelto-warning-500); }
+}
+
+.badge-status-completed {
+  background: var(--kelto-success-100);
+  color: var(--kelto-success-700);
+  &::before { background: var(--kelto-success-500); }
+}
+
+.badge-status-cancelled {
+  background: var(--kelto-neutral-100);
+  color: var(--kelto-neutral-600);
+  &::before { background: var(--kelto-neutral-400); }
+}
+
+.badge-status-overdue {
+  background: var(--kelto-danger-100);
+  color: var(--kelto-danger-700);
+  &::before { background: var(--kelto-danger-500); }
+}

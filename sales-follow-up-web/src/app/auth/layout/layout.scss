@@ -35,9 +35,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, var(--kelto-brand-600), var(--kelto-brand-700));
   color: #ffffff;
-  box-shadow: 0 4px 10px -2px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 10px -2px rgba(204, 70, 38, 0.4);
 }
 
 .brand-name {
