@@ -69,8 +69,15 @@ export const routes: Routes = [
     path: 'admissions',
     title: 'Admissions | Kelto',
     canActivate: [authGuard],
-    loadChildren: () =>
-      import('./admissions/admissions.routes').then((m) => m.ADMISSIONS_ROUTES),
+    loadComponent: () =>
+      import('./dashboard/dashboard').then((m) => m.Dashboard),
+    children: [
+      {
+        path: '',
+        loadChildren: () =>
+          import('./admissions/admissions.routes').then((m) => m.ADMISSIONS_ROUTES),
+      },
+    ],
   },
   {
     path: 'auth',

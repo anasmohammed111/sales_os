@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AdmissionsService } from '../../core/services/admissions.service';
@@ -7,7 +8,8 @@ import { JourneyRail, RailStage } from '../shared/journey-rail';
 
 @Component({
   selector: 'adm-overview',
-  imports: [JourneyRail, RouterLink],
+  standalone: true,
+  imports: [CommonModule, JourneyRail, RouterLink],
   templateUrl: './overview.html',
   styleUrl: './overview.scss',
 })
@@ -28,8 +30,24 @@ export class Overview implements OnInit {
   readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 + i);
   readonly money = money;
 
+  readonly hasActiveFilters = computed(() => Object.keys(this.filters()).length > 0);
+  readonly activeFilterCount = computed(() => Object.keys(this.filters()).length);
+
+  readonly totalAttentionCount = computed(() => {
+    const m = this.data()?.metrics;
+    if (!m) return 0;
+    return (m.overdueFollowUps?.value ?? 0) + (m.stuck?.value ?? 0) + (m.needsReview?.value ?? 0);
+  });
+
   readonly rail = computed<RailStage[]>(() =>
-    (this.data()?.stages ?? []).map((s) => ({ key: s.key, name: s.name, order: s.order ?? 0, isArchived: s.isArchived, count: s.count, stuck: s.stuck }))
+    (this.data()?.stages ?? []).map((s) => ({
+      key: s.key,
+      name: s.name,
+      order: s.order ?? 0,
+      isArchived: s.isArchived,
+      count: s.count,
+      stuck: s.stuck,
+    }))
   );
 
   readonly periodLabel = computed(() => {
@@ -40,6 +58,10 @@ export class Overview implements OnInit {
   readonly conversionPercent = computed(() => {
     const rate = this.data()?.conversion.rate;
     return rate === null || rate === undefined ? null : Math.round(rate * 1000) / 10;
+  });
+
+  readonly totalOverdueMoneyCount = computed(() => {
+    return (this.data()?.outstandingByCurrency ?? []).filter((r) => (r.overdueMinor ?? 0) > 0).length;
   });
 
   ngOnInit(): void {
@@ -66,6 +88,11 @@ export class Overview implements OnInit {
     if (value) next[key] = value;
     else delete next[key];
     this.filters.set(next);
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.filters.set({});
     this.load();
   }
 

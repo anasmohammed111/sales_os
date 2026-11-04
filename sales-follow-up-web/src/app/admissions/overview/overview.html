@@ -1,154 +1,553 @@
 <div class="adm-page">
+  <!-- Page Header -->
   <header class="adm-head">
-    <div>
-      <h1 class="adm-title">{{ ctx()?.businessName || 'Admissions' }}</h1>
-      <p class="adm-sub">
+    <div class="adm-head-title-wrap">
+      <div class="adm-eyebrow">
+        <span class="adm-eyebrow-dot" aria-hidden="true"></span>
+        <span>Admissions Workspace</span>
         @if (ctx()?.isAdmin) {
-          Every student in admissions.
+          <span class="adm-scope-badge">All Students</span>
         } @else {
-          Your students only.
+          <span class="adm-scope-badge">My Students</span>
         }
-        Figures for added students and visa results cover {{ periodLabel() || 'the last 12 months' }}.
+      </div>
+      <h1 class="adm-title">{{ ctx()?.businessName || 'Admissions Overview' }}</h1>
+      <p class="adm-sub">
+        Real-time pipeline tracking, student checkpoints, visa milestones, and fee collection for
+        <strong class="adm-period-chip">{{ periodLabel() || 'the last 12 months' }}</strong>.
       </p>
     </div>
+
     <div class="adm-actions">
-      <a class="adm-btn" routerLink="/admissions/students">All students</a>
-      <a class="adm-btn adm-btn--primary" routerLink="/admissions/pipeline">Open pipeline</a>
+      <button type="button" class="adm-btn adm-btn--ghost" (click)="load()" [disabled]="loading()" title="Refresh overview data">
+        <svg class="adm-icon" [class.is-spinning]="loading()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+          <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+          <path d="M16 16h5v5" />
+        </svg>
+        <span>Refresh</span>
+      </button>
+
+      <a class="adm-btn" routerLink="/admissions/students">
+        <svg class="adm-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        <span>All students</span>
+      </a>
+
+      <a class="adm-btn adm-btn--primary" routerLink="/admissions/pipeline">
+        <svg class="adm-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="5" height="18" rx="1" />
+          <rect x="11" y="3" width="5" height="12" rx="1" />
+          <rect x="19" y="3" width="5" height="15" rx="1" />
+        </svg>
+        <span>Open pipeline</span>
+      </a>
     </div>
   </header>
 
-  <section class="adm-filters" aria-label="Filters">
-    <label class="month">
-      <span>Reporting month</span>
-      <input type="month" (change)="setFilter('month', $any($event.target).value)" aria-label="Reporting month" />
-    </label>
-    <select aria-label="Level" (change)="setFilter('studyLevel', $any($event.target).value)">
-      <option value="">Any level</option>
-      <option value="BACHELOR">Bachelor's</option>
-      <option value="MASTER">Master's</option>
-    </select>
-    <select aria-label="Intake month" (change)="setFilter('intakeMonth', $any($event.target).value)">
-      <option value="">Any intake month</option>
-      @for (m of months; track m.value) {
-        <option [value]="m.value">{{ m.label }}</option>
-      }
-    </select>
-    <select aria-label="Intake year" (change)="setFilter('intakeYear', $any($event.target).value)">
-      <option value="">Any intake year</option>
-      @for (y of years; track y) {
-        <option [value]="y">{{ y }}</option>
-      }
-    </select>
-    @if (showCounsellor()) {
-      <select aria-label="Counsellor" (change)="setFilter('counsellorId', $any($event.target).value)">
-        <option value="">All counsellors</option>
-        @for (c of ctx()?.counsellors; track c._id) {
-          <option [value]="c._id">{{ c.name }}</option>
+  <!-- Filter Toolbar -->
+  <section class="adm-filter-bar" aria-label="Filters">
+    <div class="adm-filter-bar__header">
+      <div class="adm-filter-title">
+        <svg class="adm-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+        <span>Filter Data</span>
+        @if (hasActiveFilters()) {
+          <span class="adm-active-filter-badge">{{ activeFilterCount() }} active</span>
         }
-      </select>
-    }
-    @if (ctx()?.universities?.length) {
-      <select aria-label="University" (change)="setFilter('universityId', $any($event.target).value)">
-        <option value="">Any university</option>
-        @for (u of ctx()?.universities; track u._id) {
-          <option [value]="u._id">{{ u.name }}</option>
-        }
-      </select>
-    }
+      </div>
+
+      @if (hasActiveFilters()) {
+        <button type="button" class="adm-clear-filters" (click)="clearFilters()">
+          Clear filters
+        </button>
+      }
+    </div>
+
+    <div class="adm-filter-inputs">
+      <div class="adm-filter-field">
+        <label for="adm-month-input">Reporting month</label>
+        <div class="adm-input-wrap">
+          <input
+            id="adm-month-input"
+            type="month"
+            [value]="filters()['month'] || ''"
+            (change)="setFilter('month', $any($event.target).value)"
+            aria-label="Reporting month"
+          />
+        </div>
+      </div>
+
+      <div class="adm-filter-field">
+        <label for="adm-level-select">Study level</label>
+        <div class="adm-select-wrap">
+          <select id="adm-level-select" [value]="filters()['studyLevel'] || ''" (change)="setFilter('studyLevel', $any($event.target).value)" aria-label="Level">
+            <option value="">All study levels</option>
+            <option value="BACHELOR">Bachelor's Degree</option>
+            <option value="MASTER">Master's Degree</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="adm-filter-field">
+        <label for="adm-intake-month">Intake month</label>
+        <div class="adm-select-wrap">
+          <select id="adm-intake-month" [value]="filters()['intakeMonth'] || ''" (change)="setFilter('intakeMonth', $any($event.target).value)" aria-label="Intake month">
+            <option value="">Any intake month</option>
+            @for (m of months; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="adm-filter-field">
+        <label for="adm-intake-year">Intake year</label>
+        <div class="adm-select-wrap">
+          <select id="adm-intake-year" [value]="filters()['intakeYear'] || ''" (change)="setFilter('intakeYear', $any($event.target).value)" aria-label="Intake year">
+            <option value="">Any intake year</option>
+            @for (y of years; track y) {
+              <option [value]="y">{{ y }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (showCounsellor()) {
+        <div class="adm-filter-field">
+          <label for="adm-counsellor-select">Counsellor</label>
+          <div class="adm-select-wrap">
+            <select id="adm-counsellor-select" [value]="filters()['counsellorId'] || ''" (change)="setFilter('counsellorId', $any($event.target).value)" aria-label="Counsellor">
+              <option value="">All counsellors</option>
+              @for (c of ctx()?.counsellors; track c._id) {
+                <option [value]="c._id">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      }
+
+      @if (ctx()?.universities?.length) {
+        <div class="adm-filter-field">
+          <label for="adm-uni-select">University</label>
+          <div class="adm-select-wrap">
+            <select id="adm-uni-select" [value]="filters()['universityId'] || ''" (change)="setFilter('universityId', $any($event.target).value)" aria-label="University">
+              <option value="">Any university</option>
+              @for (u of ctx()?.universities; track u._id) {
+                <option [value]="u._id">{{ u.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      }
+    </div>
   </section>
 
+  <!-- State Views: Error, Loading, or Main Content -->
   @if (error(); as message) {
-    <div class="adm-panel adm-state"><strong>{{ message }}</strong><button type="button" class="adm-btn" (click)="load()">Try again</button></div>
-  } @else if (loading() && !data()) {
-    <div class="adm-skeleton" style="height: 150px"></div>
-    <div class="adm-skeleton" style="height: 260px"></div>
-  } @else if (data(); as d) {
-    <section class="adm-panel route" [class.is-loading]="loading()">
-      <div class="route-head">
-        <h2>Where students are now</h2>
-        <button type="button" class="adm-link" (click)="openList(d.metrics.active.query)">
-          <span class="adm-num">{{ d.metrics.active.value }}</span> active
-        </button>
+    <div class="adm-panel adm-state-panel error-state">
+      <div class="adm-state-icon is-danger" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
       </div>
-      <adm-journey-rail mode="counts" [stages]="rail()" (select)="openStage($event)" />
+      <h2>We couldn't load the admissions overview</h2>
+      <p>{{ message }}</p>
+      <button type="button" class="adm-btn adm-btn--primary" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading() && !data()) {
+    <div class="adm-skeleton-grid">
+      <div class="adm-skeleton card-skeleton" style="height: 120px"></div>
+      <div class="adm-skeleton card-skeleton" style="height: 120px"></div>
+      <div class="adm-skeleton card-skeleton" style="height: 120px"></div>
+      <div class="adm-skeleton card-skeleton" style="height: 120px"></div>
+    </div>
+    <div class="adm-skeleton" style="height: 220px; border-radius: var(--adm-radius-lg);"></div>
+    <div class="adm-skeleton-row">
+      <div class="adm-skeleton" style="height: 280px; flex: 1;"></div>
+      <div class="adm-skeleton" style="height: 280px; flex: 1;"></div>
+      <div class="adm-skeleton" style="height: 280px; flex: 1;"></div>
+    </div>
+  } @else if (data(); as d) {
+    <!-- High-Impact KPI Summary Cards -->
+    <section class="adm-kpi-grid" aria-label="Key Performance Indicators">
+      <!-- KPI 1: Active Students -->
+      <article class="adm-kpi-card" (click)="openList(d.metrics.active.query)" role="button" tabindex="0">
+        <div class="adm-kpi-card__top">
+          <div class="adm-kpi-icon is-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 3 9 3 12 0v-5" />
+            </svg>
+          </div>
+          <span class="adm-kpi-link-label">View all &rarr;</span>
+        </div>
+        <div class="adm-kpi-card__body">
+          <span class="adm-kpi-label">Active Students</span>
+          <strong class="adm-kpi-value adm-num">{{ d.metrics.active.value }}</strong>
+          <span class="adm-kpi-sub">In progress across all stages</span>
+        </div>
+      </article>
+
+      <!-- KPI 2: Needs Attention -->
+      <article
+        class="adm-kpi-card"
+        [class.is-alert]="totalAttentionCount() > 0"
+        (click)="openList(d.metrics.overdueFollowUps.query)"
+        role="button"
+        tabindex="0"
+      >
+        <div class="adm-kpi-card__top">
+          <div class="adm-kpi-icon is-amber">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          @if (totalAttentionCount() > 0) {
+            <span class="adm-kpi-tag is-warn">Attention needed</span>
+          } @else {
+            <span class="adm-kpi-tag is-ok">All on track</span>
+          }
+        </div>
+        <div class="adm-kpi-card__body">
+          <span class="adm-kpi-label">Needs Attention</span>
+          <strong class="adm-kpi-value adm-num" [class.is-warn]="totalAttentionCount() > 0">{{ totalAttentionCount() }}</strong>
+          <span class="adm-kpi-sub">
+            {{ d.metrics.overdueFollowUps.value }} overdue &middot; {{ d.metrics.stuck.value }} stuck &middot; {{ d.metrics.needsReview.value }} review
+          </span>
+        </div>
+      </article>
+
+      <!-- KPI 3: Visa Conversion Rate -->
+      <article class="adm-kpi-card" (click)="openList(d.conversion.query)" role="button" tabindex="0">
+        <div class="adm-kpi-card__top">
+          <div class="adm-kpi-icon is-green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="9 12 11 14 15 10" />
+            </svg>
+          </div>
+          <span class="adm-kpi-tag is-ok">{{ d.metrics.visasApproved.value }} Approved</span>
+        </div>
+        <div class="adm-kpi-card__body">
+          <span class="adm-kpi-label">Visa Approval Rate</span>
+          <strong class="adm-kpi-value adm-num ok">
+            {{ conversionPercent() === null ? '—' : conversionPercent() + '%' }}
+          </strong>
+          <span class="adm-kpi-sub">{{ d.conversion.approved }} of {{ d.conversion.cohort }} cohort students</span>
+        </div>
+      </article>
+
+      <!-- KPI 4: Fees Outstanding -->
+      <article class="adm-kpi-card" routerLink="/admissions/payments" role="button" tabindex="0">
+        <div class="adm-kpi-card__top">
+          <div class="adm-kpi-icon is-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <line x1="2" y1="10" x2="22" y2="10" />
+            </svg>
+          </div>
+          @if (totalOverdueMoneyCount() > 0) {
+            <span class="adm-kpi-tag is-bad">{{ totalOverdueMoneyCount() }} Overdue</span>
+          } @else {
+            <span class="adm-kpi-link-label">Payments &rarr;</span>
+          }
+        </div>
+        <div class="adm-kpi-card__body">
+          <span class="adm-kpi-label">Total Outstanding</span>
+          @if (d.outstandingByCurrency.length) {
+            <strong class="adm-kpi-value adm-num">
+              {{ money(d.outstandingByCurrency[0].outstandingMinor, d.outstandingByCurrency[0].currency) }}
+            </strong>
+            <span class="adm-kpi-sub">
+              @if (d.outstandingByCurrency.length > 1) {
+                +{{ d.outstandingByCurrency.length - 1 }} other currencies
+              } @else {
+                Across {{ d.outstandingByCurrency[0].currency }} balances
+              }
+            </span>
+          } @else {
+            <strong class="adm-kpi-value adm-num ok">Clear</strong>
+            <span class="adm-kpi-sub">No outstanding fees recorded</span>
+          }
+        </div>
+      </article>
     </section>
 
-    <div class="columns">
-      <section class="adm-panel">
-        <div class="adm-panel__head"><h2>Needs attention</h2></div>
-        <ul class="rows">
-          <li>
-            <button type="button" (click)="openList(d.metrics.overdueFollowUps.query)" [class.is-warn]="d.metrics.overdueFollowUps.value">
-              <span>Follow-ups overdue</span>
-              <strong class="adm-num">{{ d.metrics.overdueFollowUps.value }}</strong>
-            </button>
-          </li>
-          <li>
-            <button type="button" (click)="openList(d.metrics.stuck.query)" [class.is-warn]="d.metrics.stuck.value">
-              <span>Stuck longer than their stage allows</span>
-              <strong class="adm-num">{{ d.metrics.stuck.value }}</strong>
-            </button>
-          </li>
-          <li>
-            <button type="button" (click)="openList(d.metrics.needsReview.query)" [class.is-bad]="d.metrics.needsReview.value">
-              <span>Flagged for review (failed interview or exam)</span>
-              <strong class="adm-num">{{ d.metrics.needsReview.value }}</strong>
-            </button>
-          </li>
-        </ul>
-      </section>
-
-      <section class="adm-panel">
-        <div class="adm-panel__head"><h2>In this period</h2></div>
-        <ul class="rows">
-          <li>
-            <button type="button" (click)="openList(d.metrics.newLeads.query)">
-              <span>New students added</span>
-              <strong class="adm-num">{{ d.metrics.newLeads.value }}</strong>
-            </button>
-          </li>
-          <li>
-            <button type="button" (click)="openList(d.metrics.visasApproved.query)">
-              <span>Visas approved</span>
-              <strong class="adm-num ok">{{ d.metrics.visasApproved.value }}</strong>
-            </button>
-          </li>
-          <li>
-            <button type="button" (click)="openList(d.metrics.visasRejected.query)">
-              <span>Visas rejected</span>
-              <strong class="adm-num">{{ d.metrics.visasRejected.value }}</strong>
-            </button>
-          </li>
-        </ul>
-        <div class="conversion">
-          <p class="rate adm-num">
-            {{ conversionPercent() === null ? 'No students yet' : conversionPercent() + '% lead to visa' }}
-          </p>
-          <p class="definition">{{ d.conversion.definition }}</p>
+    <!-- Student Pipeline Transit Route -->
+    <section class="adm-panel adm-route-panel" [class.is-loading]="loading()">
+      <div class="adm-route-panel__head">
+        <div class="adm-route-panel__title-group">
+          <h2>Student Journey Pipeline</h2>
+          <p>Live distribution of candidates across each admissions gate</p>
         </div>
-      </section>
+        <div class="adm-route-panel__actions">
+          <button type="button" class="adm-active-counter" (click)="openList(d.metrics.active.query)">
+            <span class="adm-counter-num">{{ d.metrics.active.value }}</span>
+            <span class="adm-counter-txt">active students</span>
+          </button>
+          <a class="adm-btn adm-btn--sm" routerLink="/admissions/pipeline">Kanban board</a>
+        </div>
+      </div>
 
-      <section class="adm-panel">
+      <div class="adm-rail-wrapper">
+        <adm-journey-rail mode="counts" [stages]="rail()" (select)="openStage($event)" />
+      </div>
+
+      <!-- Stage Quick Pills -->
+      <div class="adm-stage-pills" role="list" aria-label="Stages overview">
+        @for (s of d.stages; track s.key) {
+          <button type="button" class="adm-stage-pill" (click)="openList(s.query)" [class.has-students]="s.count > 0">
+            <span class="adm-stage-pill__name">{{ s.name }}</span>
+            <span class="adm-stage-pill__count">{{ s.count }}</span>
+            @if (s.stuck > 0) {
+              <span class="adm-stage-pill__stuck" title="{{ s.stuck }} stuck longer than allowed">
+                {{ s.stuck }} stuck
+              </span>
+            }
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- Deep-Dive Cards Grid -->
+    <div class="adm-columns">
+      <!-- 1. Needs Attention -->
+      <section class="adm-panel adm-detail-card">
         <div class="adm-panel__head">
-          <h2>Money outstanding</h2>
-          <a class="adm-link" routerLink="/admissions/payments">Payments</a>
+          <div class="adm-card-head-title">
+            <div class="adm-card-head-icon is-amber">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h2>Needs Attention</h2>
+          </div>
+          @if (totalAttentionCount() > 0) {
+            <span class="adm-card-badge is-warn">{{ totalAttentionCount() }} items</span>
+          } @else {
+            <span class="adm-card-badge is-ok">All clear</span>
+          }
         </div>
+
+        <ul class="adm-action-rows">
+          <li>
+            <button
+              type="button"
+              class="adm-action-row"
+              [class.is-urgent]="d.metrics.overdueFollowUps.value > 0"
+              (click)="openList(d.metrics.overdueFollowUps.query)"
+            >
+              <div class="adm-action-row__icon is-amber">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+              <div class="adm-action-row__text">
+                <strong>Follow-ups overdue</strong>
+                <span>Student outreach pending past schedule</span>
+              </div>
+              <div class="adm-action-row__right">
+                <strong class="adm-action-num" [class.is-warn]="d.metrics.overdueFollowUps.value > 0">
+                  {{ d.metrics.overdueFollowUps.value }}
+                </strong>
+                <span class="adm-row-arrow">&rarr;</span>
+              </div>
+            </button>
+          </li>
+
+          <li>
+            <button
+              type="button"
+              class="adm-action-row"
+              [class.is-urgent]="d.metrics.stuck.value > 0"
+              (click)="openList(d.metrics.stuck.query)"
+            >
+              <div class="adm-action-row__icon is-orange">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div class="adm-action-row__text">
+                <strong>Stuck in stage</strong>
+                <span>Exceeded defined stage SLA threshold</span>
+              </div>
+              <div class="adm-action-row__right">
+                <strong class="adm-action-num" [class.is-warn]="d.metrics.stuck.value > 0">
+                  {{ d.metrics.stuck.value }}
+                </strong>
+                <span class="adm-row-arrow">&rarr;</span>
+              </div>
+            </button>
+          </li>
+
+          <li>
+            <button
+              type="button"
+              class="adm-action-row"
+              [class.is-bad-alert]="d.metrics.needsReview.value > 0"
+              (click)="openList(d.metrics.needsReview.query)"
+            >
+              <div class="adm-action-row__icon is-red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <div class="adm-action-row__text">
+                <strong>Flagged for review</strong>
+                <span>Failed entrance exam or interview requiring manual decision</span>
+              </div>
+              <div class="adm-action-row__right">
+                <strong class="adm-action-num" [class.is-bad]="d.metrics.needsReview.value > 0">
+                  {{ d.metrics.needsReview.value }}
+                </strong>
+                <span class="adm-row-arrow">&rarr;</span>
+              </div>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <!-- 2. Intake & Conversion -->
+      <section class="adm-panel adm-detail-card">
+        <div class="adm-panel__head">
+          <div class="adm-card-head-title">
+            <div class="adm-card-head-icon is-blue">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+              </svg>
+            </div>
+            <h2>Intake &amp; Visa Outcomes</h2>
+          </div>
+          <span class="adm-card-badge">{{ periodLabel() || 'Past 12 months' }}</span>
+        </div>
+
+        <div class="adm-intake-body">
+          <div class="adm-stat-strip">
+            <button type="button" class="adm-mini-stat" (click)="openList(d.metrics.newLeads.query)">
+              <span class="adm-mini-stat__num">{{ d.metrics.newLeads.value }}</span>
+              <span class="adm-mini-stat__lbl">New Added</span>
+            </button>
+
+            <button type="button" class="adm-mini-stat is-success" (click)="openList(d.metrics.visasApproved.query)">
+              <span class="adm-mini-stat__num ok">{{ d.metrics.visasApproved.value }}</span>
+              <span class="adm-mini-stat__lbl">Visas Approved</span>
+            </button>
+
+            <button type="button" class="adm-mini-stat is-danger" (click)="openList(d.metrics.visasRejected.query)">
+              <span class="adm-mini-stat__num bad">{{ d.metrics.visasRejected.value }}</span>
+              <span class="adm-mini-stat__lbl">Visas Rejected</span>
+            </button>
+          </div>
+
+          <!-- Conversion Rate Block -->
+          <div class="adm-conversion-box">
+            <div class="adm-conversion-box__top">
+              <div>
+                <span class="adm-conversion-label">Lead-to-Visa Conversion</span>
+                <strong class="adm-conversion-rate adm-num">
+                  {{ conversionPercent() === null ? 'No completed cohort' : conversionPercent() + '% conversion' }}
+                </strong>
+              </div>
+              @if (conversionPercent() !== null) {
+                <div class="adm-conversion-pill ok">
+                  {{ d.conversion.approved }}/{{ d.conversion.cohort }}
+                </div>
+              }
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="adm-progress-track">
+              <div
+                class="adm-progress-fill"
+                [style.width.%]="conversionPercent() || 0"
+                role="progressbar"
+                [attr.aria-valuenow]="conversionPercent() || 0"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              ></div>
+            </div>
+
+            <p class="adm-conversion-definition">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <span>{{ d.conversion.definition }}</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Money Outstanding -->
+      <section class="adm-panel adm-detail-card">
+        <div class="adm-panel__head">
+          <div class="adm-card-head-title">
+            <div class="adm-card-head-icon is-purple">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </div>
+            <h2>Money Outstanding</h2>
+          </div>
+          <a class="adm-link adm-panel-link" routerLink="/admissions/payments">
+            <span>Payment tracker</span>
+            <span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+
         @if (d.outstandingByCurrency.length) {
-          <ul class="rows money">
+          <div class="adm-money-list">
             @for (row of d.outstandingByCurrency; track row.currency) {
-              <li>
-                <div>
-                  <span>{{ row.currency }}</span>
-                  <strong class="adm-num">{{ money(row.outstandingMinor, row.currency) }}</strong>
+              <div class="adm-money-card" [class.has-overdue]="(row.overdueMinor || 0) > 0">
+                <div class="adm-money-card__header">
+                  <span class="adm-currency-badge">{{ row.currency }}</span>
                   @if (row.overdueMinor) {
-                    <small class="adm-num is-bad">{{ money(row.overdueMinor, row.currency) }} overdue</small>
+                    <span class="adm-overdue-tag">
+                      {{ money(row.overdueMinor, row.currency) }} overdue
+                    </span>
                   }
                 </div>
-              </li>
+                <div class="adm-money-card__amounts">
+                  <span class="adm-money-label">Outstanding balance</span>
+                  <strong class="adm-money-amount adm-num">
+                    {{ money(row.outstandingMinor, row.currency) }}
+                  </strong>
+                </div>
+              </div>
             }
-          </ul>
+          </div>
         } @else {
-          <p class="none">No fees recorded.</p>
+          <div class="adm-empty-fees">
+            <div class="adm-empty-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <strong>No outstanding fees</strong>
+            <p>All recorded student fees are paid in full or no fee schedules have been configured yet.</p>
+          </div>
         }
       </section>
     </div>
