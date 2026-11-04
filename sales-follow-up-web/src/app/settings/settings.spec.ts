@@ -49,7 +49,7 @@ describe('Settings', () => {
     await load('SALESPERSON');
 
     expect(fixture.nativeElement.querySelector('#business-name')).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Only the business owner can change these');
+    expect(fixture.nativeElement.textContent).toContain('managed by the workspace owner');
   });
 
   it('sends the owner’s business changes to the API', async () => {
