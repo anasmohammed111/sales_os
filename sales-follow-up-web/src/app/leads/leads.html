@@ -549,12 +549,21 @@
             </tr>
           </thead>
           <tbody>
-            @if (isLoading()) {
-            <tr>
-              <td colspan="11" class="table-empty-cell" style="padding: 40px; text-align: center; color: #64748b;">
-                <span>Loading leads from server...</span>
-              </td>
+            @if (isLoading() && leads().length === 0) {
+            @for (row of skeletonRows; track row) {
+            <tr class="dt-skeleton-row" aria-hidden="true">
+              <td><span class="dt-skel" style="--w: 80%"></span></td>
+              <td><span class="dt-skel" style="--w: 60%"></span></td>
+              <td><span class="dt-skel" style="--w: 70%"></span></td>
+              <td><span class="dt-skel" style="--w: 50%"></span></td>
+              <td><span class="dt-skel" style="--w: 75%"></span></td>
+              <td><span class="dt-skel" style="--w: 55%"></span></td>
+              <td><span class="dt-skel" style="--w: 70%"></span></td>
+              <td><span class="dt-skel" style="--w: 80%"></span></td>
+              <td><span class="dt-skel" style="--w: 60%"></span></td>
+              <td><span class="dt-skel" style="--w: 45%"></span></td>
             </tr>
+            }
             } @else if (leads().length === 0) {
             <!-- Empty state row spanning all columns -->
             <tr class="table-empty-row">
@@ -594,16 +603,16 @@
             </tr>
             } @else {
             @for (lead of leads(); track lead._id) {
-            <tr>
+            <!-- The whole row opens the lead; links and buttons inside stop the click -->
+            <tr class="dt-row-link" tabindex="0" (click)="openDetails(lead)"
+              (keydown.enter)="$event.target === $event.currentTarget && openDetails(lead)"
+              [attr.aria-label]="'Open ' + lead.customerName">
               <td class="th-customer">
+                <div class="dt-person">
+                <span class="dt-avatar tone-{{ avatarTone(lead.customerName) }}" aria-hidden="true">{{ initials(lead.customerName) }}</span>
                 <div class="lead-contact-stack">
                   <!-- 1. Customer Name -->
-                  <div class="lead-customer-name" role="button" tabindex="0" (click)="openDetails(lead)"
-                    (keydown.enter)="openDetails(lead)"
-                    (keydown.space)="$event.preventDefault(); openDetails(lead)" title="View lead details"
-                    [attr.aria-label]="'View details for ' + lead.customerName">
-                    {{ lead.customerName }}
-                  </div>
+                  <div class="lead-customer-name">{{ lead.customerName }}</div>
 
                   <!-- 2. Company Name (its bottom) -->
                   @if (lead.companyName) {
@@ -642,9 +651,10 @@
                   </div>
                   }
                 </div>
+                </div>
               </td>
               <td class="th-source">
-                <span class="badge-source">{{ lead.source }}</span>
+                <span class="dt-chip" [attr.data-source]="lead.source">{{ sourceLabel(lead.source) }}</span>
               </td>
               <td class="th-interest">{{ lead.interestedIn || '—' }}</td>
               <td class="th-value">
@@ -665,32 +675,50 @@
                   {{ lead.priority }}
                 </span>
               </td>
-              <td class="th-assigned">{{ lead.assignedTo?.name || 'Unassigned' }}</td>
-              <td class="th-followup">
-                @if (lead.nextFollowUpAt) {
-                <span>{{ lead.nextFollowUpAt | date:'MMM d, y, h:mm a' }}</span>
+              <td class="th-assigned">
+                @if (lead.assignedTo?.name; as owner) {
+                <div class="dt-person">
+                  <span class="dt-avatar is-sm tone-{{ avatarTone(owner) }}" aria-hidden="true">{{ initials(owner) }}</span>
+                  <span>{{ owner }}</span>
+                </div>
                 } @else {
-                <span class="text-muted">—</span>
+                <span class="dt-muted">Unassigned</span>
                 }
               </td>
-              <td class="th-created">{{ lead.createdAt | date:'MMM d, y' }}</td>
+              <td class="th-followup">
+                @if (dueInfo(lead.nextFollowUpAt); as due) {
+                <span class="dt-due is-{{ due.tone }}" [title]="due.title">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <polyline points="12 7 12 12 15 14"></polyline>
+                  </svg>
+                  {{ due.label }}
+                </span>
+                } @else {
+                <span class="dt-muted">Not scheduled</span>
+                }
+              </td>
+              <td class="th-created" [title]="lead.createdAt | date:'medium'">{{ relativeTime(lead.createdAt) }}</td>
               <td class="th-actions">
-                <div class="table-actions-cell">
-                  <button type="button" class="btn-table-action" (click)="openDetails(lead)" title="View lead details">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                <div class="dt-actions" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+                  <button type="button" class="dt-icon-btn" (click)="openDetails(lead)" title="View lead details"
+                    aria-label="View lead details">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                   </button>
-                  <button type="button" class="btn-table-action" (click)="openEditModal(lead)" title="Edit lead">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <button type="button" class="dt-icon-btn is-brand" (click)="openEditModal(lead)" title="Edit lead"
+                    aria-label="Edit lead">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
                   </button>
-                  <button type="button" class="btn-table-action delete" (click)="openArchiveModal(lead)"
-                    title="Archive lead">
+                  <button type="button" class="dt-icon-btn is-danger" (click)="openArchiveModal(lead)"
+                    title="Archive lead" aria-label="Archive lead">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="3 6 5 6 21 6"></polyline>
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>

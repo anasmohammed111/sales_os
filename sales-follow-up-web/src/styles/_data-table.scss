@@ -1,0 +1,349 @@
+/* =========================================================================
+   Kelto data table
+   One look for every table: leads, follow-ups, quotations, team and the
+   admissions lists. Pages keep their own class names and @include these
+   mixins on them, so each table stays encapsulated in its component.
+
+     @use '../../styles/data-table' as dt;
+     .my-card     { @include dt.card; }
+     .my-scroll   { @include dt.scroller(calc(100vh - 300px)); }
+     .my-table    { @include dt.table($min-width: 1100px, $sticky-last: true); }
+     .my-footer   { @include dt.footer; }
+     @include dt.cells;   // .dt-person, .dt-avatar, .dt-due, .dt-actions, ...
+   ========================================================================= */
+
+@mixin card {
+  overflow: hidden;
+  border: 1px solid var(--kelto-border);
+  border-radius: 12px;
+  background: var(--kelto-bg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* The scrolling box. A max height lets the header stay in view while the rows scroll. */
+@mixin scroller($max-height: none) {
+  width: 100%;
+  max-height: $max-height;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--kelto-neutral-300) transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid var(--kelto-bg);
+    border-radius: 999px;
+    background: var(--kelto-neutral-300);
+  }
+}
+
+@mixin table($min-width: 0, $sticky-first: false, $sticky-last: false) {
+  width: 100%;
+  min-width: $min-width;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--kelto-neutral-700);
+  font-size: 13.5px;
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    height: 44px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--kelto-border);
+    background: var(--kelto-bg-subtle);
+    color: var(--kelto-text-subtle);
+    font-size: 11.5px;
+    font-weight: 650;
+    letter-spacing: 0.4px;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--kelto-neutral-100);
+    background: var(--kelto-bg);
+    vertical-align: middle;
+    transition: background-color 0.12s ease;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr:hover td {
+    background: var(--kelto-bg-subtle);
+  }
+
+  /* A row that opens its record when clicked */
+  tbody tr.dt-row-link {
+    cursor: pointer;
+  }
+
+  tbody tr.dt-row-link:focus-visible td {
+    background: var(--kelto-brand-50);
+  }
+
+  tbody tr.dt-row-link:focus-visible {
+    outline: none;
+  }
+
+  .dt-num,
+  th.dt-num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  @if $sticky-first {
+    th:first-child,
+    td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      box-shadow: inset -1px 0 0 var(--kelto-neutral-100);
+    }
+
+    thead th:first-child {
+      z-index: 3;
+    }
+  }
+
+  @if $sticky-last {
+    th:last-child,
+    td:last-child {
+      position: sticky;
+      right: 0;
+      z-index: 1;
+      box-shadow: inset 1px 0 0 var(--kelto-neutral-100);
+    }
+
+    thead th:last-child {
+      z-index: 3;
+    }
+  }
+}
+
+/* "Showing 1 to 10 of 42", rows per page, page numbers */
+@mixin footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--kelto-border);
+  background: var(--kelto-bg);
+  color: var(--kelto-text-subtle);
+  font-size: 12.5px;
+
+  strong {
+    color: var(--kelto-text);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@mixin cells {
+  /* Avatar and name, with a second line */
+  .dt-person {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .dt-person-text {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .dt-name {
+    overflow: hidden;
+    color: var(--kelto-text);
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dt-sub {
+    overflow: hidden;
+    color: var(--kelto-text-subtle);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dt-muted {
+    color: var(--kelto-neutral-400);
+  }
+
+  .dt-avatar {
+    display: inline-grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-neutral-600);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+
+    &.is-sm {
+      width: 26px;
+      height: 26px;
+      font-size: 10px;
+    }
+
+    &.tone-1 { background: var(--kelto-brand-100); color: var(--kelto-brand-700); }
+    &.tone-2 { background: var(--kelto-info-100); color: var(--kelto-info-700); }
+    &.tone-3 { background: var(--kelto-success-100); color: var(--kelto-success-700); }
+    &.tone-4 { background: var(--kelto-warning-100); color: var(--kelto-warning-700); }
+    &.tone-5 { background: #ede9fe; color: #6d28d9; }
+    &.tone-6 { background: #fce7f3; color: #be185d; }
+  }
+
+  /* A label with a coloured dot, e.g. a lead source */
+  .dt-chip {
+    --dot: var(--kelto-neutral-400);
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px 3px 8px;
+    border: 1px solid var(--kelto-border);
+    border-radius: 999px;
+    background: var(--kelto-bg);
+    color: var(--kelto-neutral-700);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    &::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--dot);
+    }
+
+    &[data-source='INSTAGRAM'] { --dot: #db2777; }
+    &[data-source='WHATSAPP'] { --dot: #16a34a; }
+    &[data-source='WEBSITE'] { --dot: var(--kelto-info-600); }
+    &[data-source='WALK_IN'] { --dot: var(--kelto-warning-500); }
+    &[data-source='PHONE'] { --dot: #7c3aed; }
+    &[data-source='EMAIL'] { --dot: #0891b2; }
+    &[data-source='REFERRAL'] { --dot: var(--kelto-brand-500); }
+  }
+
+  /* When something is due: overdue, today, in the next two days, later */
+  .dt-due {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-neutral-700);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &.is-overdue { background: var(--kelto-danger-50); color: var(--kelto-danger-700); }
+    &.is-today { background: var(--kelto-warning-50); color: var(--kelto-warning-700); }
+    &.is-soon { background: var(--kelto-info-50); color: var(--kelto-info-700); }
+  }
+
+  /* Row actions: quiet until the row is hovered */
+  .dt-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+  }
+
+  .dt-icon-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--kelto-neutral-400);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      border-color: var(--kelto-border);
+      background: var(--kelto-bg);
+      color: var(--kelto-text);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+      color: var(--kelto-text);
+    }
+
+    &.is-danger:hover {
+      border-color: var(--kelto-danger-100);
+      background: var(--kelto-danger-50);
+      color: var(--kelto-danger-600);
+    }
+
+    &.is-brand:hover {
+      border-color: var(--kelto-brand-200);
+      background: var(--kelto-brand-50);
+      color: var(--kelto-brand-700);
+    }
+  }
+
+  tr:hover .dt-icon-btn {
+    color: var(--kelto-neutral-600);
+  }
+
+  /* Placeholder rows while a page loads */
+  .dt-skeleton-row td {
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
+  .dt-skel {
+    display: block;
+    width: var(--w, 70%);
+    height: 11px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--kelto-neutral-100) 25%, var(--kelto-neutral-50) 37%, var(--kelto-neutral-100) 63%);
+    background-size: 400% 100%;
+    animation: dt-shimmer 1.4s ease infinite;
+  }
+
+  @keyframes dt-shimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dt-skel {
+      animation: none;
+    }
+  }
+}

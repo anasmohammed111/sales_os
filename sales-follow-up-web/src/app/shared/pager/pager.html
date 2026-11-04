@@ -1,0 +1,44 @@
+<nav class="pager" aria-label="Pages">
+  <button type="button" class="pager-btn" [disabled]="page() <= 1" (click)="go(1)" aria-label="First page"
+    title="First page">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="11 17 6 12 11 7" />
+      <polyline points="18 17 13 12 18 7" />
+    </svg>
+  </button>
+  <button type="button" class="pager-btn" [disabled]="page() <= 1" (click)="go(page() - 1)"
+    aria-label="Previous page" title="Previous page">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  </button>
+
+  @for (item of pages(); track item) {
+    @if (item === 'gap-start' || item === 'gap-end') {
+      <span class="pager-gap" aria-hidden="true">…</span>
+    } @else {
+      <button type="button" class="pager-btn pager-num" [class.is-current]="item === page()"
+        [attr.aria-current]="item === page() ? 'page' : null" [attr.aria-label]="'Page ' + item" (click)="go(item)">
+        {{ item }}
+      </button>
+    }
+  }
+
+  <button type="button" class="pager-btn" [disabled]="page() >= totalPages()" (click)="go(page() + 1)"
+    aria-label="Next page" title="Next page">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  </button>
+  <button type="button" class="pager-btn" [disabled]="page() >= totalPages()" (click)="go(totalPages())"
+    aria-label="Last page" title="Last page">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="13 17 18 12 13 7" />
+      <polyline points="6 17 11 12 6 7" />
+    </svg>
+  </button>
+</nav>

@@ -20,11 +20,13 @@ import { AuthService, AuthUser } from '../core/services/auth.service';
 import { TeamService, TeamMember } from '../core/services/team.service';
 import { AdmissionsService } from '../core/services/admissions.service';
 import { Router, RouterLink } from '@angular/router';
+import { Pager } from '../shared/pager/pager';
+import { avatarTone, dueInfo, leadSourceLabel, personInitials, relativeTime } from '../core/utils/table-format';
 
 @Component({
   selector: 'app-leads',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, RouterLink, DatePipe, CurrencyPipe],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, DatePipe, CurrencyPipe, Pager],
   templateUrl: './leads.html',
   styleUrl: './leads.scss',
 })
@@ -84,6 +86,15 @@ export class Leads implements OnInit {
   pageSize = signal(10);
   sortBy = signal('createdAt');
   sortOrder = signal<'asc' | 'desc'>('desc');
+
+  // --- Table cell formatting (shared with the other tables) ---
+  readonly initials = personInitials;
+  readonly avatarTone = avatarTone;
+  readonly dueInfo = dueInfo;
+  readonly relativeTime = relativeTime;
+  readonly sourceLabel = leadSourceLabel;
+  /** Placeholder rows while a page of leads loads */
+  readonly skeletonRows = [1, 2, 3, 4, 5, 6];
 
   // --- UI & Modal States ---
   isLoading = signal(false);
