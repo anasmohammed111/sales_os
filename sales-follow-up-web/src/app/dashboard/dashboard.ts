@@ -70,6 +70,24 @@ export class Dashboard {
   );
   user = this.authService.currentUser;
   isOwner = computed(() => this.user()?.role === 'OWNER');
+  currentPageLabel = computed(() => {
+    if (this.currentTab() === 'admissions') {
+      const section = this.admissionsLinks.find((link) => this.router.url.startsWith(`/admissions/${link.path}`));
+      return section?.label ?? 'Admissions';
+    }
+
+    const labels: Record<DashboardTab, string> = {
+      dashboard: 'Dashboard',
+      leads: 'Leads',
+      'follow-ups': 'Follow-ups',
+      team: 'Team',
+      pipeline: 'Sales pipeline',
+      quotations: 'Quotations',
+      admissions: 'Admissions',
+      settings: 'Settings',
+    };
+    return labels[this.currentTab()];
+  });
 
   constructor() {
     this.admissions.loadContext().subscribe();
@@ -101,6 +119,13 @@ export class Dashboard {
 
   isMobileMoreOpen = signal(false);
   isSidebarCollapsed = signal(this.getInitialSidebarState());
+  private mobileMenuTrigger: HTMLElement | null = null;
+
+  userRoleLabel(): string {
+    if (this.user()?.role === 'OWNER') return 'Workspace owner';
+    if (this.user()?.role === 'SALES_MANAGER') return 'Sales manager';
+    return 'Sales representative';
+  }
 
   navigateTo(tab: DashboardTab): void {
     if (tab === 'team' && !this.isOwner()) {
@@ -120,12 +145,40 @@ export class Dashboard {
     return this.currentTab() === 'admissions' && this.router.url.startsWith(`/admissions/${path}`);
   }
 
-  toggleMobileMore(): void {
-    this.isMobileMoreOpen.update((open) => !open);
+  toggleMobileMore(event?: Event): void {
+    const willOpen = !this.isMobileMoreOpen();
+    if (willOpen && event?.currentTarget instanceof HTMLElement) {
+      this.mobileMenuTrigger = event.currentTarget;
+    }
+    this.isMobileMoreOpen.set(willOpen);
   }
 
   closeMobileMore(): void {
+    if (!this.isMobileMoreOpen()) return;
     this.isMobileMoreOpen.set(false);
+    queueMicrotask(() => this.mobileMenuTrigger?.focus());
+  }
+
+  trapMobileMenuFocus(event: KeyboardEvent): void {
+    if (event.key !== 'Tab') return;
+
+    const menu = event.currentTarget as HTMLElement;
+    const focusable = Array.from(
+      menu.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    );
+    if (!focusable.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   toggleSidebar(): void {

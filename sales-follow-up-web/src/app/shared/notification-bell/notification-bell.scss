@@ -21,6 +21,22 @@
   }
 }
 
+:host-context(.sidebar) .bell {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+
+  &:hover {
+    border-color: rgba(96, 165, 250, 0.45);
+    background: rgba(37, 99, 235, 0.18);
+    color: #dbeafe;
+  }
+}
+
+:host-context(.sidebar) .badge {
+  border-color: #101a2e;
+}
+
 .badge {
   position: absolute;
   top: -5px;

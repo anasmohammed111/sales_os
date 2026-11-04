@@ -380,7 +380,11 @@
             <!-- 1. Customer / Lead -->
             <td class="th-customer">
               <div class="lead-contact-stack">
-                <span class="lead-customer-name" (click)="openDetailsDrawer(item)" title="View interaction details">
+                <span class="lead-customer-name" role="button" tabindex="0" (click)="openDetailsDrawer(item)"
+                  (keydown.enter)="openDetailsDrawer(item)"
+                  (keydown.space)="$event.preventDefault(); openDetailsDrawer(item)"
+                  title="View interaction details"
+                  [attr.aria-label]="'View follow-up details for ' + getLeadName(item)">
                   {{ getLeadName(item) }}
                 </span>
                 @if (getLeadCompany(item)) {

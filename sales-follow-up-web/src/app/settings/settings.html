@@ -1,128 +1,281 @@
 <div class="settings-page">
   <header class="page-head">
-    <h1>Settings</h1>
-    <p>Your profile and password, and your business details.</p>
+    <div class="page-heading-lockup">
+      <div class="page-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.08a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.08A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.08a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.08a1.7 1.7 0 0 0-1.52 1z"></path>
+        </svg>
+      </div>
+      <div>
+        <span class="page-eyebrow">Workspace preferences</span>
+        <h1>Settings</h1>
+        <p>Manage your account, security, and business preferences in one place.</p>
+      </div>
+    </div>
+
+    @if (settings(); as currentSettings) {
+    <div class="account-context" aria-label="Signed-in account">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span class="account-email">{{ currentSettings.profile.email }}</span>
+      <span class="account-role">{{ roleLabels[currentSettings.profile.role] || currentSettings.profile.role }}</span>
+    </div>
+    }
   </header>
 
   @if (error(); as message) {
-  <div class="card state">
-    <strong>{{ message }}</strong>
+  <div class="card state state-error" role="alert">
+    <div class="state-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 8v4M12 16h.01"></path>
+      </svg>
+    </div>
+    <div class="state-copy">
+      <strong>We couldn’t load your settings</strong>
+      <span>{{ message }}</span>
+    </div>
     <button type="button" class="btn" (click)="load()">Try again</button>
   </div>
   } @else if (!settings()) {
-  <div class="card state" aria-busy="true">Loading settings…</div>
+  <div class="card state loading-state" aria-busy="true" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    <div class="state-copy">
+      <strong>Loading settings</strong>
+      <span>Getting your latest account preferences…</span>
+    </div>
+  </div>
   } @else if (settings(); as s) {
   <div class="grid">
-    <!-- My profile -->
     <form class="card" (ngSubmit)="saveProfile()">
-      <h2>My profile</h2>
-      <dl class="facts">
-        <div><dt>Email</dt><dd>{{ s.profile.email }}</dd></div>
-        <div><dt>Role</dt><dd>{{ roleLabels[s.profile.role] || s.profile.role }}</dd></div>
+      <div class="card-header">
+        <div class="card-title-lockup">
+          <span class="card-icon icon-profile" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 21a8 8 0 0 1 16 0"></path>
+            </svg>
+          </span>
+          <div>
+            <h2>Personal profile</h2>
+            <p>Keep your contact details up to date.</p>
+          </div>
+        </div>
+        <span class="section-badge">Personal</span>
+      </div>
+
+      <dl class="facts compact-facts">
+        <div>
+          <dt>Email address</dt>
+          <dd>{{ s.profile.email }}</dd>
+        </div>
+        <div>
+          <dt>Access level</dt>
+          <dd>{{ roleLabels[s.profile.role] || s.profile.role }}</dd>
+        </div>
       </dl>
-      <label class="field">
-        <span>Name</span>
-        <input id="profile-name" name="name" [(ngModel)]="profile.name" required autocomplete="name" />
-      </label>
-      <label class="field">
-        <span>Phone</span>
-        <input name="phone" type="tel" [(ngModel)]="profile.phone" autocomplete="tel" />
-      </label>
+
+      <div class="form-fields">
+        <label class="field" for="profile-name">
+          <span>Full name</span>
+          <input id="profile-name" name="name" [(ngModel)]="profile.name" required autocomplete="name"
+            placeholder="Enter your full name" />
+        </label>
+        <label class="field" for="profile-phone">
+          <span>Phone number <small class="optional">Optional</small></span>
+          <input id="profile-phone" name="phone" type="tel" inputmode="tel" [(ngModel)]="profile.phone"
+            autocomplete="tel" placeholder="Add a contact number" />
+        </label>
+      </div>
+
       <div class="actions">
-        <button type="submit" class="btn btn-primary" [disabled]="saving() === 'profile' || profile.name.trim().length < 2">
+        <span class="action-hint">Used across team activity and customer records.</span>
+        <button type="submit" class="btn btn-primary"
+          [disabled]="saving() === 'profile' || profile.name.trim().length < 2"
+          [attr.aria-busy]="saving() === 'profile'">
+          @if (saving() === 'profile') {
+          <span class="button-spinner" aria-hidden="true"></span>
+          }
           {{ saving() === 'profile' ? 'Saving…' : 'Save profile' }}
         </button>
       </div>
     </form>
 
-    <!-- Password -->
     <form class="card" (ngSubmit)="savePassword()">
-      <h2>{{ s.profile.hasPassword ? 'Change password' : 'Set a password' }}</h2>
+      <div class="card-header">
+        <div class="card-title-lockup">
+          <span class="card-icon icon-security" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="10" width="16" height="11" rx="2"></rect>
+              <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+            </svg>
+          </span>
+          <div>
+            <h2>{{ s.profile.hasPassword ? 'Password & security' : 'Set a password' }}</h2>
+            <p>{{ s.profile.hasPassword ? 'Choose a strong password for your account.' : 'Add email sign-in alongside Google.' }}</p>
+          </div>
+        </div>
+        <span class="section-badge security-badge">Security</span>
+      </div>
+
       @if (!s.profile.hasPassword) {
-      <p class="hint">You sign in with Google. Set a password if you also want to sign in with your email.</p>
-      } @else {
-      <label class="field">
-        <span>Current password</span>
-        <input name="current" type="password" [(ngModel)]="password.current" autocomplete="current-password" />
-      </label>
+      <div class="info-note">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 11v5M12 8h.01"></path>
+        </svg>
+        <p>You currently sign in with Google. Setting a password also enables sign-in with your email address.</p>
+      </div>
       }
-      <label class="field">
-        <span>New password</span>
-        <input name="next" type="password" [(ngModel)]="password.next" autocomplete="new-password" />
-        <small>At least 8 characters.</small>
-      </label>
-      <label class="field">
-        <span>Repeat new password</span>
-        <input name="confirm" type="password" [(ngModel)]="password.confirm" autocomplete="new-password" />
-      </label>
-      <div class="actions">
-        @if (password.next && passwordProblem(); as problem) {
-        <small class="problem">{{ problem }}</small>
+
+      <div class="form-fields">
+        @if (s.profile.hasPassword) {
+        <label class="field" for="current-password">
+          <span>Current password</span>
+          <input id="current-password" name="current" type="password" [(ngModel)]="password.current"
+            autocomplete="current-password" placeholder="Enter your current password" />
+        </label>
         }
-        <button type="submit" class="btn btn-primary" [disabled]="saving() === 'password' || !!passwordProblem()">
+        <label class="field" for="new-password">
+          <span>New password</span>
+          <input id="new-password" name="next" type="password" [(ngModel)]="password.next"
+            autocomplete="new-password" placeholder="Use at least 8 characters" aria-describedby="password-requirement" />
+          <small id="password-requirement">Use at least 8 characters and avoid reused passwords.</small>
+        </label>
+        <label class="field" for="confirm-password">
+          <span>Confirm new password</span>
+          <input id="confirm-password" name="confirm" type="password" [(ngModel)]="password.confirm"
+            autocomplete="new-password" placeholder="Enter the new password again" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <span class="validation-slot" aria-live="polite">
+          @if (password.next && passwordProblem(); as problem) {
+          <span class="problem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
+              aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>
+            {{ problem }}
+          </span>
+          }
+        </span>
+        <button type="submit" class="btn btn-primary" [disabled]="saving() === 'password' || !!passwordProblem()"
+          [attr.aria-busy]="saving() === 'password'">
+          @if (saving() === 'password') {
+          <span class="button-spinner" aria-hidden="true"></span>
+          }
           {{ saving() === 'password' ? 'Saving…' : s.profile.hasPassword ? 'Change password' : 'Set password' }}
         </button>
       </div>
     </form>
 
-    <!-- Business -->
-    <section class="card wide">
-      <h2>Business</h2>
+    <section class="card wide business-card">
+      <div class="card-header">
+        <div class="card-title-lockup">
+          <span class="card-icon icon-business" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21h18M5 21V7l7-4 7 4v14"></path>
+              <path d="M9 10h1M14 10h1M9 14h1M14 14h1M9 18h1M14 18h1"></path>
+            </svg>
+          </span>
+          <div>
+            <h2>Business details</h2>
+            <p>Information used across CRM records and documents.</p>
+          </div>
+        </div>
+        @if (isOwner()) {
+        <span class="section-badge owner-badge">Owner controls</span>
+        }
+      </div>
+
       @if (isOwner()) {
       <form id="business-form" class="business-form" (ngSubmit)="saveBusiness()">
-        <label class="field">
+        <label class="field" for="business-name">
           <span>Business name</span>
-          <input id="business-name" name="businessName" [(ngModel)]="business.businessName" required />
+          <input id="business-name" name="businessName" [(ngModel)]="business.businessName" required
+            autocomplete="organization" placeholder="Enter your business name" />
         </label>
-        <label class="field">
-          <span>Business email</span>
-          <input name="email" type="email" [(ngModel)]="business.email" />
+        <label class="field" for="business-email">
+          <span>Business email <small class="optional">Optional</small></span>
+          <input id="business-email" name="email" type="email" [(ngModel)]="business.email"
+            autocomplete="email" placeholder="hello@business.com" />
         </label>
-        <label class="field">
-          <span>Phone</span>
-          <input name="bphone" type="tel" [(ngModel)]="business.phone" />
+        <label class="field" for="business-phone">
+          <span>Business phone <small class="optional">Optional</small></span>
+          <input id="business-phone" name="bphone" type="tel" inputmode="tel" [(ngModel)]="business.phone"
+            autocomplete="tel" placeholder="Add a business number" />
         </label>
-        <label class="field">
-          <span>GSTIN</span>
-          <input name="gstin" [(ngModel)]="business.gstin" placeholder="Optional" />
+        <label class="field" for="business-gstin">
+          <span>GSTIN <small class="optional">Optional</small></span>
+          <input id="business-gstin" name="gstin" [(ngModel)]="business.gstin" placeholder="Add your tax identifier" />
         </label>
-        <label class="field span-2">
-          <span>Address</span>
-          <input name="address" [(ngModel)]="business.address" />
+        <label class="field span-2" for="business-address">
+          <span>Business address <small class="optional">Optional</small></span>
+          <input id="business-address" name="address" [(ngModel)]="business.address"
+            autocomplete="street-address" placeholder="Add the address shown on business documents" />
         </label>
-        <label class="field">
-          <span>Currency for lead values</span>
-          <select name="currency" [(ngModel)]="business.currency">
+        <label class="field currency-field" for="business-currency">
+          <span>Display currency</span>
+          <select id="business-currency" name="currency" [(ngModel)]="business.currency">
             @for (c of s.currencies; track c) {
             <option [value]="c">{{ c }}</option>
             }
           </select>
-          <small>Changes how amounts are shown. Values are not converted.</small>
+          <small>Changes how lead and pipeline amounts are displayed. Existing values are not converted.</small>
         </label>
-        <div class="actions span-2">
-          <button type="submit" class="btn btn-primary" [disabled]="saving() === 'business'">
+        <div class="actions span-2 business-actions">
+          <span class="action-hint">Changes apply to everyone in this workspace.</span>
+          <button type="submit" class="btn btn-primary" [disabled]="saving() === 'business'"
+            [attr.aria-busy]="saving() === 'business'">
+            @if (saving() === 'business') {
+            <span class="button-spinner" aria-hidden="true"></span>
+            }
             {{ saving() === 'business' ? 'Saving…' : 'Save business details' }}
           </button>
         </div>
       </form>
       } @else {
-      <dl class="facts">
+      <dl class="facts business-facts">
         <div><dt>Business name</dt><dd>{{ s.business.businessName }}</dd></div>
         <div><dt>Email</dt><dd>{{ s.business.email || '—' }}</dd></div>
         <div><dt>Phone</dt><dd>{{ s.business.phone || '—' }}</dd></div>
         <div><dt>Currency</dt><dd>{{ s.business.currency }}</dd></div>
       </dl>
-      <p class="hint">Only the business owner can change these.</p>
+      <div class="info-note neutral-note">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <p>Business preferences are managed by the workspace owner.</p>
+      </div>
       }
     </section>
 
     @if (s.features.admissions && isOwner()) {
     <section class="card wide link-card">
-      <div>
-        <h2>Admissions</h2>
-        <p class="hint">Stages, checklists, document types, lead sources, universities, reminders and timezone.</p>
+      <div class="card-title-lockup">
+        <span class="card-icon icon-admissions" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10 12 5 2 10l10 5 10-5z"></path>
+            <path d="M6 12v5c3 2 9 2 12 0v-5"></path>
+          </svg>
+        </span>
+        <div>
+          <h2>Admissions preferences</h2>
+          <p>Manage stages, checklists, documents, sources, universities, reminders, and timezone.</p>
+        </div>
       </div>
-      <a class="btn" routerLink="/admissions/settings">Open admissions settings</a>
+      <a class="btn link-button" routerLink="/admissions/settings">
+        <span>Open admissions settings</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6"></path>
+        </svg>
+      </a>
     </section>
     }
   </div>

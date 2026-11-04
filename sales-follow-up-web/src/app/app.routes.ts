@@ -10,42 +10,49 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    title: 'Dashboard | SalesOS',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'leads',
+    title: 'Leads | SalesOS',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'follow-ups',
+    title: 'Follow-ups | SalesOS',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'team',
+    title: 'Team | SalesOS',
     canActivate: [authGuard, ownerGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'pipeline',
+    title: 'Sales pipeline | SalesOS',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'quotations',
+    title: 'Quotations | SalesOS',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'settings',
+    title: 'Settings | SalesOS',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
@@ -53,6 +60,7 @@ export const routes: Routes = [
   {
     // SYB admissions: rendered inside the app shell's outlet
     path: 'admissions',
+    title: 'Admissions | SalesOS',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./dashboard/dashboard').then((m) => m.Dashboard),
@@ -61,6 +69,7 @@ export const routes: Routes = [
   },
   {
     path: 'auth',
+    title: 'Account | SalesOS',
     loadChildren: () =>
       import('./auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
