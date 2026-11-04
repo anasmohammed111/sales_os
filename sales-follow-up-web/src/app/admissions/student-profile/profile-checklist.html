@@ -153,6 +153,9 @@
                     <small>{{ notNeededReason(entry) }}</small>
                   } @else if (entry.blockedBy) {
                     <small class="is-warn">{{ entry.blockedBy }}</small>
+                    @if (entry.rule === 'FINAL_CHOICE_SET' && isActive()) {
+                      <button type="button" class="adm-link fix-link" (click)="openFinalChoice.emit()">Record final choice</button>
+                    }
                   }
                   @if (entry.paymentCategory && entry.status === 'PENDING') {
                     <small>Ticking this doesn't record money. Add the payment in the Payments tab.</small>

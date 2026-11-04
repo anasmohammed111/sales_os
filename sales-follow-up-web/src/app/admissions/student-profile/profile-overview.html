@@ -128,7 +128,7 @@
         <p class="adm-muted">No universities shortlisted yet.</p>
       }
 
-      <h4>Final choice</h4>
+      <h4 id="final-choice" tabindex="-1">Final choice</h4>
       <ng-container *ngTemplateOutlet="choiceFields; context: { $implicit: finalChoice, index: 0, prefix: 'f' }" />
     </div>
   </section>

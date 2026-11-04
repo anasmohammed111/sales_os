@@ -21,6 +21,8 @@ export class ProfileChecklist {
   readonly application = input.required<ApplicationDetail>();
   readonly updated = output<ApplicationDetail>();
   readonly moveNext = output<void>();
+  /** Asks the profile to open the Details tab at the final university choice. */
+  readonly openFinalChoice = output<void>();
 
   readonly ctx = this.admissions.context;
   readonly tz = computed(() => this.ctx()?.config.timezone);

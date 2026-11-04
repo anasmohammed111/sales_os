@@ -161,7 +161,8 @@
           <adm-profile-overview [application]="a" (updated)="onUpdated($event)" />
         }
         @case ('checklist') {
-          <adm-profile-checklist [application]="a" (updated)="onUpdated($event)" (moveNext)="moveNext()" />
+          <adm-profile-checklist [application]="a" (updated)="onUpdated($event)" (moveNext)="moveNext()"
+            (openFinalChoice)="openFinalChoice()" />
         }
         @case ('documents') {
           <adm-profile-documents [application]="a" />

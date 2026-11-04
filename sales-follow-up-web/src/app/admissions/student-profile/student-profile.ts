@@ -119,6 +119,16 @@ export class StudentProfile implements OnInit {
     this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, replaceUrl: true });
   }
 
+  /** From the checklist: go to Details and bring "Final choice" into view. */
+  openFinalChoice(): void {
+    this.selectTab('overview');
+    setTimeout(() => {
+      const heading = document.getElementById('final-choice');
+      heading?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      heading?.focus({ preventScroll: true });
+    });
+  }
+
   /** Children that change the record hand back the fresh profile, or ask for a reload. */
   onUpdated(detail: ApplicationDetail | null): void {
     if (detail) this.app.set(detail);
