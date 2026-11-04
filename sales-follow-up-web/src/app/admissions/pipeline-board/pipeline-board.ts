@@ -8,17 +8,26 @@ import {
   errorMessage,
   initials,
   intakeLabel,
+  LEVEL_LABELS,
   relativeDay,
   WARNING_LABELS,
   WARNING_TONE,
 } from '../admissions.utils';
 import { MoveRequest, StageMoveDialog } from '../shared/stage-move-dialog';
+import { menuOpensUp } from '../../core/utils/menu-placement';
 
 interface Column extends StageRef {
   order: number;
   isArchived: boolean;
+  color: string;
+  stuck: number;
   items: Application[];
 }
+
+type ProfileTab = 'checklist' | 'overview' | 'documents' | 'payments' | 'tasks' | 'activity';
+
+/** The one warning a card shows as a pill, most serious first */
+const WARNING_PRIORITY: Warning[] = ['NEEDS_REVIEW', 'PAYMENT_OVERDUE', 'STUCK', 'FOLLOW_UP_OVERDUE', 'UNASSIGNED'];
 
 @Component({
   selector: 'adm-pipeline-board',
@@ -38,18 +47,33 @@ export class PipelineBoard implements OnInit {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly filters = signal<Query>({});
+  readonly searchText = signal('');
 
   readonly dragId = signal<string | null>(null);
   readonly dropKey = signal<string | null>(null);
   readonly movingId = signal<string | null>(null);
   readonly moveRequest = signal<MoveRequest | null>(null);
   readonly pickerFor = signal<Application | null>(null);
+  readonly menuFor = signal<string | null>(null);
+  /** The open card menu flips up near the bottom of a column */
+  readonly menuUp = signal(false);
   readonly mobileStage = signal<string | null>(null);
 
-  readonly warningLabels = WARNING_LABELS;
-  readonly warningTone = WARNING_TONE;
   readonly initials = initials;
   readonly intakeLabel = intakeLabel;
+
+  readonly hasActiveFilters = computed(() => Object.keys(this.filters()).length > 0);
+
+  /** KPI tiles; they count what the board is showing */
+  readonly stats = computed(() => {
+    const apps = this.applications();
+    return {
+      total: apps.length,
+      stuck: apps.filter((a) => a.isStuck).length,
+      followUpOverdue: apps.filter((a) => a.isFollowUpOverdue).length,
+      paymentOverdue: apps.filter((a) => a.isPaymentOverdue).length,
+    };
+  });
 
   readonly columns = computed<Column[]>(() => {
     const stages = [...(this.ctx()?.config.stages || [])].sort((a, b) => a.order - b.order);
@@ -61,7 +85,19 @@ export class PipelineBoard implements OnInit {
     }
     return stages
       .filter((s) => !s.isArchived || byStage.has(s.key))
-      .map((s) => ({ key: s.key, name: s.name, order: s.order, isArchived: s.isArchived, items: byStage.get(s.key) || [] }));
+      .map((s) => {
+        const items = byStage.get(s.key) || [];
+        return {
+          key: s.key,
+          name: s.name,
+          order: s.order,
+          isArchived: s.isArchived,
+          // Stages have no colour of their own; walk the Kelto chart palette in stage order
+          color: `var(--kelto-chart-${((s.order - 1) % 8 + 8) % 8 + 1})`,
+          stuck: items.filter((a) => a.isStuck).length,
+          items,
+        };
+      });
   });
 
   readonly activeStages = computed(() => this.columns().filter((c) => !c.isArchived));
@@ -99,22 +135,92 @@ export class PipelineBoard implements OnInit {
     this.load();
   }
 
+  /** KPI tiles switch their filter on and off */
+  toggleFilter(key: string, value = '1'): void {
+    this.setFilter(key, this.filters()[key] === value ? '' : value);
+  }
+
   onSearch(value: string): void {
+    this.searchText.set(value);
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.setFilter('search', value.trim()), 300);
   }
 
+  clearSearch(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchText.set('');
+    this.setFilter('search', '');
+  }
+
+  clearFilters(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchText.set('');
+    this.filters.set({});
+    this.load();
+  }
+
+  goToStudents(): void {
+    this.router.navigate(['/admissions/students']);
+  }
+
   open(app: Application): void {
+    this.menuFor.set(null);
     this.router.navigate(['/admissions/students', app.id]);
   }
 
-  // The card template variable is untyped, so warnings go through typed helpers
+  /** Enter on the card itself; Enter on a button inside it is that button's */
+  onCardKey(event: Event, app: Application): void {
+    if (event.target === event.currentTarget) this.open(app);
+  }
+
+  openTab(app: Application, tab: ProfileTab): void {
+    this.menuFor.set(null);
+    this.router.navigate(['/admissions/students', app.id], { queryParams: { tab } });
+  }
+
+  toggleMenu(event: Event, app: Application): void {
+    event.stopPropagation();
+    const opening = this.menuFor() !== app.id;
+    if (opening) this.menuUp.set(menuOpensUp(event.currentTarget));
+    this.menuFor.set(opening ? app.id : null);
+  }
+
+  closeMenu(): void {
+    this.menuFor.set(null);
+  }
+
+  openPicker(app: Application): void {
+    this.menuFor.set(null);
+    this.pickerFor.set(app);
+  }
+
+  // The card template variable is untyped, so card values go through typed helpers
+  topWarning(app: Application): Warning | null {
+    return WARNING_PRIORITY.find((w) => app.warnings.includes(w)) ?? null;
+  }
+
+  levelOf(app: Application): string {
+    return LEVEL_LABELS[app.studyLevel];
+  }
+
   toneOf(w: Warning): string {
-    return this.warningTone[w];
+    return WARNING_TONE[w];
   }
 
   labelOf(w: Warning): string {
-    return this.warningLabels[w];
+    return WARNING_LABELS[w];
+  }
+
+  /** Left edge colour: red for review or money problems, amber for time problems */
+  cardTone(app: Application): 'bad' | 'warn' | null {
+    if (app.needsReview || app.isPaymentOverdue) return 'bad';
+    if (app.isStuck || app.isFollowUpOverdue) return 'warn';
+    return null;
+  }
+
+  /** How far through the stage's time limit the student is */
+  stagePercent(app: Application): number {
+    return Math.min(100, Math.round((app.daysInStage / Math.max(1, app.stuckThresholdDays)) * 100));
   }
 
   universityOf(app: Application): string {
@@ -123,12 +229,13 @@ export class PipelineBoard implements OnInit {
     return choice.courseName ? `${choice.universityName}, ${choice.courseName}` : choice.universityName;
   }
 
-  followUp(app: Application): string {
-    return app.nextFollowUpAt ? relativeDay(app.nextFollowUpAt, this.tz()) : 'none';
+  followUpText(app: Application): string {
+    return app.nextFollowUpAt ? `Follow-up ${relativeDay(app.nextFollowUpAt, this.tz())}` : 'No follow-up set';
   }
 
   // Drag and drop (desktop). The server validates every move.
   onDragStart(event: DragEvent, app: Application): void {
+    this.menuFor.set(null);
     this.dragId.set(app.id);
     event.dataTransfer?.setData('text/plain', app.id);
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -155,6 +262,7 @@ export class PipelineBoard implements OnInit {
 
   requestMove(app: Application, target: StageRef): void {
     this.pickerFor.set(null);
+    this.menuFor.set(null);
     if (app.currentStage.key === target.key) return;
     this.movingId.set(app.id);
     this.moveRequest.set({

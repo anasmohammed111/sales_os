@@ -1,0 +1,1322 @@
+/* =========================================================================
+   Kelto pipeline board
+   One look for both boards: the sales pipeline (app/pipeline) and the
+   admissions pipeline (app/admissions/pipeline-board). Each component
+   @use's this file, so the rules stay encapsulated per component.
+
+   Page structure, top to bottom:
+   .pipeline-page
+     .pipeline-header      title, subtitle and actions
+     .summary-cards-strip  four KPI tiles (div, or button to toggle a filter)
+     .filters-toolbar      search, labelled selects, filter chips, clear
+     .pipeline-board-container > .pipeline-kanban-board > .kanban-column
+       .column-header      stage dot, name, count, and a value or flag
+       .column-cards-scroll > .lead-card | .column-empty-state | .card-skeleton
+
+   A column sets --stage-color; the dot and the top accent bar use it.
+   ========================================================================= */
+
+.pipeline-page {
+  /* Height of everything above the board; columns fill the rest of the window */
+  --kb-board-offset: 290px;
+  --kb-column-width: 284px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 24px;
+  color: var(--kelto-text);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.btn-primary {
+  background: var(--kelto-primary);
+  border-color: var(--kelto-primary);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: var(--kelto-primary-hover);
+    border-color: var(--kelto-primary-hover);
+  }
+}
+
+.btn-secondary {
+  background: var(--kelto-bg);
+  border-color: var(--kelto-border);
+  color: var(--kelto-neutral-600);
+
+  &:hover:not(:disabled) {
+    background: var(--kelto-bg-subtle);
+    border-color: var(--kelto-border-strong);
+    color: var(--kelto-text);
+  }
+}
+
+/* Header link to the related list page */
+.btn-nav,
+.btn-nav-leads {
+  gap: 7px;
+  border-color: var(--kelto-border-strong);
+  color: var(--kelto-neutral-700);
+
+  .chevron-nav-icon {
+    color: var(--kelto-neutral-400);
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--kelto-neutral-400);
+    color: var(--kelto-text);
+
+    .chevron-nav-icon {
+      transform: translateX(2px);
+      color: var(--kelto-text);
+    }
+  }
+}
+
+/* ==========================================================================
+   Page header
+   ========================================================================== */
+.pipeline-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px 24px;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-title {
+  margin: 0;
+  color: var(--kelto-text);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.4px;
+}
+
+.page-subtitle {
+  max-width: 720px;
+  margin: 3px 0 0;
+  color: var(--kelto-text-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   KPI tiles
+   ========================================================================== */
+.summary-cards-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-card {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 12px;
+  background: var(--kelto-bg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--kelto-border-strong);
+    box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.1);
+  }
+}
+
+/* A tile that toggles a filter */
+button.summary-card {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--kelto-brand-300);
+    background: var(--kelto-brand-50);
+    box-shadow: 0 0 0 3px rgba(229, 96, 62, 0.12);
+
+    .summary-label {
+      color: var(--kelto-brand-700);
+    }
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+}
+
+.summary-card-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+
+  &.icon-blue {
+    background: var(--kelto-brand-50);
+    color: var(--kelto-brand-600);
+  }
+
+  &.icon-purple {
+    background: #f5f3ff;
+    color: #7c3aed;
+  }
+
+  &.icon-emerald {
+    background: var(--kelto-success-50);
+    color: var(--kelto-success-600);
+  }
+
+  &.icon-rose {
+    background: var(--kelto-danger-50);
+    color: var(--kelto-danger-600);
+  }
+
+  &.icon-amber {
+    background: var(--kelto-warning-50);
+    color: var(--kelto-warning-600);
+  }
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.summary-val {
+  color: var(--kelto-text);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+
+  &.val-emerald {
+    color: var(--kelto-success-700);
+  }
+
+  &.val-rose {
+    color: var(--kelto-danger-700);
+  }
+
+  &.val-amber {
+    color: var(--kelto-warning-700);
+  }
+}
+
+.summary-label {
+  margin-top: 1px;
+  color: var(--kelto-text-subtle);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Filters toolbar
+   ========================================================================== */
+.filters-toolbar {
+  padding: 10px 12px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 12px;
+  background: var(--kelto-bg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 260px;
+
+  .search-icon {
+    position: absolute;
+    left: 11px;
+    color: var(--kelto-neutral-400);
+    pointer-events: none;
+  }
+
+  .filter-search-input {
+    width: 100%;
+    height: 36px;
+    padding: 0 32px 0 34px;
+    border: 1px solid var(--kelto-border);
+    border-radius: 8px;
+    outline: none;
+    background: var(--kelto-bg-subtle);
+    color: var(--kelto-text);
+    font: inherit;
+    font-size: 13px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &::placeholder {
+      color: var(--kelto-neutral-400);
+    }
+
+    &:hover {
+      border-color: var(--kelto-border-strong);
+    }
+
+    &:focus {
+      border-color: var(--kelto-brand-500);
+      background: var(--kelto-bg);
+      box-shadow: var(--focus-ring);
+    }
+
+    /* The clear button below replaces the browser's own */
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+
+  .btn-clear-search {
+    position: absolute;
+    right: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    background: var(--kelto-neutral-200);
+    color: var(--kelto-neutral-600);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--kelto-neutral-300);
+      color: var(--kelto-text);
+    }
+  }
+}
+
+.filter-controls-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.filter-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .filter-select-label {
+    color: var(--kelto-text-subtle);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .filter-select {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--kelto-border);
+    border-radius: 8px;
+    outline: none;
+    background: var(--kelto-bg);
+    color: var(--kelto-text);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      border-color: var(--kelto-border-strong);
+    }
+
+    &:focus-visible {
+      border-color: var(--kelto-brand-500);
+      box-shadow: var(--focus-ring);
+    }
+
+    /* A select that is narrowing the board */
+    &.is-set {
+      border-color: var(--kelto-brand-200);
+      background: var(--kelto-brand-50);
+      color: var(--kelto-brand-700);
+      font-weight: 600;
+    }
+  }
+}
+
+.btn-clear-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px dashed var(--kelto-border-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--kelto-text-subtle);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--kelto-neutral-400);
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+/* ==========================================================================
+   Board and columns
+   ========================================================================== */
+.pipeline-board-container {
+  width: 100%;
+  padding-bottom: 12px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-color: var(--kelto-neutral-400) var(--kelto-bg-muted);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--kelto-bg-muted);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid var(--kelto-bg-muted);
+    border-radius: 999px;
+    background: var(--kelto-neutral-400);
+  }
+}
+
+.pipeline-kanban-board {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.kanban-column {
+  --stage-color: var(--kelto-neutral-400);
+
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--kb-column-width);
+  height: max(440px, calc(100vh - var(--kb-board-offset)));
+  overflow: hidden;
+  border: 1px solid var(--kelto-border);
+  border-radius: 12px;
+  background: var(--kelto-bg-subtle);
+  /* Stage colour along the top edge */
+  box-shadow: inset 0 3px 0 var(--stage-color);
+  scroll-snap-align: start;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+
+  &.drag-over {
+    border-color: var(--kelto-brand-400);
+    background: var(--kelto-brand-50);
+    box-shadow: inset 0 3px 0 var(--stage-color), 0 0 0 3px rgba(229, 96, 62, 0.14);
+  }
+
+  &.is-archived {
+    border-style: dashed;
+    background: var(--kelto-bg-muted);
+  }
+}
+
+/* While a card is being dragged, show where it can land */
+.is-dragging .kanban-column:not(.is-archived):not(.drag-over) {
+  border-style: dashed;
+  border-color: var(--kelto-border-strong);
+}
+
+.column-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 12px 10px;
+  border-bottom: 1px solid var(--kelto-border);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stage-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--stage-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--stage-color) 18%, transparent);
+
+  /* Numbered stages (admissions) */
+  &.has-number {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    box-shadow: none;
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.stage-name {
+  margin: 0;
+  overflow: hidden;
+  color: var(--kelto-text);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-count-badge {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 10px;
+  box-sizing: border-box;
+  background: var(--kelto-bg);
+  color: var(--kelto-neutral-600);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  &.won-badge {
+    border-color: var(--kelto-success-100);
+    background: var(--kelto-success-50);
+    color: var(--kelto-success-700);
+  }
+
+  &.lost-badge {
+    border-color: var(--kelto-danger-100);
+    background: var(--kelto-danger-50);
+    color: var(--kelto-danger-700);
+  }
+}
+
+.stage-total-val {
+  flex-shrink: 0;
+  color: var(--kelto-neutral-600);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  &.won-val {
+    color: var(--kelto-success-700);
+  }
+
+  &.lost-val {
+    color: var(--kelto-danger-700);
+  }
+}
+
+/* Right-hand note in a column header, e.g. "2 stuck" */
+.stage-flag {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--kelto-warning-50);
+  color: var(--kelto-warning-700);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.column-note {
+  margin: 8px 12px 0;
+  color: var(--kelto-text-subtle);
+  font-size: 12px;
+}
+
+.column-cards-scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: var(--kelto-neutral-300);
+  }
+}
+
+.column-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 26px 14px;
+  border: 1px dashed var(--kelto-border-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  text-align: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.empty-stage-icon {
+  margin-bottom: 4px;
+  color: var(--kelto-neutral-400);
+}
+
+.empty-stage-text {
+  color: var(--kelto-neutral-600);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.empty-stage-hint {
+  color: var(--kelto-neutral-400);
+  font-size: 11px;
+}
+
+.drag-over .column-empty-state {
+  border-color: var(--kelto-brand-300);
+  background: var(--kelto-bg);
+
+  .empty-stage-icon,
+  .empty-stage-text {
+    color: var(--kelto-brand-600);
+  }
+}
+
+/* Loading placeholder card */
+.card-skeleton {
+  flex-shrink: 0;
+  height: 118px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--kelto-neutral-100) 25%,
+    var(--kelto-neutral-50) 37%,
+    var(--kelto-neutral-100) 63%
+  );
+  background-size: 400% 100%;
+  animation: kb-shimmer 1.4s ease infinite;
+
+  & + & {
+    height: 96px;
+  }
+}
+
+@keyframes kb-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+.lead-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 10px;
+  background: var(--kelto-bg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+
+  &:hover {
+    border-color: var(--kelto-border-strong);
+    box-shadow: 0 8px 18px -8px rgba(15, 23, 42, 0.18);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--kelto-brand-400);
+    box-shadow: var(--focus-ring);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  /* Saving a move */
+  &.is-moving {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  &.lead-card-won {
+    border-left: 3px solid var(--kelto-success-500);
+  }
+
+  &.lead-card-lost {
+    border-left: 3px solid var(--kelto-danger-500);
+    opacity: 0.92;
+  }
+
+  &.lead-card-warn {
+    border-left: 3px solid var(--kelto-warning-500);
+  }
+
+  &.lead-card-bad {
+    border-left: 3px solid var(--kelto-danger-500);
+  }
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 24px;
+}
+
+/* Small uppercase line above the name: company, or intake and level */
+.company-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--kelto-text-subtle);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.card-header-right {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.priority-pill,
+.card-pill {
+  padding: 2px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+
+  &.priority-high,
+  &.tone-bad {
+    border-color: var(--kelto-danger-100);
+    background: var(--kelto-danger-50);
+    color: var(--kelto-danger-700);
+  }
+
+  &.priority-medium {
+    border-color: var(--kelto-brand-100);
+    background: var(--kelto-brand-50);
+    color: var(--kelto-brand-700);
+  }
+
+  &.tone-warn {
+    border-color: var(--kelto-warning-100);
+    background: var(--kelto-warning-50);
+    color: var(--kelto-warning-700);
+  }
+
+  &.priority-low,
+  &.tone-muted {
+    border-color: var(--kelto-border);
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-neutral-600);
+  }
+}
+
+/* Quick move to the next stage */
+.btn-card-move-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 6px;
+  background: var(--kelto-bg);
+  color: var(--kelto-brand-600);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    border-color: var(--kelto-brand-500);
+    background: var(--kelto-brand-500);
+    color: #ffffff;
+    transform: translateX(1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.menu-container {
+  position: relative;
+}
+
+.btn-card-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--kelto-neutral-400);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.card-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 184px;
+  margin-top: 4px;
+  padding: 5px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 10px;
+  background: var(--kelto-bg);
+  box-shadow: 0 16px 32px -12px rgba(15, 23, 42, 0.22), 0 4px 10px -4px rgba(15, 23, 42, 0.08);
+  cursor: default;
+
+  /* Near the bottom of a column (see core/utils/menu-placement.ts) */
+  &.opens-up {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 4px;
+  }
+}
+
+/* Each card is its own layer (hover lift), so lift the one whose menu is open
+   above the cards after it */
+.lead-card:has(.card-dropdown-menu) {
+  z-index: 5;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--kelto-neutral-700);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+
+  svg {
+    flex-shrink: 0;
+    color: var(--kelto-neutral-400);
+  }
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-text);
+  }
+}
+
+.card-dropdown-menu .menu-item-move {
+  color: var(--kelto-brand-700);
+  font-weight: 600;
+
+  svg {
+    color: var(--kelto-brand-500);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--kelto-brand-50);
+    color: var(--kelto-brand-700);
+  }
+}
+
+.card-dropdown-menu .menu-item-danger {
+  color: var(--kelto-danger-600);
+
+  svg {
+    color: var(--kelto-danger-500);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--kelto-danger-50);
+    color: var(--kelto-danger-700);
+  }
+}
+
+.menu-divider {
+  height: 1px;
+  margin: 3px 4px;
+  background: var(--kelto-border);
+}
+
+.card-customer-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.customer-name {
+  margin: 0;
+  overflow: hidden;
+  color: var(--kelto-text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-tag {
+  overflow: hidden;
+  color: var(--kelto-text-subtle);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.is-empty {
+    color: var(--kelto-neutral-400);
+  }
+}
+
+.card-value-row {
+  margin-top: 1px;
+}
+
+.deal-value-amount {
+  color: var(--kelto-text);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+
+  &.val-won {
+    color: var(--kelto-success-700);
+  }
+
+  &.val-lost {
+    color: var(--kelto-danger-700);
+  }
+}
+
+/* Days in stage against the stage's limit (admissions) */
+.stage-time {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stage-time-text {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--kelto-text-subtle);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+
+  strong {
+    color: var(--kelto-text);
+    font-weight: 650;
+  }
+}
+
+.stage-time-bar {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--kelto-bg-muted);
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--kelto-success-500);
+    transition: width 0.3s ease;
+  }
+}
+
+.stage-time.is-near {
+  .stage-time-bar span {
+    background: var(--kelto-warning-500);
+  }
+}
+
+.stage-time.is-stuck {
+  .stage-time-text strong {
+    color: var(--kelto-danger-700);
+  }
+
+  .stage-time-bar span {
+    background: var(--kelto-danger-500);
+  }
+}
+
+.card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 1px;
+  padding-top: 8px;
+  border-top: 1px solid var(--kelto-bg-muted);
+}
+
+.followup-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--kelto-text-subtle);
+  font-size: 11.5px;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &.overdue {
+    color: var(--kelto-danger-600);
+    font-weight: 600;
+  }
+}
+
+.followup-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.text-muted {
+    color: var(--kelto-neutral-400);
+  }
+}
+
+.overdue-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--kelto-danger-500);
+}
+
+.salesperson-chip {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.sp-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--kelto-brand-100);
+  color: var(--kelto-brand-700);
+  font-size: 9.5px;
+  font-weight: 700;
+
+  &.is-empty {
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-neutral-400);
+  }
+}
+
+.sp-name {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--kelto-neutral-600);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Lost leads: archive straight from the card */
+.card-lost-action-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px dashed var(--kelto-danger-100);
+
+  .btn-archive-lost-lead {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border: 1px solid var(--kelto-danger-100);
+    border-radius: 6px;
+    background: var(--kelto-danger-50);
+    color: var(--kelto-danger-600);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      border-color: var(--kelto-danger-600);
+      background: var(--kelto-danger-600);
+      color: #ffffff;
+    }
+  }
+}
+
+/* ==========================================================================
+   Whole-board empty, error and "no matches" state
+   ========================================================================== */
+.global-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0;
+  padding: 48px 20px;
+  border: 1px solid var(--kelto-border);
+  border-radius: 12px;
+  background: var(--kelto-bg);
+  text-align: center;
+}
+
+.empty-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: var(--kelto-bg-muted);
+  color: var(--kelto-text-subtle);
+}
+
+.empty-title {
+  margin: 0;
+  color: var(--kelto-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.empty-desc {
+  max-width: 420px;
+  margin: 6px 0 16px;
+  color: var(--kelto-text-subtle);
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   Smaller screens
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .summary-cards-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pipeline-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .pipeline-page {
+    --kb-column-width: 264px;
+  }
+
+  .summary-cards-strip {
+    gap: 8px;
+  }
+
+  .summary-card {
+    padding: 12px;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filter-controls-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-card,
+  .lead-card:hover {
+    transform: none;
+  }
+
+  .card-skeleton {
+    animation: none;
+  }
+}

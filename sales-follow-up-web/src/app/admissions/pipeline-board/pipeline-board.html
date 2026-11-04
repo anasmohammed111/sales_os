@@ -1,104 +1,272 @@
-<div class="adm-page">
-  <header class="adm-head">
-    <div>
-      <h1 class="adm-title">Pipeline</h1>
-      <p class="adm-sub">Active applications by stage. Drag a card, or use Move, to change its stage.</p>
+<!-- Same layout and styles as the sales pipeline: src/styles/_pipeline-board.scss -->
+<div class="pipeline-page" (click)="closeMenu()" (keydown.escape)="closeMenu()">
+  <header class="pipeline-header">
+    <div class="header-titles">
+      <h1 class="page-title">Admissions Pipeline</h1>
+      <p class="page-subtitle">Every active student by stage. Drag a card, or use the arrow, to move a student on.</p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary btn-nav" (click)="goToStudents()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path d="M6 12v5c3 3 9 3 12 0v-5" />
+        </svg>
+        <span>View all students</span>
+        <svg class="chevron-nav-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
     </div>
   </header>
 
-  <section class="adm-filters" aria-label="Filters">
-    <label class="adm-search">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-        stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-      <span class="adm-visually-hidden">Search students</span>
-      <input type="search" placeholder="Name, phone or email" (input)="onSearch($any($event.target).value)" />
-    </label>
-    <select aria-label="Level" (change)="setFilter('studyLevel', $any($event.target).value)">
-      <option value="">Any level</option>
-      <option value="BACHELOR">Bachelor's</option>
-      <option value="MASTER">Master's</option>
-    </select>
-    @if (showCounsellor()) {
-      <select aria-label="Counsellor" (change)="setFilter('counsellorId', $any($event.target).value)">
-        <option value="">All counsellors</option>
-        @for (c of ctx()?.counsellors; track c._id) {
-          <option [value]="c._id">{{ c.name }}</option>
+  <!-- KPI tiles; the last three switch their filter on and off -->
+  <section class="summary-cards-strip" aria-label="Pipeline summary">
+    <div class="summary-card">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val">{{ stats().total }}</div>
+          <div class="summary-label">Active students</div>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="summary-card" [attr.aria-pressed]="!!filters()['stuck']"
+      (click)="toggleFilter('stuck')" title="Show only students who are past their stage's time limit">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-amber">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val" [class.val-amber]="stats().stuck > 0">{{ stats().stuck }}</div>
+          <div class="summary-label">Stuck in a stage</div>
+        </div>
+      </div>
+    </button>
+
+    <button type="button" class="summary-card" [attr.aria-pressed]="!!filters()['overdue']"
+      (click)="toggleFilter('overdue')" title="Show only students whose follow-up is overdue">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-rose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+            <line x1="10" y1="14" x2="14" y2="18" />
+            <line x1="14" y1="14" x2="10" y2="18" />
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val" [class.val-rose]="stats().followUpOverdue > 0">{{ stats().followUpOverdue }}</div>
+          <div class="summary-label">Follow-ups overdue</div>
+        </div>
+      </div>
+    </button>
+
+    <button type="button" class="summary-card" [attr.aria-pressed]="filters()['paymentStatus'] === 'OVERDUE'"
+      (click)="toggleFilter('paymentStatus', 'OVERDUE')" title="Show only students with an overdue payment">
+      <div class="summary-card-inner">
+        <div class="summary-icon icon-purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-val" [class.val-rose]="stats().paymentOverdue > 0">{{ stats().paymentOverdue }}</div>
+          <div class="summary-label">Payments overdue</div>
+        </div>
+      </div>
+    </button>
+  </section>
+
+  <section class="filters-toolbar" aria-label="Filter students">
+    <div class="filter-row">
+      <div class="search-box">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="search" class="filter-search-input" [value]="searchText()"
+          (input)="onSearch($any($event.target).value)" placeholder="Search by student name, phone or email..."
+          autocomplete="off" aria-label="Search students" />
+        @if (searchText()) {
+          <button type="button" class="btn-clear-search" (click)="clearSearch()" aria-label="Clear search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         }
-      </select>
-    }
-    <button type="button" class="adm-toggle-chip" [attr.aria-pressed]="!!filters()['stuck']"
-      (click)="setFilter('stuck', filters()['stuck'] ? '' : '1')">Stuck only</button>
-    <button type="button" class="adm-toggle-chip" [attr.aria-pressed]="!!filters()['overdue']"
-      (click)="setFilter('overdue', filters()['overdue'] ? '' : '1')">Follow-up overdue</button>
+      </div>
+
+      <div class="filter-controls-group">
+        <div class="filter-select-wrap">
+          <label class="filter-select-label" for="adm-board-level">Level:</label>
+          <select id="adm-board-level" class="filter-select" [class.is-set]="!!filters()['studyLevel']"
+            [value]="filters()['studyLevel'] || ''" (change)="setFilter('studyLevel', $any($event.target).value)">
+            <option value="">All levels</option>
+            <option value="BACHELOR">Bachelor's</option>
+            <option value="MASTER">Master's</option>
+          </select>
+        </div>
+
+        @if (showCounsellor()) {
+          <div class="filter-select-wrap">
+            <label class="filter-select-label" for="adm-board-counsellor">Counsellor:</label>
+            <select id="adm-board-counsellor" class="filter-select" [class.is-set]="!!filters()['counsellorId']"
+              (change)="setFilter('counsellorId', $any($event.target).value)">
+              <option value="" [selected]="!filters()['counsellorId']">All counsellors</option>
+              @for (c of ctx()?.counsellors; track c._id) {
+                <option [value]="c._id" [selected]="c._id === filters()['counsellorId']">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        @if (hasActiveFilters()) {
+          <button type="button" class="btn-clear-filters" (click)="clearFilters()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            <span>Clear filters</span>
+          </button>
+        }
+      </div>
+    </div>
   </section>
 
   @if (error(); as message) {
-    <div class="adm-panel adm-state">
-      <strong>{{ message }}</strong>
-      <button type="button" class="adm-btn" (click)="load()">Try again</button>
+    <div class="global-empty-state" role="alert">
+      <div class="empty-icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <h3 class="empty-title">{{ message }}</h3>
+      <p class="empty-desc">Check your connection and try again.</p>
+      <button type="button" class="btn btn-secondary" (click)="load()">Try again</button>
     </div>
   } @else if (loading() && !applications().length) {
-    <div class="board" aria-busy="true">
-      @for (n of [1, 2, 3, 4]; track n) {
-        <div class="column"><div class="adm-skeleton" style="height: 220px"></div></div>
-      }
+    <div class="pipeline-board-container" aria-busy="true">
+      <div class="pipeline-kanban-board">
+        @for (n of [1, 2, 3, 4, 5]; track n) {
+          <div class="kanban-column">
+            <div class="column-header"><span class="stage-name">&nbsp;</span></div>
+            <div class="column-cards-scroll">
+              <div class="card-skeleton" aria-hidden="true"></div>
+              <div class="card-skeleton" aria-hidden="true"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (!applications().length && hasActiveFilters()) {
+    <div class="global-empty-state">
+      <div class="empty-icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <line x1="8" y1="11" x2="14" y2="11" />
+        </svg>
+      </div>
+      <h3 class="empty-title">No students match these filters</h3>
+      <p class="empty-desc">Try a different search, or clear the filters to see the whole pipeline.</p>
+      <button type="button" class="btn btn-secondary" (click)="clearFilters()">Clear all filters</button>
     </div>
   } @else {
     <!-- Desktop: columns -->
-    <div class="board desktop-only" [class.is-dragging]="!!dragId()">
-      @for (col of columns(); track col.key) {
-        <section class="column" [class.is-drop]="dropKey() === col.key" [class.is-archived]="col.isArchived"
-          (dragover)="onDragOver($event, col)" (dragleave)="dropKey.set(null)" (drop)="onDrop($event, col)"
-          [attr.aria-label]="col.name + ', ' + col.items.length + ' students'">
-          <header class="column-head">
-            <span class="station adm-num">{{ col.order }}</span>
-            <h2>{{ col.name }}</h2>
-            <span class="count adm-num">{{ col.items.length }}</span>
-          </header>
-          @if (col.isArchived) {
-            <p class="archived-note">Archived stage. Move these students on.</p>
-          }
-
-          <div class="cards">
-            @for (app of col.items; track app.id) {
-              <article class="card" draggable="true" [class.is-moving]="movingId() === app.id"
-                (dragstart)="onDragStart($event, app)" (dragend)="onDragEnd()">
-                <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: app }" />
-                <div class="card-foot">
-                                    <button type="button" class="adm-btn adm-btn--sm" (click)="pickerFor.set(app)">Move</button>
-                </div>
-              </article>
-            } @empty {
-              <p class="empty">No students here.</p>
+    <div class="pipeline-board-container desktop-only">
+      <div class="pipeline-kanban-board" [class.is-dragging]="!!dragId()">
+        @for (col of columns(); track col.key) {
+          <section class="kanban-column" [style.--stage-color]="col.color" [class.drag-over]="dropKey() === col.key"
+            [class.is-archived]="col.isArchived" (dragover)="onDragOver($event, col)" (dragleave)="dropKey.set(null)"
+            (drop)="onDrop($event, col)" [attr.aria-label]="col.name + ', ' + col.items.length + ' students'">
+            <div class="column-header">
+              <div class="header-left">
+                <span class="stage-dot has-number" aria-hidden="true">{{ col.order }}</span>
+                <h3 class="stage-name" [title]="col.name">{{ col.name }}</h3>
+                <span class="stage-count-badge">{{ col.items.length }}</span>
+              </div>
+              @if (col.stuck) {
+                <span class="stage-flag" [title]="col.stuck + ' past the time limit for this stage'">{{ col.stuck }} stuck</span>
+              }
+            </div>
+            @if (col.isArchived) {
+              <p class="column-note">Archived stage. Move these students on.</p>
             }
-          </div>
-        </section>
-      }
+
+            <div class="column-cards-scroll">
+              @for (app of col.items; track app.id) {
+                <ng-container *ngTemplateOutlet="card; context: { $implicit: app, drag: true }" />
+              } @empty {
+                <div class="column-empty-state">
+                  <div class="empty-stage-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <line x1="9" y1="12" x2="15" y2="12" />
+                    </svg>
+                  </div>
+                  <span class="empty-stage-text">No students in this stage.</span>
+                  @if (!col.isArchived) {
+                    <span class="empty-stage-hint">Drag students here</span>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
     </div>
 
     <!-- Mobile: stage tabs and a list -->
     <div class="mobile-only">
       <div class="stage-tabs" role="tablist" aria-label="Stages">
         @for (col of columns(); track col.key) {
-          <button type="button" role="tab" [attr.aria-selected]="selectedColumn()?.key === col.key" (click)="mobileStage.set(col.key)">
-            <span class="station adm-num">{{ col.order }}</span>
+          <button type="button" role="tab" [style.--stage-color]="col.color"
+            [attr.aria-selected]="selectedColumn()?.key === col.key" (click)="mobileStage.set(col.key)">
+            <span class="stage-dot has-number" aria-hidden="true">{{ col.order }}</span>
             {{ col.name }}
-            <span class="count adm-num">{{ col.items.length }}</span>
+            <span class="stage-count-badge">{{ col.items.length }}</span>
           </button>
         }
       </div>
 
       @if (selectedColumn(); as col) {
-        <div class="cards mobile-list">
+        <div class="mobile-list">
           @for (app of col.items; track app.id) {
-            <article class="card" [class.is-moving]="movingId() === app.id">
-              <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: app }" />
-              <div class="card-foot">
-                                <button type="button" class="adm-btn adm-btn--sm" (click)="pickerFor.set(app)">Move</button>
-              </div>
-            </article>
+            <ng-container *ngTemplateOutlet="card; context: { $implicit: app, drag: false }" />
           } @empty {
-            <div class="adm-panel adm-state"><strong>No students in {{ col.name }}</strong></div>
+            <div class="column-empty-state">
+              <span class="empty-stage-text">No students in {{ col.name }}.</span>
+            </div>
           }
         </div>
       }
@@ -106,34 +274,132 @@
   }
 </div>
 
-<ng-template #cardBody let-app>
-  <button type="button" class="card-main" (click)="open(app)">
-    <span class="card-name">{{ app.student.name }}</span>
-    @if (universityOf(app); as uni) {
-      <span class="card-uni">{{ uni }}</span>
-    }
-    <span class="card-meta">
-      <span>{{ intakeLabel(app.intakeMonth, app.intakeYear) }}</span>
-      <span class="adm-num" [class.is-warn]="app.isStuck">{{ app.daysInStage }}d in stage</span>
-      <span [class.is-warn]="app.isFollowUpOverdue">Follow-up {{ followUp(app) }}</span>
-    </span>
-  </button>
-  <div class="card-tags">
-    @if (showCounsellor()) {
-      <span class="adm-avatar" [title]="app.counsellor?.name || 'Unassigned'">{{ initials(app.counsellor?.name) }}</span>
-    }
-    @for (w of app.warnings.slice(0, 2); track w) {
-      @if (w !== 'NO_FOLLOW_UP') {
-        <span class="adm-chip" [class]="'adm-chip adm-chip--' + toneOf(w)">{{ labelOf(w) }}</span>
+<!-- One student card, used by the columns and by the mobile list -->
+<ng-template #card let-app let-drag="drag">
+  <article class="lead-card" [class.lead-card-bad]="cardTone(app) === 'bad'"
+    [class.lead-card-warn]="cardTone(app) === 'warn'" [class.is-moving]="movingId() === app.id"
+    [attr.draggable]="drag ? 'true' : null" (dragstart)="drag && onDragStart($event, app)" (dragend)="onDragEnd()"
+    (click)="open(app)" (keydown.enter)="onCardKey($event, app)" role="button" tabindex="0"
+    [attr.aria-label]="'Open ' + app.student.name">
+    <div class="card-header-row">
+      <span class="company-name">{{ intakeLabel(app.intakeMonth, app.intakeYear) }} · {{ levelOf(app) }}</span>
+
+      <div class="card-header-right">
+        @if (topWarning(app); as w) {
+          <span class="card-pill" [class]="'card-pill tone-' + toneOf(w)">{{ labelOf(w) }}</span>
+        }
+
+        <!-- Opens the stage picker (next stage highlighted); a move saves as soon as it is chosen -->
+        @if (app.nextStage) {
+          <button type="button" class="btn-card-move-arrow" (click)="$event.stopPropagation(); openPicker(app)"
+            [title]="'Move stage (next: ' + app.nextStage.name + ')'" [attr.aria-label]="'Move ' + app.student.name + ' to another stage'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        }
+
+        <div class="menu-container" (click)="$event.stopPropagation()">
+          <button type="button" class="btn-card-menu" (click)="toggleMenu($event, app)" aria-label="Student actions"
+            aria-haspopup="menu" [attr.aria-expanded]="menuFor() === app.id">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
+
+          @if (menuFor() === app.id) {
+            <div class="card-dropdown-menu" [class.opens-up]="menuUp()" role="menu">
+              <button type="button" class="menu-item" role="menuitem" (click)="open(app)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>Open profile</span>
+              </button>
+              <button type="button" class="menu-item" role="menuitem" (click)="openTab(app, 'checklist')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                <span>Checklist</span>
+              </button>
+              <button type="button" class="menu-item" role="menuitem" (click)="openTab(app, 'payments')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                <span>Payments</span>
+              </button>
+              <button type="button" class="menu-item" role="menuitem" (click)="openTab(app, 'tasks')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>Follow-ups</span>
+              </button>
+              <div class="menu-divider" role="separator"></div>
+              <button type="button" class="menu-item menu-item-move" role="menuitem" (click)="openPicker(app)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+                <span>Move to stage...</span>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card-customer-row">
+      <h4 class="customer-name">{{ app.student.name }}</h4>
+      @if (universityOf(app); as uni) {
+        <span class="product-tag" [title]="uni">{{ uni }}</span>
+      } @else {
+        <span class="product-tag is-empty">No university chosen yet</span>
       }
-    }
-    @if (app.warnings.length > 2) {
-      <span class="adm-chip adm-chip--muted">+{{ app.warnings.length - 2 }}</span>
-    }
-  </div>
+    </div>
+
+    <div class="stage-time" [class.is-stuck]="app.isStuck" [class.is-near]="!app.isStuck && stagePercent(app) >= 75">
+      <div class="stage-time-text">
+        <span><strong>{{ app.daysInStage }} {{ app.daysInStage === 1 ? 'day' : 'days' }}</strong> in stage</span>
+        <span>limit {{ app.stuckThresholdDays }}</span>
+      </div>
+      <div class="stage-time-bar" aria-hidden="true"><span [style.width.%]="stagePercent(app)"></span></div>
+    </div>
+
+    <div class="card-footer-row">
+      <div class="followup-info" [class.overdue]="app.isFollowUpOverdue">
+        @if (app.isFollowUpOverdue) {
+          <span class="overdue-dot" aria-hidden="true"></span>
+        } @else {
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        }
+        <span class="followup-text" [class.text-muted]="!app.nextFollowUpAt">{{ followUpText(app) }}</span>
+      </div>
+
+      <div class="salesperson-chip" [title]="'Counsellor: ' + (app.counsellor?.name || 'Unassigned')">
+        <div class="sp-avatar" [class.is-empty]="!app.counsellor?.name">{{ initials(app.counsellor?.name) }}</div>
+        <span class="sp-name">{{ app.counsellor?.name || 'Unassigned' }}</span>
+      </div>
+    </div>
+  </article>
 </ng-template>
 
-<!-- Stage picker for Move (keyboard and touch friendly) -->
+<!-- Stage picker for "Move to stage..." (keyboard and touch friendly) -->
 @if (pickerFor(); as app) {
   <div class="adm-dialog-backdrop" (click)="pickerFor.set(null)" role="presentation">
     <div class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="picker-title" (click)="$event.stopPropagation()">
@@ -147,9 +413,10 @@
         <ul class="picker">
           @for (stage of activeStages(); track stage.key) {
             <li>
-              <button type="button" class="picker-item" [disabled]="stage.key === app.currentStage.key"
-                [class.is-next]="stage.key === app.nextStage?.key" (click)="requestMove(app, stage)">
-                <span class="station adm-num">{{ stage.order }}</span>
+              <button type="button" class="picker-item" [style.--stage-color]="stage.color"
+                [disabled]="stage.key === app.currentStage.key" [class.is-next]="stage.key === app.nextStage?.key"
+                (click)="requestMove(app, stage)">
+                <span class="stage-dot has-number" aria-hidden="true">{{ stage.order }}</span>
                 <span>{{ stage.name }}</span>
                 @if (stage.key === app.currentStage.key) {
                   <span class="adm-chip">Current</span>
