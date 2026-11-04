@@ -50,7 +50,12 @@ export class AdmissionsService {
       this.contextUserId = userId;
     }
     if (force || !this.context$) {
-      this.contextState.set('loading');
+      // Refreshing a context that is already loaded happens in the background.
+      // The admissions layout only shows its pages while the state is 'ready', so
+      // switching to 'loading' would destroy the page that asked for the refresh;
+      // Settings refreshes on open, so that looped forever.
+      const refreshing = this.contextState() === 'ready' && this.context() !== null;
+      if (!refreshing) this.contextState.set('loading');
       this.context$ = this.http.get<ApiResponse<AdmissionsContext>>(`${this.base}/context`).pipe(
         map((res) => res.data),
         tap((ctx) => {
@@ -58,9 +63,11 @@ export class AdmissionsService {
           this.contextState.set('ready');
         }),
         catchError((err) => {
+          this.context$ = null;
+          // A failed refresh keeps what is already on screen
+          if (refreshing) return of(this.context());
           this.context.set(null);
           this.contextState.set(err?.status === 404 ? 'disabled' : 'error');
-          this.context$ = null;
           return of(null);
         }),
         shareReplay(1)
