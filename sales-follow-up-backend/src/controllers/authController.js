@@ -1,8 +1,10 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const Business = require('../models/Business');
 const { generateToken } = require('../services/authService');
+const { sendMail } = require('../services/mailer');
 
 const googleClient = new OAuth2Client();
 
@@ -491,6 +493,86 @@ const googleAuth = async (req, res) => {
     }
 };
 
+const RESET_TTL_MS = 60 * 60 * 1000;
+const FORGOT_MESSAGE = "If an account exists for that email, we've sent a link to reset the password. It works for one hour.";
+
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+
+/**
+ * Starts a password reset. Always gives the same answer so nobody can find
+ * out which emails have accounts. Only a hash of the token is stored.
+ */
+const forgotPassword = async (req, res) => {
+    try {
+        const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Enter your email address' });
+        }
+
+        const user = await User.findOne({ email, isActive: true });
+        if (user) {
+            const token = crypto.randomBytes(32).toString('hex');
+            await User.updateOne(
+                { _id: user._id },
+                { $set: { resetPasswordToken: hashToken(token), resetPasswordExpires: new Date(Date.now() + RESET_TTL_MS) } }
+            );
+
+            const appUrl = (process.env.APP_URL || 'http://localhost:4200').replace(/\/$/, '');
+            const link = `${appUrl}/auth/reset-password?token=${token}`;
+            const { sent } = await sendMail({
+                to: user.email,
+                subject: 'Reset your password',
+                text: `${link}\n\nUse this link within one hour to choose a new password. If you didn't ask for this, ignore this email.`,
+                html: `<p><a href="${link}">Choose a new password</a></p><p>The link works for one hour. If you didn't ask for this, ignore this email.</p>`,
+            });
+
+            if (!sent && process.env.NODE_ENV !== 'production') {
+                console.log(`[Password reset] Email is not configured. Reset link for ${user.email}: ${link}`);
+            } else if (!sent) {
+                console.warn('[Password reset] SMTP_HOST is not set, so no reset email was sent.');
+            }
+        }
+
+        return res.status(200).json({ success: true, message: FORGOT_MESSAGE });
+    } catch (error) {
+        console.error('Forgot password error:', error.message);
+        return res.status(500).json({ success: false, message: 'Could not start the password reset' });
+    }
+};
+
+/** Finishes a password reset with the token from the email. */
+const resetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body || {};
+
+        if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
+            return res.status(400).json({ success: false, message: 'The new password must be between 8 and 128 characters' });
+        }
+
+        const user =
+            typeof token === 'string' && /^[a-f0-9]{64}$/.test(token)
+                ? await User.findOne({ resetPasswordToken: hashToken(token), resetPasswordExpires: { $gt: new Date() }, isActive: true })
+                : null;
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'This reset link is invalid or has expired. Ask for a new one.',
+            });
+        }
+
+        user.password = await bcrypt.hash(password, 12);
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+
+        return res.status(200).json({ success: true, message: 'Password changed. You can sign in now.' });
+    } catch (error) {
+        console.error('Reset password error:', error.message);
+        return res.status(500).json({ success: false, message: 'Could not reset the password' });
+    }
+};
+
 const getMe = async (req, res) => {
     try {
         const user = await User.findById(
@@ -545,5 +627,7 @@ module.exports = {
     register,
     login,
     googleAuth,
+    forgotPassword,
+    resetPassword,
     getMe
 };
