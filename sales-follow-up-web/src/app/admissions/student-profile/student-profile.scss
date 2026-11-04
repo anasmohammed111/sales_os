@@ -53,6 +53,10 @@
   font: inherit;
   font-size: 13.5px;
   font-weight: 600;
+
+  @supports (appearance: base-select) {
+    padding-inline-end: 10px;
+  }
 }
 
 .rail-panel {
@@ -70,6 +74,10 @@
   font-size: 13.5px;
   font-weight: 650;
   color: var(--adm-ink);
+
+  @supports (appearance: base-select) {
+    padding-inline-end: 8px;
+  }
 }
 
 @media (max-width: 640px) {

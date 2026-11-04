@@ -347,6 +347,16 @@
     background-repeat: no-repeat;
     background-position: right 10px center;
     background-size: 14px;
+
+    @supports (appearance: base-select) {
+      background-image: none;
+    }
+  }
+
+  /* Chrome and Edge draw the arrow as ::picker-icon (styles/kelto-select.scss) */
+  @supports (appearance: base-select) {
+    padding-inline-end: 12px;
+    background-image: none;
   }
 }
 

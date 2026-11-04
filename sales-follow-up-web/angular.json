@@ -33,7 +33,8 @@
             "styles": [
               "src/styles/kelto-colors.css",
               "src/styles.scss",
-              "src/styles/admissions.scss"
+              "src/styles/admissions.scss",
+              "src/styles/kelto-select.scss"
             ]
           },
           "configurations": {

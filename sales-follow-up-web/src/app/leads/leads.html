@@ -79,7 +79,7 @@
                 (change)="convertCounsellorId.set($any($event.target).value)">
                 <option value="">Default (Current User)</option>
                 @for (member of teamMembers(); track member._id) {
-                <option [value]="member._id">{{ member.name }}</option>
+                <option [value]="member._id" [selected]="member._id === convertCounsellorId()">{{ member.name }}</option>
                 }
               </select>
               <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -95,7 +95,7 @@
               <select class="form-control select-control" [value]="convertIntakeMonth()"
                 (change)="convertIntakeMonth.set(+$any($event.target).value)">
                 @for (m of convertMonths; track m.value) {
-                <option [value]="m.value">{{ m.label }}</option>
+                <option [value]="m.value" [selected]="m.value === convertIntakeMonth()">{{ m.label }}</option>
                 }
               </select>
               <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -111,7 +111,7 @@
               <select class="form-control select-control" [value]="convertIntakeYear()"
                 (change)="convertIntakeYear.set(+$any($event.target).value)">
                 @for (y of convertYears; track y) {
-                <option [value]="y">{{ y }}</option>
+                <option [value]="y" [selected]="y === convertIntakeYear()">{{ y }}</option>
                 }
               </select>
               <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1119,7 +1119,7 @@
                 <select class="filter-select lifecycle-select" [value]="selectedLead()?.status"
                   (change)="quickChangeStatus(selectedLead()!, $any($event.target).value)">
                   @for (st of allStatuses; track st.value) {
-                  <option [value]="st.value">{{ st.label }}</option>
+                  <option [value]="st.value" [selected]="st.value === selectedLead()?.status">{{ st.label }}</option>
                   }
                 </select>
                 <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"

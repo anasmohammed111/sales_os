@@ -122,11 +122,12 @@
               @if (ctx()?.isAdmin) {
                 <option value="">Unassigned</option>
               }
+              <!-- Options come from @for/@if, which render after the select's [value], so each marks itself -->
               @if (a.counsellor && !counsellorListed()) {
-                <option [value]="a.counsellorId">{{ a.counsellor.name }}</option>
+                <option [value]="a.counsellorId" selected>{{ a.counsellor.name }}</option>
               }
               @for (c of ctx()?.counsellors; track c._id) {
-                <option [value]="c._id">{{ c.name }}</option>
+                <option [value]="c._id" [selected]="c._id === a.counsellorId">{{ c.name }}</option>
               }
             </select>
           } @else {

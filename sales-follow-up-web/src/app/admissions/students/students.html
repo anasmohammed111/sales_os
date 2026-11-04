@@ -33,7 +33,7 @@
     <select aria-label="Stage" [value]="filters()['stage'] || ''" (change)="setFilter('stage', $any($event.target).value)">
       <option value="">All stages</option>
       @for (s of stages(); track s.key) {
-        <option [value]="s.key">{{ s.order }}. {{ s.name }}</option>
+        <option [value]="s.key" [selected]="s.key === filters()['stage']">{{ s.order }}. {{ s.name }}</option>
       }
     </select>
 
@@ -46,14 +46,14 @@
     <select aria-label="Intake month" [value]="filters()['intakeMonth'] || ''" (change)="setFilter('intakeMonth', $any($event.target).value)">
       <option value="">Any intake month</option>
       @for (m of months; track m.value) {
-        <option [value]="m.value">{{ m.label }}</option>
+        <option [value]="m.value" [selected]="'' + m.value === filters()['intakeMonth']">{{ m.label }}</option>
       }
     </select>
 
     <select aria-label="Intake year" [value]="filters()['intakeYear'] || ''" (change)="setFilter('intakeYear', $any($event.target).value)">
       <option value="">Any year</option>
       @for (y of years; track y) {
-        <option [value]="y">{{ y }}</option>
+        <option [value]="y" [selected]="'' + y === filters()['intakeYear']">{{ y }}</option>
       }
     </select>
 
@@ -61,10 +61,10 @@
       <select aria-label="Counsellor" [value]="filters()['counsellorId'] || ''" (change)="setFilter('counsellorId', $any($event.target).value)">
         <option value="">All counsellors</option>
         @for (c of ctx()?.counsellors; track c._id) {
-          <option [value]="c._id">{{ c.name }}</option>
+          <option [value]="c._id" [selected]="c._id === filters()['counsellorId']">{{ c.name }}</option>
         }
         @if (ctx()?.isAdmin) {
-          <option value="UNASSIGNED">Unassigned</option>
+          <option value="UNASSIGNED" [selected]="filters()['counsellorId'] === 'UNASSIGNED'">Unassigned</option>
         }
       </select>
     }
@@ -73,7 +73,7 @@
       <select aria-label="University" [value]="filters()['universityId'] || ''" (change)="setFilter('universityId', $any($event.target).value)">
         <option value="">Any university</option>
         @for (u of ctx()?.universities; track u._id) {
-          <option [value]="u._id">{{ u.name }}</option>
+          <option [value]="u._id" [selected]="u._id === filters()['universityId']">{{ u.name }}</option>
         }
       </select>
     }
