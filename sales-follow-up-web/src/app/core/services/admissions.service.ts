@@ -107,7 +107,7 @@ export class AdmissionsService {
       .pipe(map((r) => r.data));
   }
 
-  setStatus(id: string, status: 'WITHDRAWN' | 'ACTIVE', reason = ''): Observable<Application> {
+  setStatus(id: string, status: 'WITHDRAWN' | 'ACTIVE' | 'CLOSED', reason = ''): Observable<Application> {
     return this.http
       .patch<ApiResponse<Application>>(`${this.base}/applications/${id}/status`, { status, reason })
       .pipe(map((r) => r.data));

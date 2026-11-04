@@ -60,10 +60,14 @@
               }
             </select>
           </label>
-          <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="withdrawing.set(true)">Withdraw</button>
+          <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="closing.set(true)">Close</button>
+          <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" (click)="withdrawing.set(true)">No Longer Required / Withdraw</button>
         } @else if (a.status === 'WITHDRAWN') {
-          <span class="adm-chip adm-chip--muted">Withdrawn: {{ a.withdrawnReason }}</span>
+          <span class="adm-chip adm-chip--muted">Withdrawn / Not required: {{ a.withdrawnReason }}</span>
           <button type="button" class="adm-btn adm-btn--sm" (click)="reactivate()">Reactivate</button>
+        } @else if (a.status === 'CLOSED') {
+          <span class="adm-chip adm-chip--muted">Closed: {{ a.withdrawnReason || 'Complete' }}</span>
+          <button type="button" class="adm-btn adm-btn--sm" (click)="reactivate()">Reopen / Reactivate</button>
         }
       </div>
     </header>
@@ -186,19 +190,43 @@
         (ngSubmit)="withdraw()">
         <div class="adm-dialog__head">
           <div>
-            <h2 id="withdraw-title">Withdraw {{ a.student.name }}'s application?</h2>
-            <p>It leaves the pipeline and its reminders stop. You can reactivate it later.</p>
+            <h2 id="withdraw-title">Withdraw / Mark not required: {{ a.student.name }}</h2>
+            <p>It leaves the active pipeline and reminders pause. You can reactivate it later.</p>
           </div>
         </div>
         <div class="adm-dialog__body">
           <label class="adm-field">
-            <span>Reason</span>
-            <textarea name="reason" [(ngModel)]="withdrawReason" rows="3" placeholder="For example: chose another agency"></textarea>
+            <span>Reason (or "No longer required")</span>
+            <textarea name="reason" [(ngModel)]="withdrawReason" rows="3" placeholder="For example: No longer required or chose another program"></textarea>
           </label>
         </div>
         <div class="adm-dialog__foot">
           <button type="button" class="adm-btn" (click)="withdrawing.set(false)">Cancel</button>
-          <button type="submit" class="adm-btn adm-btn--danger" [disabled]="withdrawReason.trim().length < 3">Withdraw</button>
+          <button type="submit" class="adm-btn adm-btn--danger" [disabled]="withdrawReason.trim().length < 3">Mark Withdrawn / Not Required</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (closing()) {
+    <div class="adm-dialog-backdrop" (click)="closing.set(false)" role="presentation">
+      <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="close-title" (click)="$event.stopPropagation()"
+        (ngSubmit)="closeApp()">
+        <div class="adm-dialog__head">
+          <div>
+            <h2 id="close-title">Close {{ a.student.name }}'s application?</h2>
+            <p>Archive or finalize this student's admissions application.</p>
+          </div>
+        </div>
+        <div class="adm-dialog__body">
+          <label class="adm-field">
+            <span>Closing Notes / Remarks</span>
+            <textarea name="reason" [(ngModel)]="closeReason" rows="3" placeholder="For example: Visa completed successfully or admissions closed"></textarea>
+          </label>
+        </div>
+        <div class="adm-dialog__foot">
+          <button type="button" class="adm-btn" (click)="closing.set(false)">Cancel</button>
+          <button type="submit" class="adm-btn adm-btn--primary">Close Application</button>
         </div>
       </form>
     </div>

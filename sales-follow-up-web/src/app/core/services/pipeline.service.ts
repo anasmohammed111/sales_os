@@ -79,12 +79,31 @@ export class PipelineService {
   updateLeadStatus(
     leadId: string,
     status: LeadStatus,
-    lostReason?: string
+    options?:
+      | string
+      | {
+          lostReason?: string;
+          notes?: string;
+          nextFollowUpAt?: string | null;
+          estimatedValue?: number | null;
+          isArchived?: boolean;
+        }
   ): Observable<Lead> {
-    const payload: { status: LeadStatus; lostReason?: string } = { status };
-    if (status === 'LOST' && lostReason) {
-      payload.lostReason = lostReason.trim();
+    let payload: {
+      status: LeadStatus;
+      lostReason?: string;
+      notes?: string;
+      nextFollowUpAt?: string | null;
+      estimatedValue?: number | null;
+      isArchived?: boolean;
+    } = { status };
+
+    if (typeof options === 'string') {
+      payload.lostReason = options;
+    } else if (options) {
+      payload = { ...payload, ...options };
     }
+
     return this.http
       .patch<ApiResponse<Lead>>(`${this.apiUrl}/${leadId}/status`, payload)
       .pipe(map((res) => res.data));

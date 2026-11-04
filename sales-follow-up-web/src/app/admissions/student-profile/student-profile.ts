@@ -61,6 +61,8 @@ export class StudentProfile implements OnInit {
   readonly moveRequest = signal<MoveRequest | null>(null);
   readonly withdrawing = signal(false);
   withdrawReason = '';
+  readonly closing = signal(false);
+  closeReason = '';
 
   readonly tabs: { key: Tab; label: string }[] = [
     { key: 'checklist', label: 'Checklist' },
@@ -188,10 +190,24 @@ export class StudentProfile implements OnInit {
       next: () => {
         this.withdrawing.set(false);
         this.withdrawReason = '';
-        toast.success('Application withdrawn');
+        toast.success('Application withdrawn / marked no longer required');
         this.load();
       },
       error: (err) => toast.error(errorMessage(err, 'The application could not be withdrawn.')),
+    });
+  }
+
+  closeApp(): void {
+    const app = this.app();
+    if (!app) return;
+    this.admissions.setStatus(app.id, 'CLOSED', this.closeReason || 'Closed').subscribe({
+      next: () => {
+        this.closing.set(false);
+        this.closeReason = '';
+        toast.success('Application marked as closed');
+        this.load();
+      },
+      error: (err) => toast.error(errorMessage(err, 'The application could not be closed.')),
     });
   }
 

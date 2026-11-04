@@ -6,7 +6,8 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { toast } from 'ngx-sonner';
 
-import { Lead, LeadPriority, LeadStatus } from '../core/services/lead.service';
+import { Lead, LeadPriority, LeadStatus, LeadService, LEAD_STATUS_LABELS } from '../core/services/lead.service';
+import { AdmissionsService } from '../core/services/admissions.service';
 import { AuthService, AuthUser } from '../core/services/auth.service';
 import { TeamMember, TeamService } from '../core/services/team.service';
 import {
@@ -31,17 +32,26 @@ const DEFAULT_STAGES: StageColumn[] = [
   { id: 'QUOTATION_SENT', name: 'Quotation Sent', color: 'var(--kelto-stage-proposal)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
   { id: 'NEGOTIATION', name: 'Negotiation', color: 'var(--kelto-stage-negotiation)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
   { id: 'WON', name: 'Won', color: 'var(--kelto-stage-won)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'ADMISSIONS', name: 'Admissions', color: '#2563eb', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'ON_HOLD', name: 'On Hold', color: '#d97706', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'CLOSED', name: 'Closed', color: '#475569', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
+  { id: 'NO_LONGER_REQUIRED', name: 'Not Required', color: '#64748b', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
   { id: 'LOST', name: 'Lost', color: 'var(--kelto-stage-lost)', totalLeads: 0, totalEstimatedValue: 0, leads: [] },
 ];
 
 const ALLOWED_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  NEW: ['CONTACTED', 'QUALIFIED', 'LOST'],
-  CONTACTED: ['NEW', 'QUALIFIED', 'QUOTATION_SENT', 'LOST'],
-  QUALIFIED: ['CONTACTED', 'QUOTATION_SENT', 'NEGOTIATION', 'LOST'],
-  QUOTATION_SENT: ['QUALIFIED', 'NEGOTIATION', 'WON', 'LOST'],
-  NEGOTIATION: ['QUOTATION_SENT', 'WON', 'LOST'],
-  WON: [],
-  LOST: ['NEW', 'CONTACTED'],
+  NEW: ['CONTACTED', 'QUALIFIED', 'ADMISSIONS', 'ON_HOLD', 'CLOSED', 'NO_LONGER_REQUIRED', 'UNRESPONSIVE', 'LOST'],
+  CONTACTED: ['NEW', 'QUALIFIED', 'QUOTATION_SENT', 'ADMISSIONS', 'ON_HOLD', 'CLOSED', 'NO_LONGER_REQUIRED', 'UNRESPONSIVE', 'LOST'],
+  QUALIFIED: ['CONTACTED', 'QUOTATION_SENT', 'NEGOTIATION', 'ADMISSIONS', 'ON_HOLD', 'CLOSED', 'NO_LONGER_REQUIRED', 'UNRESPONSIVE', 'LOST'],
+  QUOTATION_SENT: ['QUALIFIED', 'NEGOTIATION', 'WON', 'ADMISSIONS', 'ON_HOLD', 'CLOSED', 'NO_LONGER_REQUIRED', 'UNRESPONSIVE', 'LOST'],
+  NEGOTIATION: ['QUOTATION_SENT', 'WON', 'ADMISSIONS', 'ON_HOLD', 'CLOSED', 'NO_LONGER_REQUIRED', 'UNRESPONSIVE', 'LOST'],
+  WON: ['ADMISSIONS', 'CLOSED', 'NEW'],
+  ADMISSIONS: ['WON', 'CLOSED', 'NEW'],
+  ON_HOLD: ['NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED', 'NO_LONGER_REQUIRED', 'LOST'],
+  CLOSED: ['NEW', 'CONTACTED', 'QUALIFIED', 'ADMISSIONS'],
+  NO_LONGER_REQUIRED: ['NEW', 'CONTACTED'],
+  UNRESPONSIVE: ['NEW', 'CONTACTED', 'CLOSED', 'NO_LONGER_REQUIRED', 'LOST'],
+  LOST: ['NEW', 'CONTACTED', 'CLOSED'],
 };
 
 @Component({
@@ -59,6 +69,8 @@ export class Pipeline implements OnInit {
   private readonly pipelineService = inject(PipelineService);
   private readonly teamService = inject(TeamService);
   private readonly authService = inject(AuthService);
+  private readonly leadService = inject(LeadService);
+  private readonly admissionsService = inject(AdmissionsService);
 
   private searchDebounceTimer?: ReturnType<typeof setTimeout>;
 
@@ -83,6 +95,57 @@ export class Pipeline implements OnInit {
   isWonConfirmOpen = signal(false);
   isLostConfirmOpen = signal(false);
   pendingStageChange = signal<{ lead: Lead; targetStatus: LeadStatus } | null>(null);
+
+  // Stage Move Dialog State
+  isMoveModalOpen = signal(false);
+  leadToMove = signal<Lead | null>(null);
+  moveTargetStatus = signal<LeadStatus>('CONTACTED');
+  moveNotes = signal<string>('');
+  moveNextFollowUpAt = signal<string>('');
+  moveEstimatedValue = signal<number | null>(null);
+  moveLostReason = signal<string>('Price / Budget Constraint');
+  moveArchiveLost = signal<boolean>(false);
+  moveStudyLevel = signal<'BACHELOR' | 'MASTER'>('BACHELOR');
+  moveIntakeMonth = signal<number>(9);
+  moveIntakeYear = signal<number>(new Date().getFullYear() + (new Date().getMonth() >= 6 ? 1 : 0));
+  isSubmittingMove = signal(false);
+
+  // Archive / Remove Dialog State
+  isArchiveModalOpen = signal(false);
+  leadToArchive = signal<Lead | null>(null);
+  isSubmittingArchive = signal(false);
+
+  readonly lostReasonOptions = [
+    'Price / Budget Constraint',
+    'Chose Competitor / Other Agency',
+    'Not Eligible / Academic Rejection',
+    'No Longer Interested in Studying Abroad',
+    'Unresponsive after Multiple Follow-ups',
+    'Financial / Visa Constraint',
+    'Personal / Family Reasons',
+    'Other',
+  ];
+
+  readonly intakeMonthOptions = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' },
+  ];
+
+  readonly intakeYearOptions = [
+    new Date().getFullYear(),
+    new Date().getFullYear() + 1,
+    new Date().getFullYear() + 2,
+  ];
 
   // Drag and Drop State
   draggedLead: Lead | null = null;
@@ -290,6 +353,161 @@ export class Pipeline implements OnInit {
         toast.error(err.error?.message || 'Failed to update lead status.');
       },
     });
+  }
+
+  
+  getStatusLabel(status: LeadStatus): string {
+    return LEAD_STATUS_LABELS[status] || status;
+  }
+
+  getAllowedNextStages(status: LeadStatus): { value: LeadStatus; label: string }[] {
+    const allowed = ALLOWED_STATUS_TRANSITIONS[status] || [];
+    return allowed.map((s) => ({
+      value: s,
+      label: this.getStatusLabel(s),
+    }));
+  }
+
+  openMoveStageDialog(event: Event, lead: Lead): void {
+    event.stopPropagation();
+    this.leadToMove.set(lead);
+
+    const stagesOrder: LeadStatus[] = [
+      'NEW',
+      'CONTACTED',
+      'QUALIFIED',
+      'QUOTATION_SENT',
+      'NEGOTIATION',
+      'WON',
+      'ADMISSIONS',
+    ];
+    const currentIdx = stagesOrder.indexOf(lead.status);
+    let nextStage: LeadStatus = 'CONTACTED';
+
+    if (currentIdx >= 0 && currentIdx < stagesOrder.length - 1) {
+      nextStage = stagesOrder[currentIdx + 1];
+    } else {
+      const allowed = ALLOWED_STATUS_TRANSITIONS[lead.status] || [];
+      nextStage = allowed[0] || 'CONTACTED';
+    }
+
+    this.moveTargetStatus.set(nextStage);
+    this.moveNotes.set(lead.notes || '');
+    this.moveNextFollowUpAt.set(lead.nextFollowUpAt ? lead.nextFollowUpAt.slice(0, 16) : '');
+    this.moveEstimatedValue.set(lead.estimatedValue ?? null);
+    this.moveLostReason.set('Price / Budget Constraint');
+    this.moveArchiveLost.set(false);
+
+    const isMaster = (lead.interestedIn || '').toLowerCase().includes('master');
+    this.moveStudyLevel.set(isMaster ? 'MASTER' : 'BACHELOR');
+    this.moveIntakeMonth.set(9);
+    this.moveIntakeYear.set(new Date().getFullYear() + (new Date().getMonth() >= 6 ? 1 : 0));
+
+    this.isMoveModalOpen.set(true);
+    this.activeMenuLeadId.set(null);
+  }
+
+  closeMoveModal(): void {
+    this.isMoveModalOpen.set(false);
+    this.leadToMove.set(null);
+  }
+
+  confirmMoveStage(): void {
+    const lead = this.leadToMove();
+    if (!lead || this.isSubmittingMove()) return;
+
+    const targetStatus = this.moveTargetStatus();
+    this.isSubmittingMove.set(true);
+
+    // If moving to Admissions, also enroll into Admissions Student Journey
+    if (targetStatus === 'ADMISSIONS') {
+      this.admissionsService
+        .createApplication({
+          studentId: lead._id,
+          studyLevel: this.moveStudyLevel(),
+          intakeMonth: Number(this.moveIntakeMonth()),
+          intakeYear: Number(this.moveIntakeYear()),
+          counsellorId: lead.assignedTo?._id || this.currentUser()?.id || undefined,
+          leadSource: lead.source ? lead.source.toLowerCase() : 'other',
+        })
+        .subscribe({
+          next: () => {
+            this.executeLeadPipelineMove(lead, targetStatus);
+          },
+          error: () => {
+            // If application already exists, continue with pipeline status update
+            this.executeLeadPipelineMove(lead, targetStatus);
+          },
+        });
+      return;
+    }
+
+    this.executeLeadPipelineMove(lead, targetStatus);
+  }
+
+  private executeLeadPipelineMove(lead: Lead, targetStatus: LeadStatus): void {
+    const finalReason =
+      targetStatus === 'LOST'
+        ? this.moveNotes().trim()
+          ? `${this.moveLostReason()} - ${this.moveNotes().trim()}`
+          : this.moveLostReason()
+        : undefined;
+
+    this.pipelineService
+      .updateLeadStatus(lead._id, targetStatus, {
+        lostReason: finalReason,
+        notes: this.moveNotes().trim() || undefined,
+        nextFollowUpAt: this.moveNextFollowUpAt() ? new Date(this.moveNextFollowUpAt()).toISOString() : null,
+        estimatedValue: this.moveEstimatedValue(),
+        isArchived: targetStatus === 'LOST' && this.moveArchiveLost() ? true : undefined,
+      })
+      .pipe(finalize(() => this.isSubmittingMove.set(false)))
+      .subscribe({
+        next: () => {
+          const actionText =
+            targetStatus === 'LOST' && this.moveArchiveLost()
+              ? 'Marked as Lost & Archived'
+              : `Moved to ${this.getStatusLabel(targetStatus)}`;
+          toast.success(`"${lead.customerName}" ${actionText}`);
+          this.closeMoveModal();
+          this.loadLeads();
+        },
+        error: (err) => {
+          toast.error(err.error?.message || 'Failed to advance lead stage.');
+        },
+      });
+  }
+
+  openArchiveModal(lead: Lead, event?: Event): void {
+    event?.stopPropagation();
+    this.leadToArchive.set(lead);
+    this.isArchiveModalOpen.set(true);
+    this.activeMenuLeadId.set(null);
+  }
+
+  closeArchiveModal(): void {
+    this.isArchiveModalOpen.set(false);
+    this.leadToArchive.set(null);
+  }
+
+  confirmArchiveLead(): void {
+    const lead = this.leadToArchive();
+    if (!lead || this.isSubmittingArchive()) return;
+
+    this.isSubmittingArchive.set(true);
+    this.leadService
+      .archiveLead(lead._id)
+      .pipe(finalize(() => this.isSubmittingArchive.set(false)))
+      .subscribe({
+        next: () => {
+          toast.success(`Lead "${lead.customerName}" archived and removed from active pipeline.`);
+          this.closeArchiveModal();
+          this.loadLeads();
+        },
+        error: (err) => {
+          toast.error(err.error?.message || 'Failed to archive lead.');
+        },
+      });
   }
 
   confirmWonMove(): void {

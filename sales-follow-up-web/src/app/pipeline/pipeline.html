@@ -251,6 +251,17 @@
                   {{ lead.priority }}
                 </span>
 
+                <!-- Move Stage Quick Arrow Button -->
+                <button type="button" class="btn-card-move-arrow"
+                  (click)="openMoveStageDialog($event, lead)"
+                  title="Move lead to next level (opens transition details)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+
                 <!-- Three-dot Menu Trigger -->
                 <div class="menu-container" (click)="$event.stopPropagation()">
                   <button type="button" class="btn-card-menu" (click)="toggleCardMenu($event, lead._id)"
@@ -289,6 +300,23 @@
                       </svg>
                       <span>View Follow-ups</span>
                     </button>
+                    <button type="button" class="menu-item menu-item-move" (click)="openMoveStageDialog($event, lead)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                      </svg>
+                      <span>Move to Next Level...</span>
+                    </button>
+                    @if (lead.status === 'LOST' || stage.id === 'LOST') {
+                    <button type="button" class="menu-item menu-item-danger" (click)="openArchiveModal(lead, $event)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                        <rect x="1" y="3" width="22" height="5"></rect>
+                        <line x1="10" y1="12" x2="14" y2="12"></line>
+                      </svg>
+                      <span>Archive / Remove Lead</span>
+                    </button>
+                    }
                   </div>
                   }
                 </div>
@@ -347,6 +375,21 @@
                   'Unassigned' }}</span>
               </div>
             </div>
+
+            <!-- Quick Action for Lost Leads: Remove / Archive -->
+            @if (lead.status === 'LOST' || stage.id === 'LOST') {
+            <div class="card-lost-action-bar" (click)="$event.stopPropagation()">
+              <button type="button" class="btn-archive-lost-lead" (click)="openArchiveModal(lead, $event)"
+                title="Archive and remove this lost lead from the pipeline">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                  <rect x="1" y="3" width="22" height="5"></rect>
+                  <line x1="10" y1="12" x2="14" y2="12"></line>
+                </svg>
+                <span>Archive / Remove Lost Lead</span>
+              </button>
+            </div>
+            }
           </div>
           }
           }
@@ -549,3 +592,235 @@
   </div>
   }
 </div>
+
+  <!-- =========================================================================
+       MOVE STAGE / ADVANCE LEAD DIALOG BOX
+       ========================================================================= -->
+  @if (isMoveModalOpen() && leadToMove()) {
+  <section class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="move-modal-title"
+    (click)="closeMoveModal()">
+    <div class="modal-card modal-card-move" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div class="move-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h2 id="move-modal-title" class="modal-title">Move Stage: {{ leadToMove()?.customerName }}</h2>
+            <p class="modal-subtitle">
+              Current stage: <span class="current-stage-pill">{{ getStatusLabel(leadToMove()!.status) }}</span>
+            </p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeMoveModal()" aria-label="Close dialog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <div class="modal-body move-modal-body">
+        <!-- Target Stage Selector -->
+        <div class="form-group">
+          <label class="form-label required">Move to Next Stage / Level</label>
+          <div class="select-wrapper">
+            <select class="form-control select-control" [ngModel]="moveTargetStatus()"
+              (ngModelChange)="moveTargetStatus.set($event)">
+              @for (st of getAllowedNextStages(leadToMove()!.status); track st.value) {
+              <option [value]="st.value">{{ st.label }}</option>
+              }
+            </select>
+            <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Counsellor Discussion / Interaction Notes -->
+        <div class="form-group">
+          <label class="form-label">Counsellor Discussion & Update Notes</label>
+          <textarea class="form-control textarea-control" rows="3" [ngModel]="moveNotes()"
+            (ngModelChange)="moveNotes.set($event)"
+            placeholder="Input details: key discussion takeaways, student preferences, requirements, or next steps..."></textarea>
+        </div>
+
+        <div class="form-row-2col">
+          <!-- Next Follow-up Date & Time -->
+          <div class="form-group">
+            <label class="form-label">Next Follow-up Date & Time</label>
+            <input type="datetime-local" class="form-control" [ngModel]="moveNextFollowUpAt()"
+              (ngModelChange)="moveNextFollowUpAt.set($event)" />
+          </div>
+
+          <!-- Estimated Value / Budget -->
+          <div class="form-group">
+            <label class="form-label">Estimated Value / Budget ({{ currency() }})</label>
+            <input type="number" class="form-control" [ngModel]="moveEstimatedValue()"
+              (ngModelChange)="moveEstimatedValue.set($event)" placeholder="0.00" min="0" step="100" />
+          </div>
+        </div>
+
+        <!-- Conditional block for LOST -->
+        @if (moveTargetStatus() === 'LOST') {
+        <div class="lost-details-card">
+          <div class="lost-card-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span class="font-semibold">Reason for Lost Lead (Required)</span>
+          </div>
+          <div class="select-wrapper">
+            <select class="form-control select-control" [ngModel]="moveLostReason()"
+              (ngModelChange)="moveLostReason.set($event)">
+              @for (reason of lostReasonOptions; track reason) {
+              <option [value]="reason">{{ reason }}</option>
+              }
+            </select>
+            <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+
+          <label class="archive-lost-checkbox-label">
+            <input type="checkbox" [ngModel]="moveArchiveLost()" (ngModelChange)="moveArchiveLost.set($event)" />
+            <span>Archive & remove this lost lead from active pipeline immediately</span>
+          </label>
+        </div>
+        }
+
+        <!-- Conditional block for ADMISSIONS -->
+        @if (moveTargetStatus() === 'ADMISSIONS') {
+        <div class="admissions-details-card">
+          <div class="admissions-card-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+            </svg>
+            <span class="font-semibold">Enrolling into Admissions Student Journey</span>
+          </div>
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label class="form-label required">Study Level</label>
+              <div class="select-wrapper">
+                <select class="form-control select-control" [ngModel]="moveStudyLevel()"
+                  (ngModelChange)="moveStudyLevel.set($event)">
+                  <option value="BACHELOR">Bachelor's Degree</option>
+                  <option value="MASTER">Master's Degree</option>
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">Target Intake</label>
+              <div class="intake-dual-row">
+                <div class="select-wrapper">
+                  <select class="form-control select-control" [ngModel]="moveIntakeMonth()"
+                    (ngModelChange)="moveIntakeMonth.set(+$event)">
+                    @for (m of intakeMonthOptions; track m.value) {
+                    <option [value]="m.value">{{ m.label }}</option>
+                    }
+                  </select>
+                  <svg class="select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+                <div class="select-wrapper">
+                  <select class="form-control select-control" [ngModel]="moveIntakeYear()"
+                    (ngModelChange)="moveIntakeYear.set(+$event)">
+                    @for (y of intakeYearOptions; track y) {
+                    <option [value]="y">{{ y }}</option>
+                    }
+                  </select>
+                  <svg class="select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeMoveModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="confirmMoveStage()" [disabled]="isSubmittingMove()">
+          @if (isSubmittingMove()) {
+          <span>Saving...</span>
+          } @else {
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+          <span>Confirm & Move to {{ getStatusLabel(moveTargetStatus()) }}</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </section>
+  }
+
+  <!-- =========================================================================
+       ARCHIVE / REMOVE LOST LEAD CONFIRMATION MODAL
+       ========================================================================= -->
+  @if (isArchiveModalOpen() && leadToArchive()) {
+  <section class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="archive-modal-title"
+    (click)="closeArchiveModal()">
+    <div class="modal-card modal-card-sm" (click)="$event.stopPropagation()">
+      <div class="archive-modal-body">
+        <div class="archive-icon-circle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </div>
+
+        <div class="archive-text-content">
+          <h2 id="archive-modal-title" class="archive-modal-title">Archive / Remove Lead</h2>
+          <p class="archive-modal-description">
+            Are you sure you want to archive <strong>{{ leadToArchive()?.customerName }}</strong>?
+            This removes the lead from the active pipeline and boards while preserving their past communication records.
+          </p>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeArchiveModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger-solid" (click)="confirmArchiveLead()"
+          [disabled]="isSubmittingArchive()">
+          @if (isSubmittingArchive()) {
+          <span>Archiving...</span>
+          } @else {
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          <span>Archive Lead</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </section>
+  }

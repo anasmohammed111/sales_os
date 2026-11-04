@@ -11,7 +11,27 @@ export type LeadStatus =
     | 'QUOTATION_SENT'
     | 'NEGOTIATION'
     | 'WON'
+    | 'ADMISSIONS'
+    | 'ON_HOLD'
+    | 'CLOSED'
+    | 'NO_LONGER_REQUIRED'
+    | 'UNRESPONSIVE'
     | 'LOST';
+
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+    NEW: 'New',
+    CONTACTED: 'Contacted',
+    QUALIFIED: 'Qualified',
+    QUOTATION_SENT: 'Quotation Sent',
+    NEGOTIATION: 'Negotiation',
+    WON: 'Won',
+    ADMISSIONS: 'Moved to Admissions',
+    ON_HOLD: 'On Hold',
+    CLOSED: 'Closed',
+    NO_LONGER_REQUIRED: 'No Longer Required',
+    UNRESPONSIVE: 'Unresponsive',
+    LOST: 'Lost',
+};
 
 export type LeadPriority = 'LOW' | 'MEDIUM' | 'HIGH';
 

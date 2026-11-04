@@ -8,7 +8,150 @@
       <div class="leads-header-text">
         <div class="title-with-badge">
           <h1 class="page-title">Leads</h1>
+        
+  <!-- SECTION 6: CONVERT TO ADMISSIONS MODAL -->
+  @if (isConvertModalOpen() && leadToConvert()) {
+  <section class="view-panel view-panel-convert modal-backdrop" role="dialog" aria-modal="true"
+    aria-labelledby="convert-lead-title" (click)="closeConvertModal()">
+    <div class="modal-card modal-card-md" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div class="convert-icon-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 id="convert-lead-title" class="modal-title">Convert Lead to Admissions</h2>
+            <p class="modal-subtitle">Enroll <strong>{{ leadToConvert()?.customerName }}</strong> into the Student Journey Pipeline.</p>
+          </div>
         </div>
+        <button type="button" class="btn-close-modal" (click)="closeConvertModal()" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <div class="modal-body convert-modal-body">
+        <!-- Lead summary card -->
+        <div class="convert-lead-summary">
+          <div class="summary-item">
+            <span class="summary-label">Student</span>
+            <span class="summary-val font-semibold">{{ leadToConvert()?.customerName }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Contact</span>
+            <span class="summary-val">{{ leadToConvert()?.phone || leadToConvert()?.email || 'No contact provided' }}</span>
+          </div>
+          @if (leadToConvert()?.interestedIn) {
+          <div class="summary-item full-width">
+            <span class="summary-label">Expressed Interest</span>
+            <span class="summary-val">{{ leadToConvert()?.interestedIn }}</span>
+          </div>
+          }
+        </div>
+
+        <!-- Form Fields for Admissions Application -->
+        <div class="convert-form-grid">
+          <!-- Study Level -->
+          <div class="form-group">
+            <label class="form-label required">Study Level</label>
+            <div class="select-wrapper">
+              <select class="form-control select-control" [value]="convertStudyLevel()"
+                (change)="convertStudyLevel.set($any($event.target).value)">
+                <option value="BACHELOR">Bachelor's Degree</option>
+                <option value="MASTER">Master's Degree</option>
+              </select>
+              <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Assigned Counsellor -->
+          <div class="form-group">
+            <label class="form-label">Assigned Counsellor</label>
+            <div class="select-wrapper">
+              <select class="form-control select-control" [value]="convertCounsellorId()"
+                (change)="convertCounsellorId.set($any($event.target).value)">
+                <option value="">Default (Current User)</option>
+                @for (member of teamMembers(); track member._id) {
+                <option [value]="member._id">{{ member.name }}</option>
+                }
+              </select>
+              <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Target Intake Month -->
+          <div class="form-group">
+            <label class="form-label required">Target Intake Month</label>
+            <div class="select-wrapper">
+              <select class="form-control select-control" [value]="convertIntakeMonth()"
+                (change)="convertIntakeMonth.set(+$any($event.target).value)">
+                @for (m of convertMonths; track m.value) {
+                <option [value]="m.value">{{ m.label }}</option>
+                }
+              </select>
+              <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Target Intake Year -->
+          <div class="form-group">
+            <label class="form-label required">Target Intake Year</label>
+            <div class="select-wrapper">
+              <select class="form-control select-control" [value]="convertIntakeYear()"
+                (change)="convertIntakeYear.set(+$any($event.target).value)">
+                @for (y of convertYears; track y) {
+                <option [value]="y">{{ y }}</option>
+                }
+              </select>
+              <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="convert-notice-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Converting will create an Admissions profile at <strong>Stage 1: Lead / Counselling</strong> and update this lead's status to <strong>Moved to Admissions</strong>.</span>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeConvertModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-convert-primary" (click)="confirmConvertToAdmissions()" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+          <span>Enrolling student...</span>
+          } @else {
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+          </svg>
+          <span>Convert & Open Student Journey</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </section>
+  }
+
+</div>
         <p class="page-subtitle">Track, qualify and convert prospects throughout your sales and follow-up lifecycle.
         </p>
       </div>
@@ -126,13 +269,9 @@
                     <select id="dropdown-filter-status" class="filter-select" [value]="statusFilter()"
                       (change)="onStatusChange($event)">
                       <option value="ALL">All Statuses</option>
-                      <option value="NEW">New</option>
-                      <option value="CONTACTED">Contacted</option>
-                      <option value="QUALIFIED">Qualified</option>
-                      <option value="QUOTATION_SENT">Quotation Sent</option>
-                      <option value="NEGOTIATION">Negotiation</option>
-                      <option value="WON">Won</option>
-                      <option value="LOST">Lost</option>
+                      @for (st of allStatuses; track st.value) {
+                      <option [value]="st.value">{{ st.label }}</option>
+                      }
                     </select>
                     <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2.5">
@@ -227,7 +366,7 @@
           @if (statusFilter() !== 'ALL') {
           <span class="active-chip">
             <span class="chip-key">Status:</span>
-            <span class="chip-val">{{ statusFilter() }}</span>
+            <span class="chip-val">{{ getStatusLabel(statusFilter()) }}</span>
             <button type="button" class="chip-close-btn" (click)="clearStatusFilter()"
               aria-label="Remove status filter">
               &times;
@@ -517,7 +656,7 @@
               </td>
               <td class="th-status">
                 <span class="badge-status" [ngClass]="getStatusClass(lead.status)">
-                  {{ lead.status }}
+                  {{ getStatusLabel(lead.status) }}
                 </span>
               </td>
               <td class="th-priority">
@@ -731,13 +870,9 @@
               <label for="lead-status" class="form-label required">Status</label>
               <div class="select-wrapper">
                 <select id="lead-status" class="form-control select-control" formControlName="status">
-                  <option value="NEW">New</option>
-                  <option value="CONTACTED">Contacted</option>
-                  <option value="QUALIFIED">Qualified</option>
-                  <option value="QUOTATION_SENT">Quotation Sent</option>
-                  <option value="NEGOTIATION">Negotiation</option>
-                  <option value="WON">Won</option>
-                  <option value="LOST">Lost</option>
+                  @for (st of allStatuses; track st.value) {
+                  <option [value]="st.value">{{ st.label }}</option>
+                  }
                 </select>
                 <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="2.5">
@@ -885,7 +1020,7 @@
             <span class="snapshot-label">Status</span>
             <div class="snapshot-badge-wrapper">
               <span class="badge-status" [ngClass]="selectedLead() ? getStatusClass(selectedLead()!.status) : ''">
-                {{ selectedLead()?.status || '—' }}
+                {{ selectedLead() ? getStatusLabel(selectedLead()!.status) : '—' }}
               </span>
             </div>
           </div>
@@ -903,6 +1038,96 @@
             <span class="snapshot-value">
               {{ (selectedLead()?.estimatedValue | currency:currency():'symbol-narrow':'1.0-0') || '—' }}
             </span>
+          </div>
+        </div>
+
+        <!-- Lead Lifecycle & Quick Stage Actions -->
+        <div class="drawer-panel-card lifecycle-action-card">
+          <div class="drawer-panel-header">
+            <div class="panel-icon-box icon-status-actions">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 14 14"></polyline>
+              </svg>
+            </div>
+            <h3>Quick Status & Stage Actions</h3>
+          </div>
+          <div class="lifecycle-controls">
+            <div class="lifecycle-quick-buttons">
+              @if (selectedLead()?.status !== 'ADMISSIONS') {
+              <button type="button" class="btn-lifecycle btn-admissions"
+                (click)="openConvertToAdmissionsModal(selectedLead()!)" [disabled]="isSubmitting()"
+                title="Move lead into the Admissions student pipeline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+                <span>Move to Admissions</span>
+              </button>
+              } @else {
+              <a routerLink="/admissions/overview" class="btn-lifecycle btn-view-admissions"
+                title="Open Admissions Overview and live candidate rail">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span>Open in Student Journey</span>
+              </a>
+              }
+
+              @if (selectedLead()?.status !== 'CLOSED') {
+              <button type="button" class="btn-lifecycle btn-closed"
+                (click)="quickChangeStatus(selectedLead()!, 'CLOSED')" [disabled]="isSubmitting()"
+                title="Mark lead as Closed">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Close Lead</span>
+              </button>
+              }
+
+              @if (selectedLead()?.status !== 'NO_LONGER_REQUIRED') {
+              <button type="button" class="btn-lifecycle btn-no-required"
+                (click)="quickChangeStatus(selectedLead()!, 'NO_LONGER_REQUIRED')" [disabled]="isSubmitting()"
+                title="Mark lead as No longer required">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                </svg>
+                <span>No Longer Required</span>
+              </button>
+              }
+
+              @if (selectedLead()?.status !== 'ON_HOLD') {
+              <button type="button" class="btn-lifecycle btn-on-hold"
+                (click)="quickChangeStatus(selectedLead()!, 'ON_HOLD')" [disabled]="isSubmitting()"
+                title="Put lead on hold">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="10" y1="15" x2="10" y2="9"></line>
+                  <line x1="14" y1="15" x2="14" y2="9"></line>
+                </svg>
+                <span>On Hold</span>
+              </button>
+              }
+            </div>
+
+            <div class="lifecycle-select-row">
+              <span class="lifecycle-select-label">Change status directly to:</span>
+              <div class="select-wrapper">
+                <select class="filter-select lifecycle-select" [value]="selectedLead()?.status"
+                  (change)="quickChangeStatus(selectedLead()!, $any($event.target).value)">
+                  @for (st of allStatuses; track st.value) {
+                  <option [value]="st.value">{{ st.label }}</option>
+                  }
+                </select>
+                <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 

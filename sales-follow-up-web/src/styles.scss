@@ -689,3 +689,18 @@ a {
   }
 }
 
+
+
+/* =========================================================================
+   Universal Select Wrapper Arrow Safeguard
+   ========================================================================= */
+.select-wrapper {
+  position: relative;
+
+  select {
+    background-image: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  }
+}

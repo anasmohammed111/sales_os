@@ -291,10 +291,12 @@
   }
 }
 
-/* Global enhanced select dropdowns across all Admissions pages */
-select,
+/* Enhanced select dropdowns across Admissions pages */
 .adm-field select,
-.adm-filters select {
+.adm-filters select,
+.adm-page select,
+.stage-select select,
+.adm-select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -336,12 +338,15 @@ select,
   }
 
   /* Highlights active selected filters */
-  &:has(option:not([value=""]):checked) {
+  &:has(option:not([value=""]):not([value="ALL"]):checked) {
     border-color: #93c5fd;
     background-color: #f0f7ff;
     color: #1d4ed8;
     font-weight: 650;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
   }
 }
 

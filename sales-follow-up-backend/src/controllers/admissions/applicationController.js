@@ -187,6 +187,9 @@ const createApplication = async (req, res, next) => {
         });
         createdLeadId = null;
 
+        // Keep lead status in sync with admissions
+        await Lead.updateOne({ _id: lead._id }, { $set: { status: 'ADMISSIONS' } }).catch(() => {});
+
         await logActivity({
             req,
             application,
@@ -474,18 +477,23 @@ const updateApplicationStatus = async (req, res, next) => {
         const trimmed = typeof reason === 'string' ? reason.trim().slice(0, 500) : '';
 
         if (status === 'WITHDRAWN') {
-            if (application.status !== 'ACTIVE') return fail(res, 409, 'Only active applications can be withdrawn');
+            if (application.status === 'WITHDRAWN') return fail(res, 409, 'Application is already withdrawn');
             if (trimmed.length < 3) return fail(res, 400, 'Give a reason for withdrawing the application');
             application.status = 'WITHDRAWN';
             application.withdrawnReason = trimmed;
             application.closedAt = new Date();
+        } else if (status === 'CLOSED') {
+            if (application.status === 'CLOSED') return fail(res, 409, 'Application is already closed');
+            application.status = 'CLOSED';
+            application.withdrawnReason = trimmed || 'Application closed';
+            application.closedAt = new Date();
         } else if (status === 'ACTIVE') {
-            if (application.status !== 'WITHDRAWN') return fail(res, 409, 'Only withdrawn applications can be reactivated');
+            if (application.status === 'ACTIVE') return fail(res, 409, 'Application is already active');
             application.status = 'ACTIVE';
             application.withdrawnReason = '';
             application.closedAt = null;
         } else {
-            return fail(res, 400, 'Status must be WITHDRAWN or ACTIVE');
+            return fail(res, 400, 'Status must be ACTIVE, CLOSED, or WITHDRAWN');
         }
 
         await application.save();
@@ -494,7 +502,12 @@ const updateApplicationStatus = async (req, res, next) => {
             req,
             application,
             type: 'STATUS_CHANGED',
-            message: status === 'WITHDRAWN' ? `Application withdrawn: ${trimmed}` : 'Application reactivated',
+            message:
+                status === 'WITHDRAWN'
+                    ? `Application withdrawn: ${trimmed}`
+                    : status === 'CLOSED'
+                      ? `Application closed: ${trimmed || 'Closed'}`
+                      : 'Application reactivated',
         });
 
         const saved = await loadForResponse(application._id);

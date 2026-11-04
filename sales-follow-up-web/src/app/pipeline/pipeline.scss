@@ -1406,3 +1406,239 @@
 @media (max-width: 520px) {
   .header-actions .btn { width: 100%; }
 }
+
+
+/* =========================================================================
+   Lead Card Stage Move Arrow & Lost Action Bar
+   ========================================================================= */
+.btn-card-move-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-right: 4px;
+
+  &:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #1d4ed8;
+    transform: translateX(1px);
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+  }
+}
+
+.card-dropdown-menu .menu-item-move {
+  color: #2563eb;
+  font-weight: 600;
+
+  &:hover {
+    background: #eff6ff;
+  }
+}
+
+.card-dropdown-menu .menu-item-danger {
+  color: #dc2626;
+
+  &:hover {
+    background: #fef2f2;
+  }
+}
+
+.card-lost-action-bar {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #fecaca;
+  display: flex;
+  justify-content: flex-end;
+
+  .btn-archive-lost-lead {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #b91c1c;
+    }
+  }
+}
+
+/* =========================================================================
+   Move Stage Modal Box Styles
+   ========================================================================= */
+.modal-card-move {
+  max-width: 540px;
+  width: 100%;
+}
+
+.move-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfdbfe;
+  flex-shrink: 0;
+}
+
+.current-stage-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  margin-left: 4px;
+}
+
+.move-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.intake-dual-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 6px;
+}
+
+.lost-details-card {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .lost-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #c53030;
+    font-size: 12.5px;
+  }
+
+  .archive-lost-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #742a2a;
+    cursor: pointer;
+    margin-top: 4px;
+
+    input[type="checkbox"] {
+      cursor: pointer;
+    }
+  }
+}
+
+.admissions-details-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .admissions-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #1d4ed8;
+    font-size: 12.5px;
+  }
+}
+
+/* =========================================================================
+   Archive Modal Box Styles
+   ========================================================================= */
+.archive-modal-body {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.archive-icon-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archive-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.archive-modal-description {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.btn-danger-solid {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #dc2626;
+  border: 1px solid #b91c1c;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #b91c1c;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

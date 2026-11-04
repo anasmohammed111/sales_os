@@ -13,15 +13,18 @@ import {
   LeadService,
   LeadSource,
   LeadStatus,
+  LEAD_STATUS_LABELS,
   UpdateLeadPayload,
 } from '../core/services/lead.service';
 import { AuthService, AuthUser } from '../core/services/auth.service';
 import { TeamService, TeamMember } from '../core/services/team.service';
+import { AdmissionsService } from '../core/services/admissions.service';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-leads',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, DatePipe, CurrencyPipe],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, DatePipe, CurrencyPipe],
   templateUrl: './leads.html',
   styleUrl: './leads.scss',
 })
@@ -33,17 +36,39 @@ export class Leads implements OnInit {
   private readonly leadService = inject(LeadService);
   private readonly teamService = inject(TeamService);
   private readonly authService = inject(AuthService);
+  private readonly admissionsService = inject(AdmissionsService);
+  private readonly router = inject(Router);
 
   // Status and Priority CSS Class Lookup Maps
-  private readonly statusClasses: Record<LeadStatus, string> = {
+  readonly statusClasses: Record<LeadStatus, string> = {
     NEW: 'badge-status-new',
     CONTACTED: 'badge-status-contacted',
     QUALIFIED: 'badge-status-qualified',
     QUOTATION_SENT: 'badge-status-quotation',
     NEGOTIATION: 'badge-status-negotiation',
     WON: 'badge-status-won',
+    ADMISSIONS: 'badge-status-admissions',
+    ON_HOLD: 'badge-status-on-hold',
+    CLOSED: 'badge-status-closed',
+    NO_LONGER_REQUIRED: 'badge-status-no-required',
+    UNRESPONSIVE: 'badge-status-unresponsive',
     LOST: 'badge-status-lost',
   };
+
+  readonly allStatuses: { value: LeadStatus; label: string }[] = [
+    { value: 'NEW', label: 'New' },
+    { value: 'CONTACTED', label: 'Contacted' },
+    { value: 'QUALIFIED', label: 'Qualified' },
+    { value: 'QUOTATION_SENT', label: 'Quotation Sent' },
+    { value: 'NEGOTIATION', label: 'Negotiation' },
+    { value: 'WON', label: 'Won' },
+    { value: 'ADMISSIONS', label: 'Moved to Admissions' },
+    { value: 'ON_HOLD', label: 'On Hold' },
+    { value: 'CLOSED', label: 'Closed' },
+    { value: 'NO_LONGER_REQUIRED', label: 'No Longer Required' },
+    { value: 'UNRESPONSIVE', label: 'Unresponsive' },
+    { value: 'LOST', label: 'Lost' },
+  ];
 
   private readonly priorityClasses: Record<LeadPriority, string> = {
     LOW: 'badge-priority-low',
@@ -71,6 +96,28 @@ export class Leads implements OnInit {
   isFormModalOpen = signal(false);
   isDetailsOpen = signal(false);
   isArchiveModalOpen = signal(false);
+  isConvertModalOpen = signal(false);
+  leadToConvert = signal<Lead | null>(null);
+  convertStudyLevel = signal<'BACHELOR' | 'MASTER'>('BACHELOR');
+  convertIntakeMonth = signal<number>(9);
+  convertIntakeYear = signal<number>(new Date().getFullYear() + (new Date().getMonth() >= 6 ? 1 : 0));
+  convertCounsellorId = signal<string>('');
+
+  readonly convertMonths = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' },
+  ];
+  readonly convertYears = [new Date().getFullYear(), new Date().getFullYear() + 1, new Date().getFullYear() + 2];
 
   isEditMode = computed(() => !!this.selectedLead());
 
@@ -416,6 +463,144 @@ export class Leads implements OnInit {
           toast.error(err.error?.message || 'Failed to archive lead.');
         },
       });
+  }
+
+  
+  getStatusLabel(status: LeadStatus | 'ALL' | string): string {
+    if (status === 'ALL') return 'All';
+    return (LEAD_STATUS_LABELS as Record<string, string>)[status] || status;
+  }
+
+  quickChangeStatus(lead: Lead, newStatus: LeadStatus): void {
+    if (!lead || lead.status === newStatus || this.isSubmitting()) return;
+    this.isSubmitting.set(true);
+
+    this.leadService.updateLead(lead._id, { status: newStatus })
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: () => {
+          toast.success(`Lead status changed to "${this.getStatusLabel(newStatus)}".`);
+          if (this.selectedLead()?._id === lead._id) {
+            this.selectedLead.update((l) => (l ? { ...l, status: newStatus } : null));
+          }
+          this.loadLeads();
+        },
+        error: (err) => {
+          toast.error(err.error?.message || 'Failed to update lead status.');
+        },
+      });
+  }
+
+  moveToAdmissions(lead: Lead): void {
+    if (!lead || this.isSubmitting()) return;
+    this.isSubmitting.set(true);
+
+    const now = new Date();
+    const intakeMonth = ((now.getMonth() + 1) % 12) + 1;
+    const intakeYear = now.getFullYear() + (now.getMonth() >= 9 ? 1 : 0);
+
+    this.leadService.updateLead(lead._id, { status: 'ADMISSIONS' })
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: () => {
+          this.admissionsService.createApplication({
+            studentId: lead._id,
+            studyLevel: 'BACHELOR',
+            intakeMonth,
+            intakeYear,
+            counsellorId: lead.assignedTo?._id || undefined,
+            leadSource: lead.source ? lead.source.toLowerCase() : 'other',
+          }).subscribe({
+            next: (app) => {
+              toast.success(`Enrolled ${lead.customerName} into Admissions Student Journey!`, {
+                action: {
+                  label: 'View Student',
+                  onClick: () => this.router.navigate(['/admissions/students', app.id]),
+                },
+              });
+              if (this.selectedLead()?._id === lead._id) {
+                this.selectedLead.update((l) => (l ? { ...l, status: 'ADMISSIONS' } : null));
+              }
+              this.loadLeads();
+            },
+            error: () => {
+              toast.success(`Lead ${lead.customerName} moved to Admissions.`);
+              if (this.selectedLead()?._id === lead._id) {
+                this.selectedLead.update((l) => (l ? { ...l, status: 'ADMISSIONS' } : null));
+              }
+              this.loadLeads();
+            },
+          });
+        },
+        error: (err) => {
+          toast.error(err.error?.message || 'Failed to move lead to admissions.');
+        },
+      });
+  }
+
+  
+  openConvertToAdmissionsModal(lead: Lead): void {
+    this.leadToConvert.set(lead);
+    const isMaster = (lead.interestedIn || '').toLowerCase().includes('master');
+    this.convertStudyLevel.set(isMaster ? 'MASTER' : 'BACHELOR');
+    this.convertIntakeMonth.set(9);
+    this.convertIntakeYear.set(new Date().getFullYear() + (new Date().getMonth() >= 6 ? 1 : 0));
+    this.convertCounsellorId.set(lead.assignedTo?._id || this.currentUser()?.id || '');
+    this.isConvertModalOpen.set(true);
+  }
+
+  closeConvertModal(): void {
+    this.isConvertModalOpen.set(false);
+    this.leadToConvert.set(null);
+  }
+
+  confirmConvertToAdmissions(): void {
+    const lead = this.leadToConvert();
+    if (!lead || this.isSubmitting()) return;
+    this.isSubmitting.set(true);
+
+    const payload = {
+      studentId: lead._id,
+      studyLevel: this.convertStudyLevel(),
+      intakeMonth: Number(this.convertIntakeMonth()),
+      intakeYear: Number(this.convertIntakeYear()),
+      counsellorId: this.convertCounsellorId() || undefined,
+      leadSource: lead.source ? lead.source.toLowerCase() : 'other',
+    };
+
+    this.admissionsService.createApplication(payload).subscribe({
+      next: (app) => {
+        this.leadService.updateLead(lead._id, { status: 'ADMISSIONS' }).subscribe({
+          next: () => {
+            this.isSubmitting.set(false);
+            this.closeConvertModal();
+            toast.success(`Converted ${lead.customerName} into Admissions Student Journey!`);
+            this.loadLeads();
+            this.router.navigate(['/admissions/students', app.id]);
+          },
+          error: () => {
+            this.isSubmitting.set(false);
+            this.closeConvertModal();
+            toast.success(`Converted ${lead.customerName} into Admissions Student Journey!`);
+            this.loadLeads();
+            this.router.navigate(['/admissions/students', app.id]);
+          }
+        });
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        if (err.error?.message?.includes('already exists') || err.status === 409) {
+          this.leadService.updateLead(lead._id, { status: 'ADMISSIONS' }).subscribe(() => {
+            toast.success(`Lead ${lead.customerName} moved to Admissions status.`);
+            this.closeConvertModal();
+            this.loadLeads();
+            this.router.navigate(['/admissions/overview']);
+          });
+        } else {
+          toast.error(err.error?.message || 'Failed to convert lead to admissions.');
+        }
+      }
+    });
   }
 
   getStatusClass(status: LeadStatus): string {

@@ -979,6 +979,42 @@
   border-color: #a7f3d0;
 }
 
+
+.badge-status-admissions {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  --stage-dot: #2563eb;
+}
+
+.badge-status-on-hold {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+  --stage-dot: #d97706;
+}
+
+.badge-status-closed {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+  --stage-dot: #475569;
+}
+
+.badge-status-no-required {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #e2e8f0;
+  --stage-dot: #94a3b8;
+}
+
+.badge-status-unresponsive {
+  background: #f5f5f4;
+  color: #78716c;
+  border-color: #d6d3d1;
+  --stage-dot: #a8a29e;
+}
+
 .badge-status-lost {
   background: #fef2f2;
   color: #dc2626;
@@ -2129,5 +2165,301 @@ $kelto-lead-stages: (
     background: var(--kelto-stage-#{$stage}-bg);
     color: var(--kelto-stage-#{$stage}-text);
     border-color: transparent;
+  }
+}
+
+
+/* =========================================================================
+   Drawer Lifecycle & Quick Stage Actions
+   ========================================================================= */
+.lifecycle-action-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+
+  .icon-status-actions {
+    background: #e0f2fe;
+    color: #0284c7;
+  }
+
+  .lifecycle-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .lifecycle-quick-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .btn-lifecycle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &.btn-admissions {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+
+      &:hover:not(:disabled) {
+        background: #dbeafe;
+        border-color: #93c5fd;
+      }
+    }
+
+    &.btn-view-admissions {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #1d4ed8;
+
+      &:hover {
+        background: #1d4ed8;
+      }
+    }
+
+    &.btn-closed {
+      background: #f1f5f9;
+      color: #334155;
+      border-color: #cbd5e1;
+
+      &:hover:not(:disabled) {
+        background: #e2e8f0;
+        border-color: #94a3b8;
+      }
+    }
+
+    &.btn-no-required {
+      background: #f8fafc;
+      color: #64748b;
+      border-color: #e2e8f0;
+
+      &:hover:not(:disabled) {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+    }
+
+    &.btn-on-hold {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fde68a;
+
+      &:hover:not(:disabled) {
+        background: #fef3c7;
+        border-color: #fcd34d;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .lifecycle-select-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+
+    .lifecycle-select-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .select-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 220px;
+    }
+
+    .lifecycle-select {
+      width: 100%;
+      height: 32px;
+      padding: 4px 28px 4px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #1e293b;
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      appearance: none;
+      cursor: pointer;
+
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+      }
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      pointer-events: none;
+    }
+  }
+}
+
+
+/* =========================================================================
+   Table Actions: Convert to Admissions Button
+   ========================================================================= */
+.btn-table-action.convert-action {
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+
+  &:hover {
+    color: #1d4ed8;
+    background: #dbeafe;
+    border-color: #93c5fd;
+    transform: scale(1.05);
+  }
+}
+
+.btn-table-action.in-admissions-action {
+  color: #059669;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: #047857;
+    background: #d1fae5;
+    border-color: #6ee7b7;
+    transform: scale(1.05);
+  }
+}
+
+/* =========================================================================
+   Convert to Admissions Modal Styles
+   ========================================================================= */
+.convert-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #bfdbfe;
+}
+
+.convert-lead-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    &.full-width {
+      grid-column: 1 / -1;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 8px;
+      margin-top: 2px;
+    }
+
+    .summary-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+    }
+
+    .summary-val {
+      font-size: 13px;
+      color: #1e293b;
+    }
+  }
+}
+
+.convert-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.convert-notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #1e40af;
+  font-size: 12px;
+  line-height: 1.5;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+.btn-convert-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #2563eb;
+  border: 1px solid #1d4ed8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+
+  &:hover:not(:disabled) {
+    background: #1d4ed8;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
