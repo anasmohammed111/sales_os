@@ -5,6 +5,7 @@ const Quotation = require('../models/Quotation');
 const { SUPPORTED_CURRENCIES } = require('../models/Quotation');
 const Lead = require('../models/Leads');
 const User = require('../models/User');
+const { can, inScope, scopeOf, visibleUserIds } = require('../services/access');
 
 const VALID_STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'];
 
@@ -89,71 +90,22 @@ const validateTextFields = ({ subject, termsAndConditions, customerNotes, intern
     }
 };
 
-// Verify user permission to access or create quotations for a lead
-const canAccessLead = async (req, lead) => {
-    const { userId, businessId, role } = req.user;
-    if (role === 'OWNER') return true;
+// Whether this person may quote for a lead: the lead must be inside their quotation scope
+const canAccessLead = async (req, lead) => inScope(req, 'quotations', lead.assignedTo);
 
-    const assignedToStr = lead.assignedTo?.toString();
-    const userStr = userId.toString();
-
-    if (role === 'SALESPERSON') {
-        return assignedToStr === userStr;
-    }
-
-    if (role === 'SALES_MANAGER') {
-        if (assignedToStr === userStr) return true;
-
-        const teamMember = await User.exists({
-            _id: lead.assignedTo,
-            businessId,
-            managerId: userId,
-            role: 'SALESPERSON',
-        });
-
-        return !!teamMember;
-    }
-
-    return false;
-};
-
-// Build role-based query scope strictly isolated by businessId and team boundaries
+// Quotations this person may see: their business and their quotation data scope
 const getQuotationScope = async (req) => {
     const businessId = toObjectId(req.user?.businessId);
     const userId = toObjectId(req.user?.userId);
-    const role = req.user?.role;
 
-    if (!businessId || !userId) {
+    if (!businessId || !userId || !can(req, 'quotations.view')) {
         return { scope: { _id: null }, teamIds: [] };
     }
 
     const scope = { businessId };
-    let teamIds = [];
-
-    if (role === 'OWNER') {
-        return { scope, teamIds };
-    }
-
-    if (role === 'SALESPERSON') {
-        scope.assignedTo = userId;
-        return { scope, teamIds: [userId] };
-    }
-
-    if (role === 'SALES_MANAGER') {
-        const team = await User.find({
-            businessId,
-            managerId: userId,
-            role: 'SALESPERSON',
-        })
-            .select('_id')
-            .lean();
-
-        teamIds = [userId, ...team.map((u) => u._id)];
-        scope.assignedTo = { $in: teamIds };
-        return { scope, teamIds };
-    }
-
-    return { scope: { _id: null }, teamIds: [] };
+    const ids = await visibleUserIds(req, 'quotations');
+    if (ids) scope.assignedTo = { $in: ids };
+    return { scope, teamIds: ids || [] };
 };
 
 // Calculate item and quotation totals with strict number and discount validation
@@ -296,8 +248,8 @@ const validateDates = (quotationDate, validUntil) => {
 // Create a new quotation in DRAFT status
 const createQuotation = async (req, res) => {
     try {
-        const { role, userId, businessId } = req.user;
-        if (!['OWNER', 'SALES_MANAGER', 'SALESPERSON'].includes(role)) {
+        const { userId, businessId } = req.user;
+        if (!can(req, 'quotations.create')) {
             return res.status(403).json({
                 success: false,
                 message: 'You do not have permission to create quotations',
@@ -379,8 +331,8 @@ const createQuotation = async (req, res) => {
 // List quotations with scoped filtering, search, and pagination
 const getQuotations = async (req, res) => {
     try {
-        const { role, userId } = req.user;
-        const { scope, teamIds } = await getQuotationScope(req);
+        const { userId } = req.user;
+        const { scope } = await getQuotationScope(req);
 
         const {
             status,
@@ -413,26 +365,19 @@ const getQuotations = async (req, res) => {
 
             const targetUserId = assignedTo.toString();
 
-            if (role === 'SALESPERSON') {
-                if (targetUserId !== userId.toString()) {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'You cannot view other users quotations',
-                    });
-                }
-                scope.assignedTo = new mongoose.Types.ObjectId(assignedTo);
-            } else if (role === 'SALES_MANAGER') {
-                const isTeamMember = teamIds.some((id) => id.toString() === targetUserId);
-                if (!isTeamMember) {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'You cannot filter quotations for users outside your team',
-                    });
-                }
-                scope.assignedTo = new mongoose.Types.ObjectId(assignedTo);
-            } else {
-                scope.assignedTo = new mongoose.Types.ObjectId(assignedTo);
+            if (targetUserId !== userId.toString() && scopeOf(req, 'quotations') === 'own') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You cannot view other users quotations',
+                });
             }
+            if (!(await inScope(req, 'quotations', targetUserId))) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You cannot filter quotations for users outside your team',
+                });
+            }
+            scope.assignedTo = new mongoose.Types.ObjectId(assignedTo);
         }
 
         if (search && typeof search === 'string') {

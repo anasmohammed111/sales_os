@@ -12,14 +12,15 @@ const {
 } = require('../controllers/quotationController');
 
 const authMiddleware = require('../middleware/authMiddleware');
+const { requirePermission } = require('../services/access');
 
 router.use(authMiddleware);
 
-router.post('/', createQuotation);
-router.get('/', getQuotations);
-router.get('/:id', getQuotationById);
-router.put('/:id', updateQuotation);
-router.patch('/:id/status', updateQuotationStatus);
-router.delete('/:id', deleteQuotation);
+router.post('/', requirePermission('quotations.create'), createQuotation);
+router.get('/', requirePermission('quotations.view'), getQuotations);
+router.get('/:id', requirePermission('quotations.view'), getQuotationById);
+router.put('/:id', requirePermission('quotations.edit'), updateQuotation);
+router.patch('/:id/status', requirePermission('quotations.status'), updateQuotationStatus);
+router.delete('/:id', requirePermission('quotations.delete'), deleteQuotation);
 
 module.exports = router;

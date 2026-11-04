@@ -3,10 +3,15 @@ const Business = require('../../models/Business');
 const User = require('../../models/User');
 const AdmissionApplication = require('../../models/AdmissionApplication');
 const { ensureConfig } = require('./configService');
+const access = require('../access');
 
 const STAFF_ROLES = ['OWNER', 'SALES_MANAGER', 'SALESPERSON'];
 
-const isAdmin = (req) => req.user?.role === 'OWNER';
+/**
+ * Whether this person runs admissions for the whole business: they can change
+ * admissions settings. Specific actions check their own permission instead.
+ */
+const isAdmin = (req) => access.can(req, 'admissions.settings');
 
 /**
  * Express middleware for every admissions route. Answers 404 when the
@@ -33,25 +38,12 @@ const requireAdmissions = async (req, res, next) => {
 };
 
 /**
- * Counsellor ids whose applications the user may see.
- * Returns null for the owner (everything in the business).
+ * Counsellor ids whose applications the user may see (their admissions data
+ * scope). Returns null for everyone in the business.
  */
 const getScopedCounsellorIds = async (req) => {
-    const userId = new mongoose.Types.ObjectId(req.user.userId);
-
-    if (req.user.role === 'OWNER') return null;
-    if (req.user.role === 'SALESPERSON') return [userId];
-
-    if (req.user.role === 'SALES_MANAGER') {
-        const team = await User.find({
-            businessId: req.user.businessId,
-            managerId: req.user.userId,
-            role: 'SALESPERSON',
-        }).select('_id');
-        return [userId, ...team.map((u) => u._id)];
-    }
-
-    return [];
+    if (!access.can(req, 'admissions.view')) return [];
+    return access.visibleUserIds(req, 'admissions');
 };
 
 /** Mongo filter limiting applications to the user's business and scope. */
@@ -70,38 +62,35 @@ const findApplicationInScope = async (req, id) => {
 };
 
 /** Staff the user may assign applications to (active users only). */
-const getAssignableCounsellors = async (req) => {
-    const filter = { businessId: req.user.businessId, isActive: true, role: { $in: STAFF_ROLES } };
-    const counsellorIds = await getScopedCounsellorIds(req);
-    if (counsellorIds) filter._id = { $in: counsellorIds };
-    return User.find(filter).select('name email role managerId').sort({ name: 1 });
-};
+const getAssignableCounsellors = async (req) => access.assignablePeople(req, 'admissions');
 
 /**
- * Checks that the user may assign an application to `counsellorId`.
- * Owner: any active staff. Manager: self or own salespeople. Salesperson: self only.
+ * Checks that the user may assign an application to `counsellorId`:
+ * themselves, or anyone in their admissions scope with the "assign" permission.
  */
 const validateCounsellor = async (req, counsellorId) => {
     if (counsellorId === null || counsellorId === '') {
-        return isAdmin(req)
+        return (await access.canAssignTo(req, 'admissions', null))
             ? { counsellorId: null }
-            : { status: 403, error: 'Only an admin can leave a student unassigned' };
+            : { status: 403, error: 'You cannot leave a student unassigned' };
     }
 
     if (!mongoose.isValidObjectId(counsellorId)) {
         return { status: 400, error: 'Invalid counsellor' };
     }
 
-    const allowed = await getAssignableCounsellors(req);
-    const match = allowed.find((u) => u._id.toString() === String(counsellorId));
+    const counsellor = await User.findOne({ _id: counsellorId, businessId: req.user.businessId, isActive: true })
+        .select('_id')
+        .lean();
+    if (!counsellor) return { status: 400, error: 'Counsellor not found or not in your team' };
 
-    if (!match) {
-        return req.user.role === 'SALESPERSON'
-            ? { status: 403, error: 'Only an admin or manager can assign students to other staff' }
-            : { status: 400, error: 'Counsellor not found or not in your team' };
+    if (!(await access.canAssignTo(req, 'admissions', counsellor._id))) {
+        return access.can(req, 'admissions.assign') && access.scopeOf(req, 'admissions') !== 'own'
+            ? { status: 400, error: 'Counsellor not found or not in your team' }
+            : { status: 403, error: 'Only an admin or manager can assign students to other staff' };
     }
 
-    return { counsellorId: match._id };
+    return { counsellorId: counsellor._id };
 };
 
 module.exports = {

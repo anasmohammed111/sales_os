@@ -9,6 +9,7 @@ const {
 } = require('../controllers/leadController');
 
 const authMiddleware = require('../middleware/authMiddleware');
+const { requirePermission } = require('../services/access');
 
 const router = express.Router();
 
@@ -16,18 +17,18 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // Create a lead
-router.post('/', createLead);
+router.post('/', requirePermission('leads.create'), createLead);
 
 // Get all leads, including supported filters
-router.get('/', getLeads);
+router.get('/', requirePermission('leads.view'), getLeads);
 
 // Get one lead by ID
-router.get('/:id', getLeadById);
+router.get('/:id', requirePermission('leads.view'), getLeadById);
 
 // Update a lead
-router.patch('/:id', updateLead);
+router.patch('/:id', requirePermission('leads.edit'), updateLead);
 
 // Archive a lead
-router.delete('/:id', archiveLead);
+router.delete('/:id', requirePermission('leads.archive'), archiveLead);
 
 module.exports = router;

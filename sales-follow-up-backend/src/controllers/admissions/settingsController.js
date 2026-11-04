@@ -27,7 +27,7 @@ const fail = (res, status, message) => res.status(status).json({ success: false,
 
 const requireAdmin = (req, res) => {
     if (isAdmin(req)) return true;
-    fail(res, 403, 'Only an admin can change admissions settings');
+    fail(res, 403, 'You do not have permission to change admissions settings');
     return false;
 };
 

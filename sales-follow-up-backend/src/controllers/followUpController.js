@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const FollowUp = require('../models/FollowUp');
 const Lead = require('../models/Leads');
 const User = require('../models/User');
+const { can, scopeFilter, scopeOf, inScope, canAssignTo } = require('../services/access');
 
 const VALID_TYPES = [
     'CALL',
@@ -24,54 +25,22 @@ const VALID_STATUSES = [
     'CANCELLED',
 ];
 
-const canManageTeam = (role) =>
-    ['OWNER', 'SALES_MANAGER'].includes(role);
-
-// Common access filter based on business and team hierarchy
+// Follow-ups this person may see: their business and their follow-up data scope
 const getFollowUpScope = async (req, isArchived = false) => {
-    const filter = {
+    if (!can(req, 'followups.view')) return { _id: null };
+    return {
         businessId: req.user.businessId,
         isArchived,
+        ...(await scopeFilter(req, 'followups')),
     };
-
-    // Owner can see all follow-ups in their business
-    if (req.user.role === 'OWNER') {
-        return filter;
-    }
-
-    // Salesperson can see only their own follow-ups
-    if (req.user.role === 'SALESPERSON') {
-        filter.assignedTo = req.user.userId;
-        return filter;
-    }
-
-    // Manager can see their own follow-ups and their salespersons' follow-ups
-    if (req.user.role === 'SALES_MANAGER') {
-        const salespersons = await User.find({
-            businessId: req.user.businessId,
-            managerId: req.user.userId,
-            role: 'SALESPERSON',
-        }).select('_id');
-
-        const assignedUsers = salespersons.map((user) => user._id);
-        assignedUsers.push(req.user.userId);
-
-        filter.assignedTo = {
-            $in: assignedUsers,
-        };
-
-        return filter;
-    }
-
-    // No access for other roles
-    filter._id = null;
-    return filter;
 };
 
 // Validate and resolve follow-up assignee based on role and team hierarchy
 const validateFollowUpAssignee = async (req, assignedTo) => {
     if (assignedTo === null || assignedTo === '') {
-        return { assigneeId: null };
+        return (await canAssignTo(req, 'followups', null))
+            ? { assigneeId: null }
+            : { status: 403, error: 'You cannot leave a follow-up unassigned' };
     }
 
     if (!mongoose.isValidObjectId(assignedTo)) {
@@ -85,7 +54,6 @@ const validateFollowUpAssignee = async (req, assignedTo) => {
         _id: assignedTo,
         businessId: req.user.businessId,
         isActive: true,
-        role: { $in: ['OWNER', 'SALES_MANAGER', 'SALESPERSON'] },
     });
 
     if (!assignee) {
@@ -95,40 +63,12 @@ const validateFollowUpAssignee = async (req, assignedTo) => {
         };
     }
 
-    // Salesperson can only assign to themselves
-    if (req.user.role === 'SALESPERSON') {
-        if (assignee._id.toString() !== req.user.userId.toString()) {
-            return {
-                status: 403,
-                error: 'You can only assign follow-ups to yourself',
-            };
-        }
-    }
-
-    // Manager can assign only to themselves or their own salespersons
-    if (req.user.role === 'SALES_MANAGER') {
-        const isSelf = assignee._id.toString() === req.user.userId.toString();
-        const isOwnSalesperson =
-            assignee.role === 'SALESPERSON' &&
-            assignee.managerId?.toString() === req.user.userId.toString();
-
-        if (!isSelf && !isOwnSalesperson) {
-            return {
-                status: 403,
-                error: 'You can only assign follow-ups to yourself or your own salespersons',
-            };
-        }
-    }
-
-    // Owner cannot assign to other owners (only to themselves, managers, or salespersons)
-    if (
-        req.user.role === 'OWNER' &&
-        assignee.role === 'OWNER' &&
-        assignee._id.toString() !== req.user.userId.toString()
-    ) {
+    if (!(await canAssignTo(req, 'followups', assignee._id))) {
         return {
             status: 403,
-            error: 'Invalid assignee',
+            error: can(req, 'followups.assign')
+                ? 'You can only assign follow-ups to yourself or people in your team'
+                : 'You can only assign follow-ups to yourself',
         };
     }
 
@@ -191,11 +131,8 @@ const createFollowUp = async (req, res) => {
             });
         }
 
-        // Salesperson can only schedule follow-ups for leads assigned to them
-        if (
-            req.user.role === 'SALESPERSON' &&
-            lead.assignedTo?.toString() !== req.user.userId.toString()
-        ) {
+        // The lead must be one this person can see
+        if (!(await inScope(req, 'leads', lead.assignedTo))) {
             return res.status(403).json({
                 success: false,
                 message: 'You cannot schedule a follow-up for this lead.',
@@ -253,7 +190,7 @@ const createFollowUp = async (req, res) => {
 
         // 5. Determine Assignee
         let assigneeId = null;
-        if (assignedTo && canManageTeam(req.user.role)) {
+        if (assignedTo && can(req, 'followups.assign')) {
             const validation = await validateFollowUpAssignee(req, assignedTo);
             if (validation.error) {
                 return res.status(validation.status).json({
@@ -263,8 +200,8 @@ const createFollowUp = async (req, res) => {
             }
             assigneeId = validation.assigneeId;
         } else {
-            // Default assignee: salesperson is always self; manager/owner defaults to lead assignee or self
-            if (req.user.role === 'SALESPERSON') {
+            // Default assignee: the lead's assignee for people who can assign, otherwise themselves
+            if (!can(req, 'followups.assign')) {
                 assigneeId = req.user.userId;
             } else {
                 assigneeId = lead.assignedTo || req.user.userId;
@@ -347,15 +284,8 @@ const getFollowUps = async (req, res) => {
             filter.leadId = leadId;
         }
 
-        // Validate assignedTo filter
+        // Filter by team member: only people inside the person's follow-up scope
         if (assignedTo && assignedTo !== 'ALL') {
-            if (!canManageTeam(req.user.role)) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'You cannot filter by other team members.',
-                });
-            }
-
             if (!mongoose.isValidObjectId(assignedTo)) {
                 return res.status(400).json({
                     success: false,
@@ -363,17 +293,18 @@ const getFollowUps = async (req, res) => {
                 });
             }
 
-            if (req.user.role === 'SALES_MANAGER') {
-                const allowedTeamIds = Array.isArray(filter.assignedTo?.$in)
-                    ? filter.assignedTo.$in.map((id) => id.toString())
-                    : [];
+            if (assignedTo.toString() !== req.user.userId.toString() && scopeOf(req, 'followups') === 'own') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You cannot filter by other team members.',
+                });
+            }
 
-                if (!allowedTeamIds.includes(assignedTo.toString())) {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'You can only filter your own team members.',
-                    });
-                }
+            if (!(await inScope(req, 'followups', assignedTo))) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You can only filter your own team members.',
+                });
             }
 
             filter.assignedTo = assignedTo;
@@ -589,7 +520,7 @@ const updateFollowUp = async (req, res) => {
 
         // Support updating assignedTo if provided
         if (Object.hasOwn(req.body, 'assignedTo')) {
-            if (!canManageTeam(req.user.role)) {
+            if (!can(req, 'followups.assign') && String(req.body.assignedTo ?? '') !== String(req.user.userId)) {
                 return res.status(403).json({
                     success: false,
                     message: 'You cannot reassign follow-ups.',
@@ -672,10 +603,10 @@ const archiveFollowUp = async (req, res) => {
 // PERMANENT DELETE (Owner only, must already be archived)
 const deleteFollowUp = async (req, res) => {
     try {
-        if (req.user.role !== 'OWNER') {
+        if (!can(req, 'followups.delete')) {
             return res.status(403).json({
                 success: false,
-                message: 'Only the owner can permanently delete follow-ups.',
+                message: 'You do not have permission to permanently delete follow-ups.',
             });
         }
 

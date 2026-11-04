@@ -14,6 +14,7 @@ const { listAssessments } = require('../controllers/admissions/assessmentControl
 const settings = require('../controllers/admissions/settingsController');
 const { serveFile } = require('../controllers/admissions/fileController');
 const { uploadSingle } = require('../services/storage/uploads');
+const { requirePermission: needs } = require('../services/access');
 
 const router = express.Router();
 
@@ -24,49 +25,49 @@ router.get('/files/:token', serveFile);
 // Every admissions route: signed in, and the business has the module enabled
 router.use(authMiddleware, requireAdmissions);
 
-router.get('/context', getContext);
-router.get('/dashboard', getDashboard);
-router.get('/settings', settings.getSettings);
-router.put('/settings', settings.updateSettings);
-router.get('/universities', settings.listUniversities);
-router.post('/universities', settings.createUniversity);
-router.patch('/universities/:id', settings.updateUniversity);
+router.get('/context', needs('admissions.view'), getContext);
+router.get('/dashboard', needs('admissions.view'), getDashboard);
+router.get('/settings', needs('admissions.settings'), settings.getSettings);
+router.put('/settings', needs('admissions.settings'), settings.updateSettings);
+router.get('/universities', needs('admissions.view'), settings.listUniversities);
+router.post('/universities', needs('admissions.settings'), settings.createUniversity);
+router.patch('/universities/:id', needs('admissions.settings'), settings.updateUniversity);
 
-router.post('/applications/check-duplicates', applications.checkDuplicates);
-router.get('/applications', applications.listApplications);
-router.get('/applications/export', exportsController.exportApplications);
-router.post('/applications', applications.createApplication);
-router.get('/applications/:id', applications.getApplication);
-router.patch('/applications/:id', applications.updateApplication);
-router.patch('/applications/:id/assign', applications.assignApplication);
-router.patch('/applications/:id/status', applications.updateApplicationStatus);
-router.patch('/applications/:id/checklist/:itemKey', workflow.updateChecklistItem);
-router.post('/applications/:id/stage', workflow.changeStage);
-router.post('/applications/:id/visa-outcome', workflow.recordVisaOutcome);
-router.get('/applications/:id/activity', workflow.listActivity);
-router.post('/applications/:id/notes', workflow.addNote);
-router.get('/applications/:id/tasks', tasks.listApplicationTasks);
-router.post('/applications/:id/tasks', tasks.createTask);
+router.post('/applications/check-duplicates', needs('admissions.create'), applications.checkDuplicates);
+router.get('/applications', needs('admissions.view'), applications.listApplications);
+router.get('/applications/export', needs('admissions.export'), exportsController.exportApplications);
+router.post('/applications', needs('admissions.create'), applications.createApplication);
+router.get('/applications/:id', needs('admissions.view'), applications.getApplication);
+router.patch('/applications/:id', needs('admissions.edit'), applications.updateApplication);
+router.patch('/applications/:id/assign', needs('admissions.assign'), applications.assignApplication);
+router.patch('/applications/:id/status', needs('admissions.close'), applications.updateApplicationStatus);
+router.patch('/applications/:id/checklist/:itemKey', needs('admissions.edit'), workflow.updateChecklistItem);
+router.post('/applications/:id/stage', needs('admissions.move'), workflow.changeStage);
+router.post('/applications/:id/visa-outcome', needs('admissions.edit'), workflow.recordVisaOutcome);
+router.get('/applications/:id/activity', needs('admissions.view'), workflow.listActivity);
+router.post('/applications/:id/notes', needs('admissions.edit'), workflow.addNote);
+router.get('/applications/:id/tasks', needs('admissions.view'), tasks.listApplicationTasks);
+router.post('/applications/:id/tasks', needs('admissions.edit'), tasks.createTask);
 
-router.get('/applications/:id/documents', documents.listDocuments);
-router.post('/applications/:id/documents', documents.createDocument);
-router.patch('/documents/:docId', documents.updateDocument);
-router.post('/documents/:docId/file', uploadSingle, documents.uploadDocumentFile);
-router.patch('/documents/:docId/review', documents.reviewDocument);
-router.get('/documents/:docId/download-url', documents.getDownloadUrl);
+router.get('/applications/:id/documents', needs('admissions.view'), documents.listDocuments);
+router.post('/applications/:id/documents', needs('admissions.documents'), documents.createDocument);
+router.patch('/documents/:docId', needs('admissions.documents'), documents.updateDocument);
+router.post('/documents/:docId/file', needs('admissions.documents'), uploadSingle, documents.uploadDocumentFile);
+router.patch('/documents/:docId/review', needs('admissions.documents'), documents.reviewDocument);
+router.get('/documents/:docId/download-url', needs('admissions.view'), documents.getDownloadUrl);
 
-router.get('/applications/:id/fees', payments.listFees);
-router.post('/applications/:id/fees', payments.createFee);
-router.patch('/fees/:feeId', payments.updateFee);
-router.post('/fees/:feeId/transactions', uploadSingle, payments.recordPayment);
-router.patch('/fees/:feeId/transactions/:txId/void', payments.voidPayment);
-router.get('/fees/:feeId/transactions/:txId/receipt-url', payments.getReceiptUrl);
-router.get('/payments', payments.listPayments);
-router.get('/payments/export', exportsController.exportPayments);
+router.get('/applications/:id/fees', needs('admissions.payments'), payments.listFees);
+router.post('/applications/:id/fees', needs('admissions.record_payments'), payments.createFee);
+router.patch('/fees/:feeId', needs('admissions.record_payments'), payments.updateFee);
+router.post('/fees/:feeId/transactions', needs('admissions.record_payments'), uploadSingle, payments.recordPayment);
+router.patch('/fees/:feeId/transactions/:txId/void', needs('admissions.record_payments'), payments.voidPayment);
+router.get('/fees/:feeId/transactions/:txId/receipt-url', needs('admissions.payments'), payments.getReceiptUrl);
+router.get('/payments', needs('admissions.payments'), payments.listPayments);
+router.get('/payments/export', needs('admissions.payments', 'admissions.export'), exportsController.exportPayments);
 
-router.get('/assessments', listAssessments);
+router.get('/assessments', needs('admissions.view'), listAssessments);
 
-router.get('/tasks', tasks.listTasks);
-router.patch('/tasks/:id', tasks.updateTask);
+router.get('/tasks', needs('admissions.view'), tasks.listTasks);
+router.patch('/tasks/:id', needs('admissions.edit'), tasks.updateTask);
 
 module.exports = router;

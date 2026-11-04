@@ -5,6 +5,21 @@ const User = require('../models/User');
 const Business = require('../models/Business');
 const { generateToken } = require('../services/authService');
 const { sendMail } = require('../services/mailer');
+const { loadAccess, publicAccess, ensureDefaultRoles, invalidateAccess } = require('../services/access');
+
+/** What a person may do, sent with every sign-in so the app can show the right buttons */
+const accessFor = async (user) => {
+    const access = await loadAccess(user._id.toString(), user.businessId.toString());
+    return access ? publicAccess({ user: access }) : null;
+};
+
+/** A new business gets the built-in roles, and its owner the Owner role */
+const giveOwnerRole = async (business, owner) => {
+    const roles = await ensureDefaultRoles(business._id);
+    owner.roleId = roles.get('OWNER')._id;
+    await owner.save();
+    invalidateAccess(owner._id);
+};
 
 const googleClient = new OAuth2Client();
 
@@ -113,8 +128,10 @@ const register = async (req, res) => {
 
         business.owner = user._id;
         await business.save();
+        await giveOwnerRole(business, user);
 
         const token = generateToken(user);
+        const access = await accessFor(user);
 
         return res.status(201).json({
             success: true,
@@ -122,6 +139,7 @@ const register = async (req, res) => {
 
             data: {
                 token,
+                access,
 
                 user: {
                     id: user._id,
@@ -236,6 +254,7 @@ const login = async (req, res) => {
         }
 
         const token = generateToken(user);
+        const access = await accessFor(user);
 
         return res.status(200).json({
             success: true,
@@ -243,6 +262,7 @@ const login = async (req, res) => {
 
             data: {
                 token,
+                access,
 
                 user: {
                     id: user._id,
@@ -373,6 +393,7 @@ const googleAuth = async (req, res) => {
             }
 
             const token = generateToken(user);
+            const access = await accessFor(user);
 
             return res.status(200).json({
                 success: true,
@@ -380,6 +401,7 @@ const googleAuth = async (req, res) => {
 
                 data: {
                     token,
+                    access,
 
                     user: {
                         id: user._id,
@@ -447,8 +469,10 @@ const googleAuth = async (req, res) => {
 
         business.owner = newUser._id;
         await business.save();
+        await giveOwnerRole(business, newUser);
 
         const token = generateToken(newUser);
+        const access = await accessFor(newUser);
 
         return res.status(201).json({
             success: true,
@@ -456,6 +480,7 @@ const googleAuth = async (req, res) => {
 
             data: {
                 token,
+                access,
 
                 user: {
                     id: newUser._id,
@@ -603,6 +628,7 @@ const getMe = async (req, res) => {
             success: true,
             data: {
                 user,
+                access: publicAccess(req),
                 business: {
                     _id: business._id,
                     businessName: business.businessName,

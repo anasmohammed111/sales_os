@@ -1,282 +1,255 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Role = require('../models/Role');
 const Lead = require('../models/Leads');
 const FollowUp = require('../models/FollowUp');
 const bcrypt = require('bcryptjs');
+const {
+    can,
+    invalidateAccess,
+    ensureDefaultRoles,
+    backfillUserRoles,
+    legacyRoleFor,
+} = require('../services/access');
+const { SCOPES, DEFAULT_ROLES } = require('../services/access/catalog');
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const fail = (res, status, message, extra = {}) => res.status(status).json({ success: false, message, ...extra });
+const denied = (res) =>
+    fail(res, 403, 'You do not have permission to do this. Ask your workspace owner for access.', { code: 'PERMISSION_DENIED' });
+
+/** Team members are everyone in the business except the owner */
+const MEMBER_FILTER = { role: { $ne: 'OWNER' } };
+
+const SCOPE_RANK = Object.fromEntries(SCOPES.map((s, i) => [s, i]));
+
+/**
+ * Whether this person may give someone `role`. The owner may give any role;
+ * anyone else only roles with no permission or data scope beyond their own.
+ */
+const canGrantRole = (req, role) => {
+    if (req.user.isOwner) return true;
+    if ((role.permissions || []).some((p) => !req.user.permissions.has(p))) return false;
+    return Object.entries(role.scopes || {}).every(
+        ([module, scope]) => (SCOPE_RANK[scope] ?? 0) <= (SCOPE_RANK[req.user.scopes?.[module]] ?? 0)
+    );
+};
+
+/**
+ * The role a member should get, from `roleId` or a built-in `role` key
+ * (SALES_MANAGER or SALESPERSON, as older clients send). The Owner role is never
+ * given through the team page.
+ */
+const resolveRole = async (req, { roleId, role }) => {
+    const defaults = await ensureDefaultRoles(req.user.businessId);
+    let found = null;
+
+    if (roleId !== undefined && roleId !== null && roleId !== '') {
+        if (!mongoose.isValidObjectId(roleId)) return { status: 400, error: 'Please select a valid role.' };
+        found = await Role.findOne({ _id: roleId, businessId: req.user.businessId }).lean();
+    } else if (typeof role === 'string' && ['SALES_MANAGER', 'SALESPERSON'].includes(role)) {
+        found = defaults.get(role);
+    } else {
+        return { status: 400, error: 'Please select a valid team member role.' };
+    }
+
+    if (!found || found.key === 'OWNER') return { status: 400, error: 'Please select a valid team member role.' };
+    if (!canGrantRole(req, found)) {
+        return { status: 403, error: 'You cannot give someone more access than you have yourself.' };
+    }
+    return { role: found };
+};
+
+/**
+ * Who a member reports to: nobody, or an active person in the business who is
+ * not the member and not below them (which would make a loop).
+ */
+const resolveManager = async (req, managerId, memberId = null) => {
+    if (managerId === undefined) return { unchanged: true };
+    if (managerId === null || managerId === '') return { managerId: null };
+    if (!mongoose.isValidObjectId(managerId)) return { status: 400, error: 'Invalid manager.' };
+    if (memberId && String(managerId) === String(memberId)) {
+        return { status: 400, error: 'Someone cannot report to themselves.' };
+    }
+
+    const manager = await User.findOne({ _id: managerId, businessId: req.user.businessId, isActive: true })
+        .select('_id managerId')
+        .lean();
+    if (!manager) return { status: 400, error: 'The selected manager does not exist or is inactive.' };
+
+    if (memberId) {
+        // Walk up from the new manager; reaching the member means a loop
+        const people = await User.find({ businessId: req.user.businessId }).select('_id managerId').lean();
+        const bossOf = new Map(people.map((p) => [String(p._id), p.managerId ? String(p.managerId) : null]));
+        let cursor = String(manager._id);
+        const seen = new Set();
+        while (cursor && !seen.has(cursor)) {
+            if (cursor === String(memberId)) {
+                return { status: 400, error: 'That would make someone report to a person who reports to them.' };
+            }
+            seen.add(cursor);
+            cursor = bossOf.get(cursor);
+        }
+    }
+
+    return { managerId: manager._id };
+};
+
+const memberResponse = (member) => ({
+    id: member._id,
+    _id: member._id,
+    name: member.name,
+    email: member.email,
+    role: member.role,
+    roleId: member.roleId,
+    managerId: member.managerId,
+    isActive: member.isActive,
+    createdAt: member.createdAt,
+});
+
+const POPULATE_MANAGER = { path: 'managerId', select: 'name email role' };
+const POPULATE_ROLE = { path: 'roleId', select: 'name key isSystem' };
 
 const createTeamMember = async (req, res) => {
     try {
-        // 1. Check authorization
-        if (req.user?.role !== 'OWNER') {
-            return res.status(403).json({
-                success: false,
-                message: 'You are not authorized to perform this action.',
-            });
-        }
+        if (!can(req, 'team.create')) return denied(res);
 
-        // 2. Get and validate request data
-        const { name, email, password, role, managerId } = req.body || {};
+        const { name, email, password, role, roleId, managerId } = req.body || {};
 
         if (
             typeof name !== 'string' ||
             typeof email !== 'string' ||
             typeof password !== 'string' ||
-            typeof role !== 'string' ||
             !name.trim() ||
             !email.trim() ||
             !password ||
-            !role
+            (!role && !roleId)
         ) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please fill in all required fields.',
-            });
+            return fail(res, 400, 'Please fill in all required fields.');
         }
 
         const trimmedName = name.trim();
         const normalizedEmail = email.trim().toLowerCase();
 
-        // 3. Validate field lengths
         if (trimmedName.length < 2 || trimmedName.length > 100) {
-            return res.status(400).json({
-                success: false,
-                message: 'Name must be between 2 and 100 characters.',
-            });
+            return fail(res, 400, 'Name must be between 2 and 100 characters.');
         }
-
-        if (normalizedEmail.length > 254) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email address is too long.',
-            });
-        }
-
-        // 4. Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(normalizedEmail)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please enter a valid email address.',
-            });
-        }
-
-        // 5. Validate password
+        if (normalizedEmail.length > 254) return fail(res, 400, 'Email address is too long.');
+        if (!EMAIL_PATTERN.test(normalizedEmail)) return fail(res, 400, 'Please enter a valid email address.');
         if (password.length < 8 || password.length > 128) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password must be between 8 and 128 characters.',
-            });
+            return fail(res, 400, 'Password must be between 8 and 128 characters.');
         }
 
-        // 6. Restrict allowed roles
-        const allowedRoles = ['SALES_MANAGER', 'SALESPERSON'];
+        const roleResult = await resolveRole(req, { roleId, role });
+        if (roleResult.error) return fail(res, roleResult.status, roleResult.error);
 
-        if (!allowedRoles.includes(role)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please select a valid team member role.',
-            });
-        }
+        const managerResult = await resolveManager(req, managerId);
+        if (managerResult.error) return fail(res, managerResult.status, managerResult.error);
 
-        // 7. Ensure the authenticated owner has a business
-        if (!req.user.businessId) {
-            return res.status(403).json({
-                success: false,
-                message: 'Your account is not associated with a business.',
-            });
-        }
+        const existingUser = await User.findOne({ email: normalizedEmail }).lean();
+        if (existingUser) return fail(res, 409, 'An account with this email already exists.');
 
-        // 8. Validate manager for SALESPERSON (Required)
-        let resolvedManagerId = null;
-        if (role === 'SALESPERSON') {
-            if (!managerId || (typeof managerId === 'string' && !managerId.trim())) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Please select a sales manager.',
-                });
-            }
-
-            if (!mongoose.isValidObjectId(managerId)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid sales manager ID.',
-                });
-            }
-
-            const manager = await User.findOne({
-                _id: managerId,
-                businessId: req.user.businessId,
-                role: 'SALES_MANAGER',
-                isActive: true,
-            });
-
-            if (!manager) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Selected sales manager does not exist or is inactive.',
-                });
-            }
-
-            resolvedManagerId = manager._id;
-        }
-
-        // 9. Check whether email already exists
-        const existingUser = await User.findOne({
-            email: normalizedEmail,
-        }).lean();
-
-        if (existingUser) {
-            return res.status(409).json({
-                success: false,
-                message: 'An account with this email already exists.',
-            });
-        }
-
-        // 10. Hash password before saving
         const hashedPassword = await bcrypt.hash(password, 12);
-
-        // 11. Create team member under the owner's business
         const teamMember = await User.create({
             name: trimmedName,
             email: normalizedEmail,
             password: hashedPassword,
-            role,
-            managerId: resolvedManagerId,
+            role: legacyRoleFor(roleResult.role),
+            roleId: roleResult.role._id,
+            managerId: managerResult.managerId ?? null,
             businessId: req.user.businessId,
         });
 
         const safeMember = await User.findById(teamMember._id)
             .select('-password')
-            .populate('managerId', 'name email role');
+            .populate(POPULATE_MANAGER)
+            .populate(POPULATE_ROLE);
 
-        // 12. Return safe member information
         return res.status(201).json({
             success: true,
             message: 'Team member created successfully.',
             data: safeMember,
         });
     } catch (error) {
-        // Handle duplicate email race conditions
         if (error.code === 11000 && error.keyPattern?.email) {
-            return res.status(409).json({
-                success: false,
-                message: 'An account with this email already exists.',
-            });
+            return fail(res, 409, 'An account with this email already exists.');
         }
-
         console.error('Create team member error:', error);
-
-        return res.status(500).json({
-            success: false,
-            message: 'Unable to create team member. Please try again later.',
-        });
+        return fail(res, 500, 'Unable to create team member. Please try again later.');
     }
 };
 
 const getTeamMembers = async (req, res) => {
     try {
-        // Only OWNER can view team members
-        if (req.user.role !== 'OWNER') {
-            return res.status(403).json({
-                success: false,
-                message: 'Only the business owner can view team members.',
-            });
-        }
+        if (!can(req, 'team.view')) return denied(res);
 
-        const {
-            role = 'ALL',
-            status = 'ALL',
-            search = '',
-            page = 1,
-            limit = 10,
-        } = req.query;
+        // People added before roles existed get the built-in role for their type
+        const roles = await backfillUserRoles(req.user.businessId);
+
+        const { role = 'ALL', roleId = 'ALL', status = 'ALL', search = '', page = 1, limit = 10 } = req.query;
 
         const currentPage = Math.max(1, parseInt(page, 10) || 1);
         const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
 
-        // All team members in this business
-        const baseFilter = {
-            businessId: req.user.businessId,
-            role: { $in: ['SALES_MANAGER', 'SALESPERSON'] },
-        };
-
-        // Apply filters to the team list
+        const baseFilter = { businessId: req.user.businessId, ...MEMBER_FILTER };
         const filter = { ...baseFilter };
 
-        if (role !== 'ALL') {
-            if (!['SALES_MANAGER', 'SALESPERSON'].includes(role)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid role filter.',
-                });
-            }
-
-            filter.role = role;
+        if (roleId !== 'ALL') {
+            if (!mongoose.isValidObjectId(roleId)) return fail(res, 400, 'Invalid role filter.');
+            filter.roleId = roleId;
+        } else if (role !== 'ALL') {
+            const builtIn = roles.get(role);
+            if (!builtIn || role === 'OWNER') return fail(res, 400, 'Invalid role filter.');
+            filter.roleId = builtIn._id;
         }
 
-        if (status === 'ACTIVE') {
-            filter.isActive = true;
-        } else if (status === 'INACTIVE') {
-            filter.isActive = false;
-        } else if (status !== 'ALL') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid status filter.',
-            });
-        }
+        if (status === 'ACTIVE') filter.isActive = true;
+        else if (status === 'INACTIVE') filter.isActive = false;
+        else if (status !== 'ALL') return fail(res, 400, 'Invalid status filter.');
 
         if (typeof search === 'string' && search.trim()) {
-            const safeSearch = search.trim().slice(0, 100).replace(
-                /[.*+?^${}()|[\]\\]/g,
-                '\\$&'
-            );
-
+            const safeSearch = search.trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             filter.$or = [
                 { name: { $regex: safeSearch, $options: 'i' } },
                 { email: { $regex: safeSearch, $options: 'i' } },
             ];
         }
 
-        // Get summary counts for the full team
-        const [
-            totalMembers,
-            activeMembers,
-            inactiveMembers,
-            salesManagers,
-            salespersons,
-        ] = await Promise.all([
+        const managerRole = roles.get('SALES_MANAGER');
+        const salesRole = roles.get('SALESPERSON');
+        const [totalMembers, activeMembers, inactiveMembers, salesManagers, salespersons, byRoleRows] = await Promise.all([
             User.countDocuments(baseFilter),
             User.countDocuments({ ...baseFilter, isActive: true }),
             User.countDocuments({ ...baseFilter, isActive: false }),
-            User.countDocuments({ ...baseFilter, role: 'SALES_MANAGER' }),
-            User.countDocuments({ ...baseFilter, role: 'SALESPERSON' }),
+            managerRole ? User.countDocuments({ ...baseFilter, roleId: managerRole._id }) : 0,
+            salesRole ? User.countDocuments({ ...baseFilter, roleId: salesRole._id }) : 0,
+            User.aggregate([
+                { $match: { businessId: new mongoose.Types.ObjectId(req.user.businessId), role: { $ne: 'OWNER' } } },
+                { $group: { _id: '$roleId', count: { $sum: 1 } } },
+            ]),
         ]);
 
-        // Count members matching the selected filters
-        const total = await User.countDocuments(filter);
+        const roleDocs = await Role.find({ businessId: req.user.businessId }).select('name key').lean();
+        const roleName = new Map(roleDocs.map((r) => [String(r._id), r]));
+        const byRole = byRoleRows
+            .filter((row) => row._id && roleName.has(String(row._id)))
+            .map((row) => ({ roleId: row._id, name: roleName.get(String(row._id)).name, count: row.count }))
+            .sort((a, b) => b.count - a.count);
 
-        // Get members for the current page
+        const total = await User.countDocuments(filter);
         const teamMembers = await User.find(filter)
             .select('-password')
-            .populate('managerId', 'name email role')
+            .populate(POPULATE_MANAGER)
+            .populate(POPULATE_ROLE)
             .sort({ createdAt: -1 })
             .skip((currentPage - 1) * pageSize)
             .limit(pageSize);
 
         return res.status(200).json({
             success: true,
-
-            summary: {
-                totalMembers,
-                activeMembers,
-                inactiveMembers,
-                salesManagers,
-                salespersons,
-            },
-
+            summary: { totalMembers, activeMembers, inactiveMembers, salesManagers, salespersons, byRole },
             data: teamMembers,
-
             pagination: {
                 total,
                 page: currentPage,
@@ -286,384 +259,176 @@ const getTeamMembers = async (req, res) => {
         });
     } catch (error) {
         console.error('Get team members error:', error);
-
-        return res.status(500).json({
-            success: false,
-            message: 'Unable to retrieve team members.',
-        });
+        return fail(res, 500, 'Unable to retrieve team members.');
     }
+};
+
+/** Loads a member (not the owner) of the person's business, or answers the error */
+const findMember = async (req, res, id) => {
+    if (!mongoose.isValidObjectId(id)) {
+        fail(res, 400, 'Invalid team member ID.');
+        return null;
+    }
+    const member = await User.findOne({ _id: id, businessId: req.user.businessId, ...MEMBER_FILTER });
+    if (!member) {
+        fail(res, 404, 'Team member not found.');
+        return null;
+    }
+    if (String(member._id) === String(req.user.userId)) {
+        fail(res, 403, 'You cannot change your own account here. Ask your workspace owner.');
+        return null;
+    }
+
+    // Someone whose role has more access than mine stays out of my reach. People
+    // without a role record yet have the built-in role for their type.
+    const current =
+        (member.roleId && (await Role.findOne({ _id: member.roleId, businessId: req.user.businessId }).lean())) ||
+        DEFAULT_ROLES[member.role] ||
+        DEFAULT_ROLES.SALESPERSON;
+    if (!canGrantRole(req, current)) {
+        fail(res, 403, 'You cannot change someone who has more access than you.');
+        return null;
+    }
+    return member;
 };
 
 const updateTeamMember = async (req, res) => {
     try {
-        // 1. Only the business Owner can update team members
-        if (req.user.role !== 'OWNER') {
-            return res.status(403).json({
-                success: false,
-                message: 'Only the business owner can update team members.',
-            });
-        }
+        const body = req.body || {};
+        const { name, email, role, roleId, isActive, managerId } = body;
 
-        // 2. Get the member ID and fields from the request
-        const { id } = req.params;
+        // Switching someone on or off needs "deactivate"; any other change needs "edit"
+        const statusOnly = Object.keys(body).every((key) => key === 'isActive');
+        if (!statusOnly && !can(req, 'team.edit')) return denied(res);
+        if (isActive !== undefined && !can(req, 'team.deactivate')) return denied(res);
 
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid team member ID.',
-            });
-        }
+        const teamMember = await findMember(req, res, req.params.id);
+        if (!teamMember) return undefined;
 
-        const { name, email, role, isActive, managerId } = req.body || {};
-
-        const allowedRoles = ['SALES_MANAGER', 'SALESPERSON'];
-
-        // 3. Validate the role if it is provided
-        if (
-            role !== undefined &&
-            !allowedRoles.includes(role)
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid team member role.',
-            });
-        }
-
-        // 4. Find the member within the Owner's business
-        const teamMember = await User.findOne({
-            _id: id,
-            businessId: req.user.businessId,
-            role: { $in: allowedRoles },
-        });
-
-        if (!teamMember) {
-            return res.status(404).json({
-                success: false,
-                message: 'Team member not found.',
-            });
-        }
-
-        // 5. Update the name if provided
         if (name !== undefined) {
-            if (typeof name !== 'string' || !name.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Name cannot be empty.',
-                });
-            }
-
+            if (typeof name !== 'string' || !name.trim()) return fail(res, 400, 'Name cannot be empty.');
             const trimmedName = name.trim();
             if (trimmedName.length < 2 || trimmedName.length > 100) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Name must be between 2 and 100 characters.',
-                });
+                return fail(res, 400, 'Name must be between 2 and 100 characters.');
             }
-
             teamMember.name = trimmedName;
         }
 
-        // 6. Update the email if provided
         if (email !== undefined) {
-            if (typeof email !== 'string' || !email.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email cannot be empty.',
-                });
-            }
-
+            if (typeof email !== 'string' || !email.trim()) return fail(res, 400, 'Email cannot be empty.');
             const normalizedEmail = email.trim().toLowerCase();
-
-            if (normalizedEmail.length > 254) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email address is too long.',
-                });
-            }
-
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(normalizedEmail)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Please enter a valid email address.',
-                });
-            }
-
-            // Check whether another user already uses this email
-            const existingUser = await User.findOne({
-                email: normalizedEmail,
-                _id: { $ne: teamMember._id },
-            });
-
-            if (existingUser) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'This email is already registered.',
-                });
-            }
-
+            if (normalizedEmail.length > 254) return fail(res, 400, 'Email address is too long.');
+            if (!EMAIL_PATTERN.test(normalizedEmail)) return fail(res, 400, 'Please enter a valid email address.');
+            const existingUser = await User.findOne({ email: normalizedEmail, _id: { $ne: teamMember._id } });
+            if (existingUser) return fail(res, 409, 'This email is already registered.');
             teamMember.email = normalizedEmail;
         }
 
-        // 7. Update the role if provided
-        if (role !== undefined) {
-            teamMember.role = role;
-            if (role === 'SALES_MANAGER') {
-                teamMember.managerId = null;
-            }
+        if (roleId !== undefined || role !== undefined) {
+            const roleResult = await resolveRole(req, { roleId, role });
+            if (roleResult.error) return fail(res, roleResult.status, roleResult.error);
+            teamMember.roleId = roleResult.role._id;
+            teamMember.role = legacyRoleFor(roleResult.role);
         }
 
-        // 8. Update managerId if provided and member is SALESPERSON (Required for SALESPERSON)
-        const finalRole = role !== undefined ? role : teamMember.role;
-        if (finalRole === 'SALESPERSON') {
-            if (managerId !== undefined) {
-                if (!managerId || (typeof managerId === 'string' && !managerId.trim())) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Please select a sales manager.',
-                    });
-                }
+        const managerResult = await resolveManager(req, managerId, teamMember._id);
+        if (managerResult.error) return fail(res, managerResult.status, managerResult.error);
+        if (!managerResult.unchanged) teamMember.managerId = managerResult.managerId;
 
-                if (!mongoose.isValidObjectId(managerId)) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Invalid sales manager ID.',
-                    });
-                }
-
-                const manager = await User.findOne({
-                    _id: managerId,
-                    businessId: req.user.businessId,
-                    role: 'SALES_MANAGER',
-                    isActive: true,
-                });
-
-                if (!manager) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Selected sales manager does not exist or is inactive.',
-                    });
-                }
-
-                teamMember.managerId = manager._id;
-            } else if (role === 'SALESPERSON' && !teamMember.managerId) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Please select a sales manager.',
-                });
-            }
-        } else {
-            teamMember.managerId = null;
-        }
-
-        // 9. Activate or deactivate the member if provided
         if (isActive !== undefined) {
-            if (typeof isActive !== 'boolean') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'isActive must be true or false.',
-                });
-            }
-
+            if (typeof isActive !== 'boolean') return fail(res, 400, 'isActive must be true or false.');
             teamMember.isActive = isActive;
         }
 
-        // 10. Save all changes to MongoDB
         await teamMember.save();
-        await teamMember.populate('managerId', 'name email role');
+        invalidateAccess(teamMember._id);
+        await teamMember.populate(POPULATE_MANAGER);
+        await teamMember.populate(POPULATE_ROLE);
 
-        // 11. Return the updated member details
         return res.status(200).json({
             success: true,
             message: 'Team member updated successfully.',
-            data: {
-                id: teamMember._id,
-                name: teamMember.name,
-                email: teamMember.email,
-                role: teamMember.role,
-                managerId: teamMember.managerId,
-                isActive: teamMember.isActive,
-            },
+            data: memberResponse(teamMember),
         });
     } catch (error) {
         console.error('Update team member error:', error);
-
-        if (error.name === 'CastError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid team member ID.',
-            });
-        }
-
-        if (error.code === 11000) {
-            return res.status(409).json({
-                success: false,
-                message: 'This email is already registered.',
-            });
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: 'Unable to update team member.',
-        });
+        if (error.name === 'CastError') return fail(res, 400, 'Invalid team member ID.');
+        if (error.code === 11000) return fail(res, 409, 'This email is already registered.');
+        return fail(res, 500, 'Unable to update team member.');
     }
 };
 
 const deactivateTeamMember = async (req, res) => {
     try {
-        // Only the business Owner can deactivate team members
-        if (req.user.role !== 'OWNER') {
-            return res.status(403).json({
-                success: false,
-                message: 'Only the business owner can deactivate team members.',
-            });
-        }
+        if (!can(req, 'team.deactivate')) return denied(res);
 
-        const { id } = req.params;
+        const teamMember = await findMember(req, res, req.params.id);
+        if (!teamMember) return undefined;
 
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid team member ID.',
-            });
-        }
+        if (!teamMember.isActive) return fail(res, 400, 'Team member is already inactive.');
 
-        // Find the member within the Owner's business
-        const teamMember = await User.findOne({
-            _id: id,
-            businessId: req.user.businessId,
-            role: {
-                $in: ['SALES_MANAGER', 'SALESPERSON'],
-            },
-        });
-
-        if (!teamMember) {
-            return res.status(404).json({
-                success: false,
-                message: 'Team member not found.',
-            });
-        }
-
-        // Avoid repeating the same operation
-        if (!teamMember.isActive) {
-            return res.status(400).json({
-                success: false,
-                message: 'Team member is already inactive.',
-            });
-        }
-
-        // Deactivate the member
         teamMember.isActive = false;
-
         await teamMember.save();
+        invalidateAccess(teamMember._id);
 
         return res.status(200).json({
             success: true,
             message: 'Team member deactivated successfully.',
-            data: {
-                id: teamMember._id,
-                name: teamMember.name,
-                email: teamMember.email,
-                role: teamMember.role,
-                isActive: teamMember.isActive,
-            },
+            data: memberResponse(teamMember),
         });
     } catch (error) {
         console.error('Deactivate team member error:', error);
-
-        if (error.name === 'CastError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid team member ID.',
-            });
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: 'Unable to deactivate team member.',
-        });
+        if (error.name === 'CastError') return fail(res, 400, 'Invalid team member ID.');
+        return fail(res, 500, 'Unable to deactivate team member.');
     }
 };
 
 const deleteTeamMember = async (req, res) => {
     try {
-        if (req.user.role !== 'OWNER') {
-            return res.status(403).json({
-                success: false,
-                message: 'Only the business owner can delete team members.',
-            });
-        }
+        if (!can(req, 'team.delete')) return denied(res);
 
-        const { id } = req.params;
-
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid team member ID.',
-            });
-        }
-
-        const teamMember = await User.findOne({
-            _id: id,
-            businessId: req.user.businessId,
-            role: {
-                $in: ['SALES_MANAGER', 'SALESPERSON'],
-            },
-        });
-
-        if (!teamMember) {
-            return res.status(404).json({
-                success: false,
-                message: 'Team member not found.',
-            });
-        }
+        const teamMember = await findMember(req, res, req.params.id);
+        if (!teamMember) return undefined;
 
         // Prevent deletion if the member still owns active leads or pending follow-ups
-        const [activeLeadsCount, activeFollowUpsCount] = await Promise.all([
-            Lead.countDocuments({
-                businessId: req.user.businessId,
-                assignedTo: teamMember._id,
-                isArchived: false,
-            }),
+        const [activeLeadsCount, activeFollowUpsCount, reports] = await Promise.all([
+            Lead.countDocuments({ businessId: req.user.businessId, assignedTo: teamMember._id, isArchived: false }),
             FollowUp.countDocuments({
                 businessId: req.user.businessId,
                 assignedTo: teamMember._id,
                 status: 'PENDING',
                 isArchived: false,
             }),
+            User.countDocuments({ businessId: req.user.businessId, managerId: teamMember._id }),
         ]);
 
         if (activeLeadsCount > 0 || activeFollowUpsCount > 0) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot delete team member with ${activeLeadsCount} active lead(s) and ${activeFollowUpsCount} pending follow-up(s). Please reassign them or deactivate the member instead.`,
-            });
+            return fail(
+                res,
+                400,
+                `Cannot delete team member with ${activeLeadsCount} active lead(s) and ${activeFollowUpsCount} pending follow-up(s). Please reassign them or deactivate the member instead.`
+            );
+        }
+        if (reports > 0) {
+            return fail(res, 400, `${reports} people report to this member. Give them another manager first, or deactivate the member instead.`);
         }
 
-        await User.deleteOne({
-            _id: teamMember._id,
-            businessId: req.user.businessId,
-        });
+        await User.deleteOne({ _id: teamMember._id, businessId: req.user.businessId });
+        invalidateAccess(teamMember._id);
 
-        return res.status(200).json({
-            success: true,
-            message: 'Team member permanently deleted.',
-        });
+        return res.status(200).json({ success: true, message: 'Team member permanently deleted.' });
     } catch (error) {
         console.error('Delete team member error:', error);
-
-        if (error.name === 'CastError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid team member ID.',
-            });
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: 'Unable to delete team member.',
-        });
+        if (error.name === 'CastError') return fail(res, 400, 'Invalid team member ID.');
+        return fail(res, 500, 'Unable to delete team member.');
     }
 };
 
-module.exports = { createTeamMember, getTeamMembers, updateTeamMember, deactivateTeamMember, deleteTeamMember };
+module.exports = {
+    createTeamMember,
+    getTeamMembers,
+    updateTeamMember,
+    deactivateTeamMember,
+    deleteTeamMember,
+    canGrantRole,
+};

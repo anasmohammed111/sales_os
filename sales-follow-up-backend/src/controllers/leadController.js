@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 const Lead = require('../models/Leads');
 const User = require('../models/User');
+const { can, scopeFilter, scopeOf, inScope, canAssignTo } = require('../services/access');
 
 const VALID_STATUSES = [
     'NEW',
@@ -54,9 +55,10 @@ const VALID_SOURCES = [
     'OTHER',
 ];
 
-const canManageTeam = (role) =>
-    ['OWNER', 'SALES_MANAGER'].includes(role);
-
+/**
+ * Leads this person may see: their business, not archived, and inside their
+ * data scope for leads (own, team or all). No "leads.view" means none.
+ */
 const getLeadScope = async (req) => {
     // If businessId or userId is missing or invalid, block access completely
     if (
@@ -68,57 +70,22 @@ const getLeadScope = async (req) => {
         return { _id: null };
     }
 
-    const filter = {
+    if (!can(req, 'leads.view')) return { _id: null };
+
+    return {
         businessId: req.user.businessId,
         isArchived: { $ne: true },
+        ...(await scopeFilter(req, 'leads')),
     };
-
-    // Owner can see all leads in their business.
-    if (req.user.role === 'OWNER') {
-        return filter;
-    }
-
-    // Salesperson can see only their own leads.
-    if (req.user.role === 'SALESPERSON') {
-        filter.assignedTo = req.user.userId;
-        return filter;
-    }
-
-    // Manager can see their own leads and their salespersons' leads.
-    if (req.user.role === 'SALES_MANAGER') {
-
-        const salespersons = await User.find({
-            businessId: req.user.businessId,
-            managerId: req.user.userId,
-            role: 'SALESPERSON',
-        }).select('_id');
-
-        const assignedUsers = salespersons.map(user => user._id);
-
-        // Include the manager themselves.
-        assignedUsers.push(req.user.userId);
-
-        filter.assignedTo = {
-            $in: assignedUsers,
-        };
-
-        return filter;
-    }
-
-    // No access for other roles.
-    filter._id = null;
-
-    return filter;
 };
 
-// Validate and resolve lead assignee based on role and team hierarchy
+// Validate and resolve a lead assignee against the person's role (assign permission and scope)
 const validateLeadAssignee = async (req, assignedTo) => {
-    // Check unassign permission
     if (assignedTo === null || assignedTo === '') {
-        if (req.user.role !== 'OWNER') {
+        if (!(await canAssignTo(req, 'leads', null))) {
             return {
                 status: 403,
-                error: 'Only the owner can unassign a lead',
+                error: 'You cannot leave a lead unassigned',
             };
         }
         return { assigneeId: null };
@@ -135,7 +102,6 @@ const validateLeadAssignee = async (req, assignedTo) => {
         _id: assignedTo,
         businessId: req.user.businessId,
         isActive: true,
-        role: { $in: ['OWNER', 'SALES_MANAGER', 'SALESPERSON'] },
     });
 
     if (!assignee) {
@@ -145,30 +111,12 @@ const validateLeadAssignee = async (req, assignedTo) => {
         };
     }
 
-    // Manager can assign only to themselves or their own salespersons.
-    if (req.user.role === 'SALES_MANAGER') {
-        const isSelf = assignee._id.toString() === req.user.userId.toString();
-        const isOwnSalesperson =
-            assignee.role === 'SALESPERSON' &&
-            assignee.managerId?.toString() === req.user.userId.toString();
-
-        if (!isSelf && !isOwnSalesperson) {
-            return {
-                status: 403,
-                error: 'You can only assign leads to yourself or your own salespersons',
-            };
-        }
-    }
-
-    // Owner cannot assign to other owners (only to themselves, managers, or salespersons)
-    if (
-        req.user.role === 'OWNER' &&
-        assignee.role === 'OWNER' &&
-        assignee._id.toString() !== req.user.userId.toString()
-    ) {
+    if (!(await canAssignTo(req, 'leads', assignee._id))) {
         return {
             status: 403,
-            error: 'Invalid assignee',
+            error: can(req, 'leads.assign')
+                ? 'You can only assign leads to yourself or people in your team'
+                : 'You cannot assign leads to other people',
         };
     }
 
@@ -237,7 +185,7 @@ const createLead = async (req, res) => {
         // Default assignee is the logged-in user.
         let assigneeId = req.user.userId;
 
-        if (assignedTo && canManageTeam(req.user.role)) {
+        if (assignedTo && can(req, 'leads.assign')) {
             const validation = await validateLeadAssignee(req, assignedTo);
             if (validation.error) {
                 return res.status(validation.status).json({
@@ -353,15 +301,8 @@ const getLeads = async (req, res) => {
             filter.priority = priority;
         }
 
-        // Filter by team member.
+        // Filter by team member: only people inside the person's lead scope.
         if (assignedTo && assignedTo !== 'ALL') {
-            if (!canManageTeam(req.user.role)) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'You cannot filter by other team members',
-                });
-            }
-
             if (!mongoose.isValidObjectId(assignedTo)) {
                 return res.status(400).json({
                     success: false,
@@ -369,18 +310,18 @@ const getLeads = async (req, res) => {
                 });
             }
 
-            // Check whether the selected user is within the manager's team.
-            if (req.user.role === 'SALES_MANAGER') {
-                const allowedTeamIds = Array.isArray(filter.assignedTo?.$in)
-                    ? filter.assignedTo.$in.map(id => id.toString())
-                    : [];
+            if (assignedTo.toString() !== req.user.userId.toString() && scopeOf(req, 'leads') === 'own') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You cannot filter by other team members',
+                });
+            }
 
-                if (!allowedTeamIds.includes(assignedTo.toString())) {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'You can only filter your own team members',
-                    });
-                }
+            if (!(await inScope(req, 'leads', assignedTo))) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You can only filter your own team members',
+                });
             }
 
             filter.assignedTo = assignedTo;
@@ -652,9 +593,9 @@ const updateLead = async (req, res) => {
             }
         }
 
-        // Only owners/managers can reassign leads.
+        // Reassigning needs the "leads.assign" permission.
         if (Object.hasOwn(req.body, 'assignedTo')) {
-            if (!canManageTeam(req.user.role)) {
+            if (!can(req, 'leads.assign') && String(req.body.assignedTo ?? '') !== String(req.user.userId)) {
                 return res.status(403).json({
                     success: false,
                     message: 'You cannot reassign leads',

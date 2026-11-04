@@ -41,10 +41,19 @@ const userSchema = new mongoose.Schema(
             type: String,
         },
 
+        // Built-in role type, kept for compatibility. What a person may do comes
+        // from roleId (see services/access); custom roles store 'SALESPERSON' here.
         role: {
             type: String,
             enum: ['OWNER', 'SALES_MANAGER', 'SALESPERSON'],
             default: 'SALESPERSON',
+        },
+
+        // The role that decides this person's permissions and data scope
+        roleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Role',
+            default: null,
         },
 
         managerId: {

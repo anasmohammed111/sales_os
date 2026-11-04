@@ -1,7 +1,8 @@
 const AdmissionActivity = require('../../models/AdmissionActivity');
 const { syncChecklist, setItemStatus } = require('../../services/admissions/checklist');
 const { moveStage, isFinalStage, MIN_OVERRIDE_REASON } = require('../../services/admissions/stageService');
-const { findApplicationInScope, isAdmin } = require('../../services/admissions/access');
+const { findApplicationInScope } = require('../../services/admissions/access');
+const { can } = require('../../services/access');
 const { getActiveStages } = require('../../services/admissions/configService');
 const { logActivity } = require('../../services/admissions/activity');
 const reminders = require('../../services/admissions/reminders');
@@ -106,7 +107,7 @@ const recordVisaOutcome = async (req, res, next) => {
         const isCorrection = application.status === 'CLOSED' && application.visa.outcome !== 'PENDING';
 
         if (isCorrection) {
-            if (!isAdmin(req)) return fail(res, 403, 'Only an admin can correct a recorded visa result');
+            if (!can(req, 'admissions.override')) return fail(res, 403, 'You do not have permission to correct a recorded visa result');
             if (trimmedReason.length < MIN_OVERRIDE_REASON) {
                 return fail(res, 400, 'Give a reason (at least 5 characters) for correcting the visa result');
             }

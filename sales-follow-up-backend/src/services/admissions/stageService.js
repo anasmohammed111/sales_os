@@ -1,7 +1,7 @@
 const AdmissionApplication = require('../../models/AdmissionApplication');
 const { findStage, getActiveStages } = require('./configService');
 const { evaluateStage, syncChecklist } = require('./checklist');
-const { isAdmin } = require('./access');
+const { can } = require('../access');
 
 const MIN_OVERRIDE_REASON = 5;
 
@@ -57,8 +57,8 @@ const moveStage = async ({ req, application, config, toStageKey, fromStageKey, r
                     gateError: gateErrors.join(' ') || null,
                 });
             }
-            if (!isAdmin(req)) {
-                return failure(403, 'OVERRIDE_NOT_ALLOWED', 'Only an admin can override stage requirements');
+            if (!can(req, 'admissions.override')) {
+                return failure(403, 'OVERRIDE_NOT_ALLOWED', 'You do not have permission to override stage requirements');
             }
             if (trimmedReason.length < MIN_OVERRIDE_REASON) {
                 return failure(400, 'OVERRIDE_REASON_REQUIRED', 'Give a reason (at least 5 characters) for the override');

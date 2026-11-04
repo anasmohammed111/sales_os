@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
+const { requirePermission } = require('../services/access');
 
 const {
     createFollowUp,
@@ -13,10 +14,10 @@ const {
 
 router.use(authMiddleware);
 
-router.post('/', createFollowUp);
-router.get('/', getFollowUps);
-router.patch('/:id', updateFollowUp);
-router.patch('/:id/archive', archiveFollowUp);
-router.delete('/:id', deleteFollowUp);
+router.post('/', requirePermission('followups.create'), createFollowUp);
+router.get('/', requirePermission('followups.view'), getFollowUps);
+router.patch('/:id', requirePermission('followups.edit'), updateFollowUp);
+router.patch('/:id/archive', requirePermission('followups.archive'), archiveFollowUp);
+router.delete('/:id', requirePermission('followups.delete'), deleteFollowUp);
 
 module.exports = router;

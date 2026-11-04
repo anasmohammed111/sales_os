@@ -8,9 +8,10 @@ const {
 } = require('../controllers/pipelineController');
 
 const authMiddleware = require('../middleware/authMiddleware');
+const { requirePermission } = require('../services/access');
 
-router.get('/', authMiddleware, getPipeline);
+router.get('/', authMiddleware, requirePermission('pipeline.view'), getPipeline);
 
-router.patch('/:leadId/status', authMiddleware, updatePipelineStatus);
+router.patch('/:leadId/status', authMiddleware, requirePermission('pipeline.move'), updatePipelineStatus);
 
 module.exports = router;

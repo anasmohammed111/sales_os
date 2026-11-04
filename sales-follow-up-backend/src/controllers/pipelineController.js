@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Lead = require('../models/Leads');
 const User = require('../models/User');
+const { can, scopeOf, inScope, visibleUserIds } = require('../services/access');
 
 const PIPELINE_STAGES = [
     'NEW',
@@ -43,9 +44,6 @@ const ALLOWED_STATUS_TRANSITIONS = {
 
 const VALID_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
 
-const canManageTeam = (role) =>
-    ['OWNER', 'SALES_MANAGER'].includes(role);
-
 // Helper to safely convert string to ObjectId for aggregation
 const toObjectId = (id) =>
     mongoose.isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : null;
@@ -60,46 +58,19 @@ const getPipelineScope = async (req) => {
         return { _id: null };
     }
 
+    // The pipeline shows leads, so it follows the person's lead scope
+    if (!can(req, 'pipeline.view') || !can(req, 'leads.view')) {
+        return { _id: null };
+    }
+
     const filter = {
         businessId: businessObjectId,
         isArchived: { $ne: true },
     };
 
-    // Owner can see all leads in their business
-    if (req.user.role === 'OWNER') {
-        return filter;
-    }
-
-    // Salesperson can see only their own leads
-    if (req.user.role === 'SALESPERSON') {
-        filter.assignedTo = userObjectId;
-        return filter;
-    }
-
-    // Manager can see their own leads and their salespersons' leads
-    if (req.user.role === 'SALES_MANAGER') {
-        const salespersons = await User.find({
-            businessId: req.user.businessId,
-            managerId: req.user.userId,
-            role: 'SALESPERSON',
-        })
-            .select('_id')
-            .lean();
-
-        const teamIds = salespersons.map((user) => user._id);
-
-        filter.assignedTo = {
-            $in: [
-                userObjectId,
-                ...teamIds,
-            ],
-        };
-
-        return filter;
-    }
-
-    // No access for other roles
-    return { _id: null };
+    const ids = await visibleUserIds(req, 'leads');
+    if (ids) filter.assignedTo = { $in: ids };
+    return filter;
 };
 
 // Standard error handler matching leadController and followUpController
@@ -132,15 +103,8 @@ const getPipeline = async (req, res) => {
             Math.max(1, Number.parseInt(limit, 10) || 50)
         );
 
-        // Optional filter: assigned team member
+        // Optional filter: a team member inside the person's lead scope
         if (assignedTo && assignedTo !== 'ALL') {
-            if (!canManageTeam(req.user.role)) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'You cannot filter by other team members',
-                });
-            }
-
             if (!mongoose.isValidObjectId(assignedTo)) {
                 return res.status(400).json({
                     success: false,
@@ -148,17 +112,18 @@ const getPipeline = async (req, res) => {
                 });
             }
 
-            if (req.user.role === 'SALES_MANAGER') {
-                const allowedTeamIds = Array.isArray(scope.assignedTo?.$in)
-                    ? scope.assignedTo.$in.map((id) => id.toString())
-                    : [];
+            if (assignedTo.toString() !== req.user.userId.toString() && scopeOf(req, 'leads') === 'own') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You cannot filter by other team members',
+                });
+            }
 
-                if (!allowedTeamIds.includes(assignedTo.toString())) {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'You can only filter your own team members',
-                    });
-                }
+            if (!(await inScope(req, 'leads', assignedTo))) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You can only filter your own team members',
+                });
             }
 
             scope.assignedTo = toObjectId(assignedTo);
@@ -321,6 +286,15 @@ const updatePipelineStatus = async (req, res) => {
     try {
         const { leadId } = req.params;
         const { status, lostReason, notes, nextFollowUpAt, estimatedValue, isArchived } = req.body;
+
+        // Archiving from the pipeline is still archiving a lead
+        if (isArchived === true && !can(req, 'leads.archive')) {
+            return res.status(403).json({
+                success: false,
+                code: 'PERMISSION_DENIED',
+                message: 'You do not have permission to archive leads',
+            });
+        }
 
         if (!mongoose.isValidObjectId(leadId)) {
             return res.status(400).json({

@@ -11,6 +11,7 @@ const admissionRoutes = require('./routes/admissionRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const homeDashboardRoutes = require('./routes/homeDashboardRoutes');
+const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use('/api/admissions', admissionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/dashboard', homeDashboardRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Catch-all for undefined API routes
 app.use('/api', (req, res) => {

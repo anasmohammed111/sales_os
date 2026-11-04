@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Business = require('../models/Business');
 const { BUSINESS_CURRENCIES } = require('../models/Business');
+const { can } = require('../services/access');
 const { getStorage } = require('../services/storage');
 const {
     buildStorageKey,
@@ -86,7 +87,7 @@ const getBusinessLogo = async (req, res, next) => {
 const uploadBusinessLogo = async (req, res, next) => {
     let newStorageKey = null;
     try {
-        if (req.user.role !== 'OWNER') return fail(res, 403, 'Only the business owner can change the workspace logo');
+        if (!can(req, 'settings.business')) return fail(res, 403, 'You do not have permission to change the workspace logo');
         if (!req.file?.buffer?.length) return fail(res, 400, 'Choose a logo to upload');
         if (req.file.buffer.length > MAX_LOGO_BYTES) return fail(res, 413, 'Logo must be 2 MB or smaller');
 
@@ -127,7 +128,7 @@ const uploadBusinessLogo = async (req, res, next) => {
 /** Removes the workspace logo and returns the updated settings. Owner only. */
 const removeBusinessLogo = async (req, res, next) => {
     try {
-        if (req.user.role !== 'OWNER') return fail(res, 403, 'Only the business owner can change the workspace logo');
+        if (!can(req, 'settings.business')) return fail(res, 403, 'You do not have permission to change the workspace logo');
         const business = await Business.findOne({ _id: req.user.businessId, isActive: true }).select('logo');
         if (!business) return fail(res, 404, 'Business not found');
 
@@ -178,7 +179,7 @@ const updateProfile = async (req, res, next) => {
 /** Business details and currency. Owner only. */
 const updateBusiness = async (req, res, next) => {
     try {
-        if (req.user.role !== 'OWNER') return fail(res, 403, 'Only the business owner can change business details');
+        if (!can(req, 'settings.business')) return fail(res, 403, 'You do not have permission to change business details');
 
         const body = req.body || {};
         const updates = {};

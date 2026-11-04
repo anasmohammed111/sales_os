@@ -4,6 +4,7 @@ const Business = require('../models/Business');
 const User = require('../models/User');
 const University = require('../models/University');
 const { ensureConfig } = require('../services/admissions/configService');
+const { backfillUserRoles } = require('../services/access');
 
 // Real setup data only. No sample students or leads.
 const BUSINESS = { businessName: 'SYB Education', email: 'admin@syb.local', currency: 'INR' };
@@ -96,6 +97,8 @@ const seedSyb = async () => {
     }
 
     await ensureConfig(business._id);
+    // Built-in roles, and each seeded person linked to theirs
+    await backfillUserRoles(business._id);
 
     let universitiesAdded = 0;
     for (const [name, city] of UNIVERSITIES) {
