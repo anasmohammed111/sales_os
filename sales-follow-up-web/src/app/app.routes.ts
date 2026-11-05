@@ -87,10 +87,23 @@ export const routes: Routes = [
     ],
   },
   {
-    // Platform super admin console: its own sign-in, every workspace
+    // Kelto support sessions opened from the admin app
+    path: 'support/enter',
+    title: 'Kelto support | Kelto',
+    loadComponent: () => import('./support/support-pages').then((m) => m.SupportEnter),
+  },
+  {
+    path: 'support/ended',
+    title: 'Support session ended | Kelto',
+    loadComponent: () => import('./support/support-pages').then((m) => m.SupportEnded),
+  },
+  {
+    // The admin console is a separate app now (projects/kelto-admin)
     path: 'platform',
-    loadChildren: () =>
-      import('./platform/platform.routes').then((m) => m.PLATFORM_ROUTES),
+    children: [
+      { path: '', loadComponent: () => import('./support/support-pages').then((m) => m.AdminMoved) },
+      { path: '**', loadComponent: () => import('./support/support-pages').then((m) => m.AdminMoved) },
+    ],
   },
   {
     path: 'auth',

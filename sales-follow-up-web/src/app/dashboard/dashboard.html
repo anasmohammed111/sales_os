@@ -285,8 +285,8 @@
 
   <!-- Main View Area -->
   <main id="workspace-main" class="main-content" tabindex="-1">
-    <!-- Shown only while a platform super admin views this workspace read-only -->
-    <kt-platform-view-banner />
+    <!-- Shown for the whole of a Kelto support session -->
+    <kt-support-banner />
     <div class="page-stage">
     @if (currentTab() === 'admissions') {
     <router-outlet />
