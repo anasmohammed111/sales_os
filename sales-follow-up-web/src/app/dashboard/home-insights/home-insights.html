@@ -53,6 +53,7 @@
       </ul>
       }
 
+      @if (canAssignLeads()) {
       <button type="button" class="row" [class.is-warn]="a.unassignedLeads > 0" (click)="open('/leads')">
         <span class="row-text">
           <strong>Unassigned leads</strong>
@@ -60,6 +61,7 @@
         </span>
         <span class="row-num">{{ a.unassignedLeads }}</span>
       </button>
+      }
       }
     </div>
     } @else {
@@ -164,9 +166,9 @@
       <button type="button" class="row" [class.is-warn]="!!feesOverdue()" (click)="open('/admissions/payments')">
         <span class="row-text">
           <strong>Fees overdue</strong>
-          <span>{{ feesOutstanding() ? 'Outstanding in total: ' + feesOutstanding() : 'Nothing outstanding' }}</span>
+          <span [title]="feesOutstanding()">{{ feesOutstanding() ? 'Outstanding in total: ' + feesOutstanding() : 'Nothing outstanding' }}</span>
         </span>
-        <span class="row-num row-num--money">{{ feesOverdue() || 'None' }}</span>
+        <span class="row-num row-num--money" [title]="feesOverdue()">{{ feesOverdue() || 'None' }}</span>
       </button>
       }
     </div>

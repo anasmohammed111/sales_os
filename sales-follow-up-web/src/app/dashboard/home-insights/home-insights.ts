@@ -25,6 +25,7 @@ export class HomeInsights {
 
   readonly canSeeLeads = computed(() => this.permissions.can('leads.view'));
   readonly canSeeFollowUps = computed(() => this.permissions.can('followups.view'));
+  readonly canAssignLeads = computed(() => this.permissions.can('leads.assign'));
   readonly canSeeQuotations = computed(() => this.permissions.can('quotations.view'));
   readonly canSeeFees = computed(() => this.permissions.can('admissions.payments'));
   readonly showAdmissions = computed(() => this.permissions.can('admissions.view') && this.admissions.context() !== null);
@@ -35,7 +36,7 @@ export class HomeInsights {
     const a = this.attention();
     if (!a) return false;
     const overdue = this.canSeeFollowUps() ? a.overdueFollowUps.count : 0;
-    const leads = this.canSeeLeads() ? a.neglectedLeads.count + a.unassignedLeads : 0;
+    const leads = (this.canSeeLeads() ? a.neglectedLeads.count : 0) + (this.canAssignLeads() ? a.unassignedLeads : 0);
     return overdue + leads === 0;
   });
 

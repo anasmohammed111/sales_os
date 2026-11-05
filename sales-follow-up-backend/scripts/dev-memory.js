@@ -19,6 +19,7 @@ const User = require('../src/models/User');
 const Lead = require('../src/models/Leads');
 const University = require('../src/models/University');
 const FollowUp = require('../src/models/FollowUp');
+const Quotation = require('../src/models/Quotation');
 const AdmissionApplication = require('../src/models/AdmissionApplication');
 const AdmissionFee = require('../src/models/AdmissionFee');
 const AdmissionDocument = require('../src/models/AdmissionDocument');
@@ -337,7 +338,48 @@ const seed = async () => {
         await syncRemindersForApplication(application._id);
     }
 
+    await seedSalesDemo(business, owner, counsellors);
+
     return { owner, manager, counsellors };
+};
+
+// Sales leads and quotations for the home dashboard's "Needs attention" and "Quotations" cards
+const seedSalesDemo = async (business, owner, [anu, rahul, divya]) => {
+    const lead = async (customerName, companyName, status, estimatedValue, assignee, idleDays = 0) => {
+        const doc = await Lead.create({ businessId: business._id, customerName, companyName, status, estimatedValue, source: 'REFERRAL', assignedTo: assignee?._id ?? null, createdBy: owner._id });
+        // Backdated past Mongoose's timestamps, so the lead reads as untouched
+        if (idleDays) await Lead.collection.updateOne({ _id: doc._id }, { $set: { updatedAt: ago(idleDays), createdAt: ago(idleDays + 5) } });
+        return doc;
+    };
+    const globex = await lead('Hannah Lee', 'Globex Training', 'NEGOTIATION', 18000, anu, 12);
+    await lead('Marcus Bell', 'Northwind Colleges', 'QUALIFIED', 9500, rahul, 9);
+    await lead('Priya Raman', 'Lumen Academy', 'CONTACTED', 4200, divya, 15);
+    const initech = await lead('Tom Fischer', 'Initech Learning', 'QUOTATION_SENT', 12500, anu);
+    await lead('Walk-in enquiry', '', 'NEW', 1500, null);
+
+    let n = 0;
+    const quote = (forLead, status, grandTotal, validInDays, extra = {}) =>
+        Quotation.create({
+            businessId: business._id,
+            leadId: forLead._id,
+            quotationNumber: `QT-2026-${String(++n).padStart(3, '0')}`,
+            customer: { name: forLead.companyName || forLead.customerName },
+            quotationDate: ago(20),
+            validUntil: new Date(Date.now() + validInDays * 24 * 60 * 60 * 1000),
+            items: [{ itemName: 'Counselling programme', quantity: 1, unitPrice: grandTotal, amount: grandTotal }],
+            subtotal: grandTotal,
+            grandTotal,
+            currency: 'USD',
+            status,
+            assignedTo: forLead.assignedTo,
+            createdBy: owner._id,
+            ...extra,
+        });
+    await quote(initech, 'SENT', 12500, 2, { sentAt: ago(12) });
+    await quote(globex, 'SENT', 18000, 5, { sentAt: ago(15) });
+    await quote(globex, 'SENT', 6400, 25, { sentAt: ago(3) });
+    await quote(initech, 'ACCEPTED', 3200, 10, { sentAt: ago(9), acceptedAt: new Date(Date.now() - 2 * 60 * 60 * 1000) });
+    await quote(globex, 'DRAFT', 2500, 30);
 };
 
 const main = async () => {
