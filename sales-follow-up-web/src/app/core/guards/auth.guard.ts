@@ -10,10 +10,10 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
-  // A super admin's read-only view has ended: back to the console
-  if (authService.platformView()) {
-    authService.exitPlatformView(null);
-    return router.createUrlTree(['/platform']);
+  // A Kelto support session has expired
+  if (authService.supportSession()) {
+    authService.exitSupportSession(null);
+    return router.createUrlTree(['/support/ended']);
   }
 
   authService.logout();

@@ -5,6 +5,7 @@ import { concat, last, Observable } from 'rxjs';
 import { toast } from 'ngx-sonner';
 import { AccountSettings, SettingsService } from '../core/services/settings.service';
 import { AuthService } from '../core/services/auth.service';
+import { SupportAccessCard } from './support-access/support-access';
 import { PermissionService } from '../core/services/permission.service';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -14,7 +15,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 @Component({
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, SupportAccessCard],
   selector: 'app-settings',
   styleUrl: './settings.scss',
   templateUrl: './settings.html',

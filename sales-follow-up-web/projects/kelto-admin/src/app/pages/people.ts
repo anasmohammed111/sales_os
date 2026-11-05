@@ -3,18 +3,20 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Paged, PlatformService, PlatformUser } from '../core/services/platform.service';
+import { AdminApi, Paged, PlatformUser } from '../core/admin-api';
+import { AdminSession } from '../core/admin-session';
+import { SupportDialog } from './support-dialog';
 
-/** Everyone with a Kelto account, across all workspaces. */
+/** Everyone with a Kelto account, across all companies. */
 @Component({
-  selector: 'kt-platform-users',
-  imports: [FormsModule, DatePipe, RouterLink],
+  selector: 'ka-people',
+  imports: [FormsModule, DatePipe, RouterLink, SupportDialog],
   template: `
     <section class="pf-page">
       <div class="pf-head">
         <div>
-          <h1>People</h1>
-          <p>Everyone with an account, in every workspace.</p>
+          <h1>Company users</h1>
+          <p>Everyone with an account, in every company.</p>
         </div>
       </div>
       <div class="pf-card">
@@ -32,7 +34,7 @@ import { Paged, PlatformService, PlatformUser } from '../core/services/platform.
             <div class="pf-scroll">
               <table class="pf-table">
                 <thead>
-                  <tr><th>Name</th><th>Email</th><th>Workspace</th><th>Role</th><th>Status</th><th>Joined</th></tr>
+                  <tr><th>Name</th><th>Email</th><th>Company</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr>
                 </thead>
                 <tbody>
                   @for (u of r.items; track u.id) {
@@ -41,7 +43,10 @@ import { Paged, PlatformService, PlatformUser } from '../core/services/platform.
                       <td>{{ u.email }}</td>
                       <td>
                         @if (u.workspace) {
-                          <a [routerLink]="['/platform/workspaces', u.workspace.id]">{{ u.workspace.businessName }}</a>
+                          <a [routerLink]="['/companies', u.workspace.id]">{{ u.workspace.businessName }}</a>
+                          @if (u.workspace.status !== 'ACTIVE') {
+                            <small>Suspended</small>
+                          }
                         } @else {
                           —
                         }
@@ -49,6 +54,11 @@ import { Paged, PlatformService, PlatformUser } from '../core/services/platform.
                       <td>{{ u.roleName }}</td>
                       <td><span class="pf-chip" [class.pf-chip--on]="u.isActive">{{ u.isActive ? 'Active' : 'Inactive' }}</span></td>
                       <td>{{ u.createdAt | date: 'd MMM y' }}</td>
+                      <td class="actions">
+                        @if (session.can('support.view') && u.isActive && u.workspace) {
+                          <button type="button" class="pf-btn pf-btn--sm" (click)="viewAs.set(u)">View as…</button>
+                        }
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -67,16 +77,22 @@ import { Paged, PlatformService, PlatformUser } from '../core/services/platform.
         }
       </div>
     </section>
+
+    @if (viewAs(); as u) {
+      <ka-support-dialog [companyId]="u.workspace!.id" [companyName]="u.workspace!.businessName" [people]="[u]"
+        initialMode="VIEW_USER" [initialUserId]="u.id" (closed)="viewAs.set(null)" />
+    }
   `,
-  styleUrl: './platform.scss',
-  styles: `.pf-table a { color: var(--kelto-brand-600); font-weight: 600; text-decoration: none; }`,
+  styles: `.pf-table a { font-weight: 600; text-decoration: none; }`,
 })
-export class PlatformUsers implements OnInit {
-  private readonly platform = inject(PlatformService);
+export class PeoplePage implements OnInit {
+  private readonly api = inject(AdminApi);
+  readonly session = inject(AdminSession);
 
   search = '';
   readonly result = signal<Paged<PlatformUser> | null>(null);
   readonly error = signal<string | null>(null);
+  readonly viewAs = signal<PlatformUser | null>(null);
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
@@ -93,7 +109,7 @@ export class PlatformUsers implements OnInit {
   }
 
   go(page: number): void {
-    this.platform.users(this.search.trim(), page).subscribe({
+    this.api.people(this.search.trim(), page).subscribe({
       next: (r) => {
         this.result.set(r);
         this.error.set(null);

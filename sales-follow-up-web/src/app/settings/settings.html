@@ -405,6 +405,10 @@
     </section>
     }
 
+    @if (permissions.isOwner() && !permissions.readOnly()) {
+    <kt-support-access />
+    }
+
     @if (s.features.admissions && permissions.can('admissions.settings')) {
     <section class="card wide link-card">
       <div class="card-title-lockup">

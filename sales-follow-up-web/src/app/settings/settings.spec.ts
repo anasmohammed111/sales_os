@@ -47,6 +47,10 @@ describe('Settings', () => {
     http.expectOne((r) => r.url.endsWith('/settings')).flush(settingsFor(role));
     await fixture.whenStable();
     fixture.detectChanges();
+    // Owners also see the "Kelto support access" card, which loads its state
+    http
+      .match((r) => r.url.endsWith('/settings/support-access'))
+      .forEach((r) => r.flush({ success: true, data: { editAllowedUntil: null, grantedBy: null, grantedAt: null, liveEditSessions: 0 } }));
   };
 
   const typeInto = async (selector: string, value: string) => {

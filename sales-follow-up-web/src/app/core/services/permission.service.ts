@@ -28,6 +28,8 @@ export class PermissionService {
 
   readonly roleName = computed(() => this.access()?.roleName ?? '');
   readonly isOwner = computed(() => !!this.access()?.isOwner);
+  /** A read-only Kelto support session: nothing can be changed */
+  readonly readOnly = computed(() => !!this.access()?.readOnly);
   readonly loaded = computed(() => this.access() !== null);
 
   /** Whether the person has a permission, e.g. can('leads.edit') */

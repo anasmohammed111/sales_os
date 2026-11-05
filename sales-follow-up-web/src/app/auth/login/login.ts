@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, GOOGLE_SIGNUP_REQUIRED } from '../../core/services/auth.service';
 import { GoogleAuthService } from '../../core/services/google-auth.service';
 
@@ -18,7 +18,10 @@ export class Login implements AfterViewInit {
 
   showPassword = signal(false);
   isLoading = signal(false);
-  errorMessage = signal<string | null>(null);
+  // Sent here after the company was suspended (see the auth interceptor)
+  errorMessage = signal<string | null>(
+    inject(ActivatedRoute).snapshot.queryParamMap.has('suspended') ? 'This workspace is suspended. Contact Kelto support.' : null
+  );
 
   readonly googleEnabled = this.googleAuthService.isConfigured;
   private googleButton = viewChild<ElementRef<HTMLElement>>('googleButton');

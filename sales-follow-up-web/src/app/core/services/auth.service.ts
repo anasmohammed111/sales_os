@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, map, switchMap, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AuthUser {
@@ -23,18 +23,24 @@ export interface UserAccess {
   isOwner: boolean;
   permissions: string[];
   scopes: Partial<Record<'leads' | 'followups' | 'quotations' | 'admissions', DataScope>>;
-  /** True while a platform super admin is looking at the workspace (nothing can be changed) */
+  /** True during a read-only Kelto support session (nothing can be changed) */
   readOnly?: boolean;
 }
 
-/** A super admin's read-only look inside one workspace */
-export interface PlatformViewInfo {
+export type SupportMode = 'VIEW_OWNER' | 'VIEW_USER' | 'SUPPORT_EDIT';
+
+/** A Kelto support session in this workspace (who is really here, and until when) */
+export interface SupportSessionInfo {
+  sessionId: string;
+  mode: SupportMode;
+  adminName: string;
   businessName: string;
+  targetUserName: string | null;
   expiresAt: string;
 }
 
-const VIEW_KEY = 'kelto_platform_view';
-/** The normal session that was open before a super admin view started */
+const SUPPORT_KEY = 'kelto_support_session';
+/** The normal session that was open before a support session started */
 const SAVED_KEY = 'kelto_saved_session';
 const AUTH_KEYS = ['auth_token', 'auth_user', 'auth_access'] as const;
 
@@ -116,8 +122,8 @@ export class AuthService {
   /** Set when Google sign-in finds no account, so the register page can finish signup. */
   readonly pendingGoogleSignup = signal<PendingGoogleSignup | null>(null);
 
-  /** Set while a platform super admin is viewing this workspace read-only */
-  readonly platformView = signal<PlatformViewInfo | null>(readJson<PlatformViewInfo>(VIEW_KEY));
+  /** Set while a Kelto support session is open in this tab */
+  readonly supportSession = signal<SupportSessionInfo | null>(readJson<SupportSessionInfo>(SUPPORT_KEY));
 
   register(payload: RegisterPayload): Observable<AuthData> {
     return this.http
@@ -226,27 +232,47 @@ export class AuthService {
   }
 
   /**
-   * Switches the app to a super admin's read-only view of a workspace. A
-   * normal session that was open is kept and comes back on exit.
+   * Opens a Kelto support session from the single-use code the admin app
+   * hands over: exchanges it, then loads who is being viewed. A normal session
+   * that was open in this browser is kept and comes back on exit.
    */
-  startPlatformView(view: { token: string; user: AuthUser; access: UserAccess; business: AuthBusiness; expiresAt: string }): void {
-    if (typeof localStorage === 'undefined') return;
-    if (!this.platformView()) {
-      const saved = Object.fromEntries(AUTH_KEYS.map((key) => [key, localStorage.getItem(key)]));
-      if (saved['auth_token']) localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
-      else localStorage.removeItem(SAVED_KEY);
-    }
-    const info: PlatformViewInfo = { businessName: view.business.businessName, expiresAt: view.expiresAt };
-    localStorage.setItem(VIEW_KEY, JSON.stringify(info));
-    this.platformView.set(info);
-    this.setSession({ token: view.token, user: view.user, business: view.business, access: view.access });
+  beginSupportSession(code: string): Observable<string> {
+    return this.http
+      .post<ApiResponse<{ token: string; landingPath: string }>>(`${environment.apiUrl}/support/exchange`, { code })
+      .pipe(
+        switchMap((exchange) => {
+          if (!this.supportSession()) {
+            const saved = Object.fromEntries(AUTH_KEYS.map((key) => [key, localStorage.getItem(key)]));
+            if (saved['auth_token']) localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
+            else localStorage.removeItem(SAVED_KEY);
+          }
+          localStorage.setItem('auth_token', exchange.data.token);
+          return this.http
+            .get<ApiResponse<{ user: AuthUser; access: UserAccess; business: AuthBusiness; support: SupportSessionInfo }>>(`${this.apiUrl}/me`)
+            .pipe(
+              map((me) => {
+                localStorage.setItem(SUPPORT_KEY, JSON.stringify(me.data.support));
+                this.supportSession.set(me.data.support);
+                this.setSession({ token: exchange.data.token, user: me.data.user, business: me.data.business, access: me.data.access });
+                return exchange.data.landingPath || '/dashboard';
+              })
+            );
+        })
+      );
   }
 
-  /** Leaves the read-only view: restores the previous session, or signs out of the workspace. */
-  exitPlatformView(goTo: string | null = '/platform'): void {
+  /** Leaves the support session: ends it on the server, restores any previous session. */
+  exitSupportSession(goTo: string | null = '/support/ended'): void {
+    const token = this.getToken();
+    if (token && typeof fetch === 'function') {
+      // keepalive: the request survives the reload below
+      fetch(`${environment.apiUrl}/support/end`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, keepalive: true }).catch(
+        () => undefined
+      );
+    }
     if (typeof localStorage !== 'undefined') {
       const saved = readJson<Record<string, string | null>>(SAVED_KEY);
-      localStorage.removeItem(VIEW_KEY);
+      localStorage.removeItem(SUPPORT_KEY);
       localStorage.removeItem(SAVED_KEY);
       for (const key of AUTH_KEYS) {
         const value = saved?.[key];
@@ -254,7 +280,7 @@ export class AuthService {
         else localStorage.removeItem(key);
       }
     }
-    this.platformView.set(null);
+    this.supportSession.set(null);
     this.currentUser.set(this.getUser());
     this.access.set(this.getStoredAccess());
     // A full reload so nothing cached from the viewed workspace survives
@@ -262,8 +288,8 @@ export class AuthService {
   }
 
   logout(): void {
-    if (this.platformView()) {
-      this.exitPlatformView();
+    if (this.supportSession()) {
+      this.exitSupportSession();
       return;
     }
     if (typeof localStorage !== 'undefined') {

@@ -83,6 +83,92 @@
           "builder": "@angular/build:unit-test"
         }
       }
+    },
+    "kelto-admin": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/kelto-admin",
+      "sourceRoot": "projects/kelto-admin/src",
+      "prefix": "ka",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/kelto-admin/src/main.ts",
+            "tsConfig": "projects/kelto-admin/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "kelto-mark.svg",
+                "input": "public"
+              },
+              {
+                "glob": "favicon.ico",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/styles/kelto-colors.css",
+              "projects/kelto-admin/src/styles.scss"
+            ],
+            "outputPath": "dist/kelto-admin"
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "30kB",
+                  "maximumError": "50kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "projects/kelto-admin/src/environments/environment.ts",
+                  "with": "projects/kelto-admin/src/environments/environment.development.ts"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 4400
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "kelto-admin:build:production"
+            },
+            "development": {
+              "buildTarget": "kelto-admin:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/kelto-admin/tsconfig.spec.json"
+          }
+        }
+      }
     }
   }
 }

@@ -26,6 +26,12 @@
     },
     {
       "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/kelto-admin/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/kelto-admin/tsconfig.spec.json"
     }
   ]
 }
