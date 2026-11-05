@@ -3,7 +3,7 @@
   "outputDirectory": "dist/staged",
   "rewrites": [
     {
-      "source": "/admin/(.*)",
+      "source": "/admin(/?.*)",
       "destination": "/admin/browser/index.html"
     },
     {
