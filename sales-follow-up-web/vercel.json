@@ -1,0 +1,14 @@
+{
+  "buildCommand": "node scripts/build-for-vercel.js",
+  "outputDirectory": "dist/staged",
+  "rewrites": [
+    {
+      "source": "/admin/(.*)",
+      "destination": "/admin/browser/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/browser/index.html"
+    }
+  ]
+}
