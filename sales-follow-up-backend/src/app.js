@@ -13,7 +13,8 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const homeDashboardRoutes = require('./routes/homeDashboardRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const platformRoutes = require('./routes/platformRoutes');
-const { platformViewGuard } = require('./middleware/platformAuth');
+const supportRoutes = require('./routes/supportRoutes');
+const { supportSessionGuard } = require('./middleware/platformAuth');
 
 const app = express();
 
@@ -63,10 +64,12 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// A super admin viewing a workspace may read, never write (before every route)
-app.use('/api', platformViewGuard);
+// Kelto support sessions: read-only modes never write, and no session may
+// touch sign-in, account, people or role settings (before every route)
+app.use('/api', supportSessionGuard);
 
 app.use('/api/platform', platformRoutes);
+app.use('/api/support', supportRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/follow-ups', followUpRoutes);

@@ -598,25 +598,18 @@ const resetPassword = async (req, res) => {
     }
 };
 
-/** A super admin viewing a workspace has no user there: describe them instead. */
-const platformViewProfile = (req) => ({
-    _id: req.user.platformAdminId,
-    id: req.user.platformAdminId,
-    name: `${req.user.platformAdminName} (super admin)`,
-    email: req.user.platformAdminEmail,
-    role: 'OWNER',
-    businessId: req.user.businessId,
-    isActive: true,
-    isPlatformView: true,
-});
-
 const getMe = async (req, res) => {
     try {
-        if (req.user.isPlatformView) {
-            const business = await Business.findById(req.user.businessId).select('businessName email phone address gstin');
+        // A Kelto support session: the person being viewed (read-only modes) or
+        // the administrator (support edit), plus who is really there
+        if (req.user.support) {
+            const [business, user] = await Promise.all([
+                Business.findById(req.user.businessId).select('businessName email phone address gstin'),
+                req.user.syntheticProfile ? null : User.findById(req.user.userId).select('-password -resetPasswordToken -resetPasswordExpires'),
+            ]);
             return res.status(200).json({
                 success: true,
-                data: { user: platformViewProfile(req), access: publicAccess(req), business },
+                data: { user: req.user.syntheticProfile || user, access: publicAccess(req), business, support: req.user.support },
             });
         }
 

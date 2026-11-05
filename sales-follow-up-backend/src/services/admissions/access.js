@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { isBusinessActive } = require('../businessStatus');
 const Business = require('../../models/Business');
 const User = require('../../models/User');
 const AdmissionApplication = require('../../models/AdmissionApplication');
@@ -23,9 +24,11 @@ const requireAdmissions = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid token claims' });
         }
 
-        const business = await Business.findById(req.user.businessId).select('businessName isActive features');
+        const business = await Business.findById(req.user.businessId).select('businessName status isActive features');
 
-        if (!business || !business.isActive || business.features?.admissions !== true) {
+        // authMiddleware already refused suspended companies; Kelto support may still look
+        const usable = isBusinessActive(business) || Boolean(req.user.support);
+        if (!business || !usable || business.features?.admissions !== true) {
             return res.status(404).json({ success: false, message: 'Admissions module is not enabled' });
         }
 

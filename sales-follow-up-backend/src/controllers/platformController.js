@@ -1,5 +1,5 @@
-// Platform console: super admins see every workspace. Reads only, apart from
-// switching workspace features, and every sign-in, view and change is audited.
+// Kelto admin app: companies, lifecycle, modules, support sessions, audit.
+// Every change is audited against the real administrator.
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const Business = require('../models/Business');
@@ -9,29 +9,39 @@ const FollowUp = require('../models/FollowUp');
 const AdmissionApplication = require('../models/AdmissionApplication');
 const PlatformAdmin = require('../models/PlatformAdmin');
 const PlatformAuditLog = require('../models/PlatformAuditLog');
+const SupportSession = require('../models/SupportSession');
+const { SUPPORT_MODES } = require('../models/SupportSession');
+const { DEFAULT_ROLES } = require('../services/access/catalog');
 const {
     MAX_FAILED_LOGINS,
     LOCK_MS,
-    VIEW_TTL_SECONDS,
-    VIEW_PERMISSIONS,
+    VIEW_SESSION_MINUTES,
+    EDIT_SESSION_MINUTES,
+    HANDOFF_SECONDS,
+    SUPPORT_EDIT_OPTIONS,
     signConsoleToken,
-    signViewToken,
+    hashCode,
+    newHandoffCode,
     createRateLimiter,
+    requestIp,
     audit,
 } = require('../services/platform');
-const { SCOPED_MODULES } = require('../services/access/catalog');
+const { roleOf, permissionsOf, PLATFORM_ROLES } = require('../services/platform/roles');
+const { businessStatus } = require('../services/businessStatus');
+const { invalidateBusiness } = require('../services/access');
 
 const fail = (res, status, message, extra = {}) => res.status(status).json({ success: false, message, ...extra });
 
 // 20 sign-in attempts per IP every 15 minutes
-let loginLimiter = createRateLimiter({ max: Number(process.env.PLATFORM_LOGIN_MAX) || 20, windowMs: 15 * 60 * 1000 });
+const LOGIN_MAX = () => Number(process.env.PLATFORM_LOGIN_MAX) || 20;
+let loginLimiter = createRateLimiter({ max: LOGIN_MAX(), windowMs: 15 * 60 * 1000 });
 const resetLoginLimiter = () => {
-    loginLimiter = createRateLimiter({ max: Number(process.env.PLATFORM_LOGIN_MAX) || 20, windowMs: 15 * 60 * 1000 });
+    loginLimiter = createRateLimiter({ max: LOGIN_MAX(), windowMs: 15 * 60 * 1000 });
 };
 
 // A real hash to compare against when the email is unknown (keeps timing alike)
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
-
+const MIN_PASSWORD = 12;
 const FEATURES = ['admissions'];
 
 const escapeRegex = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -46,13 +56,24 @@ const paging = (query, { defaultLimit = 25, maxLimit = 100 } = {}) => {
     const page = Math.max(Number.parseInt(query.page, 10) || 1, 1);
     return { limit, page, skip: (page - 1) * limit };
 };
+const reasonOf = (body) => (typeof body?.reason === 'string' ? body.reason.trim().slice(0, 500) : '');
 
-// --- Sign-in -----------------------------------------------------------------
+/** The signed-in administrator as the admin app sees them. */
+const adminView = (admin) => ({
+    id: String(admin._id ?? admin.id),
+    name: admin.name,
+    email: admin.email,
+    role: roleOf(admin),
+    roleName: PLATFORM_ROLES[roleOf(admin)].name,
+    permissions: permissionsOf(admin),
+    mustChangePassword: admin.mustChangePassword === true,
+});
+
+// --- Sign-in --------------------------------------------------------------------
 
 const login = async (req, res, next) => {
     try {
-        const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || '';
-        if (!loginLimiter(ip)) return fail(res, 429, 'Too many sign-in attempts. Try again in 15 minutes.');
+        if (!loginLimiter(requestIp(req))) return fail(res, 429, 'Too many sign-in attempts. Try again in 15 minutes.');
 
         const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
         const password = typeof req.body?.password === 'string' ? req.body.password : '';
@@ -93,22 +114,51 @@ const login = async (req, res, next) => {
 
         return res.json({
             success: true,
-            data: {
-                token: signConsoleToken(admin),
-                expiresInSeconds: 8 * 60 * 60,
-                admin: { id: admin._id, name: admin.name, email: admin.email },
-            },
+            data: { token: signConsoleToken(admin), expiresInSeconds: 8 * 60 * 60, admin: adminView(admin) },
         });
     } catch (error) {
         next(error);
     }
 };
 
-const me = (req, res) => res.json({ success: true, data: { admin: req.platformAdmin } });
+const me = async (req, res, next) => {
+    try {
+        const admin = await PlatformAdmin.findById(req.platformAdmin.id).select('name email role mustChangePassword');
+        return res.json({ success: true, data: { admin: adminView(admin) } });
+    } catch (error) {
+        next(error);
+    }
+};
 
-// --- Workspaces ----------------------------------------------------------------
+/** Change your own password. Signs out every other session and returns a fresh token. */
+const changePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newPassword } = req.body || {};
+        if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD || newPassword.length > 200) {
+            return fail(res, 400, `Choose a new password of at least ${MIN_PASSWORD} characters`);
+        }
+        const admin = await PlatformAdmin.findById(req.platformAdmin.id).select('+password');
+        if (!(await bcrypt.compare(String(currentPassword || ''), admin.password))) {
+            return fail(res, 400, 'Your current password is not correct');
+        }
+        if (await bcrypt.compare(newPassword, admin.password)) return fail(res, 400, 'Choose a password different from the current one');
 
-/** Per-workspace counts and last activity, for the given workspace ids. */
+        admin.password = await bcrypt.hash(newPassword, 12);
+        admin.mustChangePassword = false;
+        admin.passwordChangedAt = new Date();
+        admin.tokenVersion = (admin.tokenVersion || 0) + 1;
+        await admin.save();
+        await audit(req, { platformAdminId: admin._id, action: 'PASSWORD_CHANGED' });
+
+        return res.json({ success: true, message: 'Password changed', data: { token: signConsoleToken(admin), admin: adminView(admin) } });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- Companies --------------------------------------------------------------------
+
+/** Per-company counts and last activity, for the given company ids. */
 const workspaceStats = async (ids) => {
     const match = { businessId: { $in: ids } };
     const group = (extra = {}) => ({ $group: { _id: '$businessId', n: { $sum: 1 }, last: { $max: '$updatedAt' }, ...extra } });
@@ -132,14 +182,20 @@ const describeWorkspace = (business, stats) => {
     const s = stats.students.get(id);
     const f = stats.followUps.get(id);
     const times = [u?.last, l?.last, s?.last, f?.last].filter(Boolean).map((d) => new Date(d).getTime());
+    const editUntil = business.supportAccess?.editAllowedUntil;
     return {
         id,
         businessName: business.businessName,
         email: business.email || '',
         phone: business.phone || '',
-        isActive: business.isActive !== false,
+        status: businessStatus(business),
+        statusReason: business.statusReason || '',
+        statusChangedAt: business.statusChangedAt || null,
+        isActive: businessStatus(business) === 'ACTIVE',
         createdAt: business.createdAt,
         features: { admissions: business.features?.admissions === true },
+        // The owner's permission for support edits (null when not allowed now)
+        supportEditAllowedUntil: editUntil && editUntil > new Date() ? editUntil : null,
         counts: {
             users: u?.n ?? 0,
             activeUsers: u?.active ?? 0,
@@ -151,22 +207,25 @@ const describeWorkspace = (business, stats) => {
     };
 };
 
+const BUSINESS_FIELDS = 'businessName email phone status statusReason statusChangedAt isActive features supportAccess owner createdAt';
+
 const listWorkspaces = async (req, res, next) => {
     try {
-        const businesses = await Business.find(searchFilter(req.query.search, ['businessName', 'email']))
-            .select('businessName email phone isActive features createdAt')
-            .sort({ createdAt: -1 })
-            .limit(1000);
+        const filter = searchFilter(req.query.search, ['businessName', 'email']);
+        const businesses = await Business.find(filter).select(BUSINESS_FIELDS).sort({ createdAt: -1 }).limit(1000);
         const stats = await workspaceStats(businesses.map((b) => b._id));
-        const items = businesses.map((b) => describeWorkspace(b, stats));
+        let items = businesses.map((b) => describeWorkspace(b, stats));
+        const status = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : '';
+        if (['ACTIVE', 'SUSPENDED', 'ARCHIVED'].includes(status)) items = items.filter((w) => w.status === status);
         const totals = items.reduce(
             (sum, w) => ({
                 workspaces: sum.workspaces + 1,
                 users: sum.users + w.counts.users,
                 leads: sum.leads + w.counts.leads,
                 students: sum.students + w.counts.students,
+                suspended: sum.suspended + (w.status === 'SUSPENDED' ? 1 : 0),
             }),
-            { workspaces: 0, users: 0, leads: 0, students: 0 }
+            { workspaces: 0, users: 0, leads: 0, students: 0, suspended: 0 }
         );
         return res.json({ success: true, data: { items, totals } });
     } catch (error) {
@@ -174,13 +233,12 @@ const listWorkspaces = async (req, res, next) => {
     }
 };
 
-const findBusiness = (id) =>
-    mongoose.isValidObjectId(id) ? Business.findById(id).select('businessName email phone isActive features createdAt') : null;
+const findBusiness = (id) => (mongoose.isValidObjectId(id) ? Business.findById(id).select(BUSINESS_FIELDS) : null);
 
 const getWorkspace = async (req, res, next) => {
     try {
         const business = await findBusiness(req.params.id);
-        if (!business) return fail(res, 404, 'Workspace not found');
+        if (!business) return fail(res, 404, 'Company not found');
 
         const [stats, users] = await Promise.all([
             workspaceStats([business._id]),
@@ -197,7 +255,8 @@ const getWorkspace = async (req, res, next) => {
                     id: u._id,
                     name: u.name,
                     email: u.email,
-                    roleName: u.roleId?.name || u.role,
+                    roleName: u.roleId?.name || DEFAULT_ROLES[u.role]?.name || u.role,
+                    isOwner: u.role === 'OWNER' || String(business.owner) === String(u._id),
                     isActive: u.isActive !== false,
                     createdAt: u.createdAt,
                 })),
@@ -215,7 +274,7 @@ const listUsers = async (req, res, next) => {
         const [items, total] = await Promise.all([
             User.find(filter)
                 .select('name email role roleId isActive businessId createdAt')
-                .populate('businessId', 'businessName')
+                .populate('businessId', 'businessName status isActive')
                 .populate('roleId', 'name')
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -229,9 +288,11 @@ const listUsers = async (req, res, next) => {
                     id: u._id,
                     name: u.name,
                     email: u.email,
-                    roleName: u.roleId?.name || u.role,
+                    roleName: u.roleId?.name || DEFAULT_ROLES[u.role]?.name || u.role,
                     isActive: u.isActive !== false,
-                    workspace: u.businessId ? { id: u.businessId._id, businessName: u.businessId.businessName } : null,
+                    workspace: u.businessId
+                        ? { id: u.businessId._id, businessName: u.businessId.businessName, status: businessStatus(u.businessId) }
+                        : null,
                     createdAt: u.createdAt,
                 })),
                 total,
@@ -247,9 +308,10 @@ const listUsers = async (req, res, next) => {
 const updateFeatures = async (req, res, next) => {
     try {
         const business = await findBusiness(req.params.id);
-        if (!business) return fail(res, 404, 'Workspace not found');
+        if (!business) return fail(res, 404, 'Company not found');
 
         const body = req.body || {};
+        if (Object.keys(body).some((k) => !FEATURES.includes(k))) return fail(res, 400, `Only these can change: ${FEATURES.join(', ')}`);
         const changes = {};
         for (const feature of FEATURES) {
             if (body[feature] === undefined) continue;
@@ -257,7 +319,6 @@ const updateFeatures = async (req, res, next) => {
             const from = business.features?.[feature] === true;
             if (from !== body[feature]) changes[feature] = { from, to: body[feature] };
         }
-        if (Object.keys(body).some((k) => !FEATURES.includes(k))) return fail(res, 400, `Only these can change: ${FEATURES.join(', ')}`);
 
         for (const [feature, change] of Object.entries(changes)) {
             business.set(`features.${feature}`, change.to);
@@ -277,65 +338,238 @@ const updateFeatures = async (req, res, next) => {
     }
 };
 
-/** A one-hour, read-only token for looking inside the workspace. */
-const openWorkspace = async (req, res, next) => {
+/** Ends live support sessions (all, or only support edits) for a company or an administrator. */
+const endSessions = async (filter, { kind, id, reason, status = 'REVOKED' }) =>
+    SupportSession.updateMany(
+        { ...filter, status: 'ACTIVE' },
+        { $set: { status, endedAt: new Date(), endedBy: { kind, id }, endReason: reason } }
+    );
+
+const setLifecycle = (to, action) => async (req, res, next) => {
     try {
         const business = await findBusiness(req.params.id);
-        if (!business) return fail(res, 404, 'Workspace not found');
+        if (!business) return fail(res, 404, 'Company not found');
+        const reason = reasonOf(req.body);
+        if (reason.length < 5) return fail(res, 400, 'Give a reason (at least 5 characters)');
+        const from = businessStatus(business);
+        if (from === to) return fail(res, 409, `The company is already ${to.toLowerCase()}`);
+        if (from === 'ARCHIVED') return fail(res, 409, 'Archived companies cannot be changed here');
 
-        const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
-        if (reason.length < 5) return fail(res, 400, 'Say why you are opening this workspace (at least 5 characters)');
-        const path = typeof req.body?.path === 'string' ? req.body.path.slice(0, 200) : '';
+        business.set({
+            status: to,
+            isActive: to === 'ACTIVE',
+            statusReason: reason,
+            statusChangedAt: new Date(),
+            statusChangedBy: req.platformAdmin.id,
+        });
+        await business.save();
+        // Signed-in people are refused from their next request
+        invalidateBusiness(business._id);
+        if (to !== 'ACTIVE') {
+            await endSessions(
+                { businessId: business._id, mode: 'SUPPORT_EDIT' },
+                { kind: 'SYSTEM', id: null, reason: 'Company suspended' }
+            );
+        }
+        await audit(req, { platformAdminId: req.platformAdmin.id, action, businessId: business._id, reason, details: { from, to } });
 
-        const admin = await PlatformAdmin.findById(req.platformAdmin.id).select('name email');
-        await audit(req, {
-            platformAdminId: admin._id,
-            action: 'VIEW_WORKSPACE',
+        const stats = await workspaceStats([business._id]);
+        return res.json({ success: true, data: describeWorkspace(business, stats) });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const suspendWorkspace = setLifecycle('SUSPENDED', 'COMPANY_SUSPENDED');
+const reactivateWorkspace = setLifecycle('ACTIVE', 'COMPANY_REACTIVATED');
+
+// --- Support sessions -------------------------------------------------------------
+
+const LANDING = /^\/(dashboard|leads|follow-ups|pipeline|quotations|reports|team|settings|admissions(\/[a-z-]+)?)$/;
+
+const describeSession = (s) => ({
+    id: String(s._id),
+    mode: s.mode,
+    status: s.status === 'ACTIVE' && s.expiresAt <= new Date() ? 'EXPIRED' : s.status,
+    admin: s.platformAdminId?.name ? { id: String(s.platformAdminId._id), name: s.platformAdminId.name, email: s.platformAdminId.email } : null,
+    workspace: s.businessId?.businessName ? { id: String(s.businessId._id), businessName: s.businessId.businessName } : null,
+    targetUser: s.targetUserId?.name ? { id: String(s.targetUserId._id), name: s.targetUserId.name, email: s.targetUserId.email } : null,
+    reason: s.reason,
+    allowedPermissions: s.allowedPermissions || [],
+    startedAt: s.startedAt,
+    expiresAt: s.expiresAt,
+    endedAt: s.endedAt,
+    endReason: s.endReason,
+    writeCount: s.writeCount || 0,
+});
+
+const populateSession = (query) =>
+    query.populate('platformAdminId', 'name email').populate('businessId', 'businessName').populate('targetUserId', 'name email');
+
+/**
+ * Starts a support session and returns a single-use hand-off code for the CRM.
+ * One live session per administrator: starting another ends the previous one.
+ */
+const startSupportSession = async (req, res, next) => {
+    try {
+        const business = await findBusiness(req.params.id);
+        if (!business) return fail(res, 404, 'Company not found');
+
+        const body = req.body || {};
+        const mode = body.mode;
+        if (!SUPPORT_MODES.includes(mode)) return fail(res, 400, 'Choose how to open the company');
+        if (mode === 'SUPPORT_EDIT' && !req.platformAdmin.permissions.has('support.edit')) {
+            return fail(res, 403, 'Your administrator role does not allow support edits', { code: 'PLATFORM_PERMISSION_DENIED' });
+        }
+        const reason = reasonOf(body);
+        if (reason.length < 5) return fail(res, 400, 'Say why you are opening this company (at least 5 characters)');
+        const landingPath = typeof body.landingPath === 'string' && LANDING.test(body.landingPath) ? body.landingPath : '/dashboard';
+
+        let targetUserId = null;
+        let allowedPermissions = [];
+        let minutes = VIEW_SESSION_MINUTES;
+        const now = new Date();
+
+        if (mode === 'VIEW_USER') {
+            const user = mongoose.isValidObjectId(body.userId)
+                ? await User.findOne({ _id: body.userId, businessId: business._id }).select('isActive')
+                : null;
+            if (!user) return fail(res, 404, 'That person is not in this company');
+            if (user.isActive === false) return fail(res, 409, 'That person is deactivated');
+            targetUserId = user._id;
+        } else if (mode === 'VIEW_OWNER') {
+            const owner =
+                (business.owner && (await User.findOne({ _id: business.owner, businessId: business._id }).select('isActive'))) ||
+                (await User.findOne({ businessId: business._id, role: 'OWNER', isActive: { $ne: false } }).select('isActive'));
+            targetUserId = owner?.isActive === false ? null : owner?._id ?? null;
+        } else {
+            // SUPPORT_EDIT: only an active company whose owner allows it, and only listed operations
+            if (businessStatus(business) !== 'ACTIVE') return fail(res, 409, 'Support edits are not possible while the company is suspended');
+            const until = business.supportAccess?.editAllowedUntil;
+            if (!until || until <= now) {
+                return fail(res, 409, "The company owner hasn't allowed Kelto support to make changes", { code: 'OWNER_AUTHORIZATION_REQUIRED' });
+            }
+            const requested = Array.isArray(body.allowedPermissions) ? body.allowedPermissions : [];
+            allowedPermissions = [...new Set(requested.filter((p) => SUPPORT_EDIT_OPTIONS.includes(p)))];
+            if (!allowedPermissions.length || allowedPermissions.length !== new Set(requested).size) {
+                return fail(res, 400, 'Choose what this session may change (from the allowed list only)');
+            }
+            minutes = Math.min(EDIT_SESSION_MINUTES, Math.floor((until - now) / 60000));
+            if (minutes < 1) return fail(res, 409, "The owner's permission is about to end");
+        }
+
+        // No parallel or nested sessions
+        await endSessions(
+            { platformAdminId: req.platformAdmin.id },
+            { kind: 'ADMIN', id: req.platformAdmin.id, reason: 'Replaced by a new session', status: 'ENDED' }
+        );
+
+        const code = newHandoffCode();
+        const session = await SupportSession.create({
+            platformAdminId: req.platformAdmin.id,
             businessId: business._id,
+            mode,
+            targetUserId,
             reason,
-            details: { ...(path && { firstPath: path }) },
+            allowedPermissions,
+            landingPath,
+            expiresAt: new Date(now.getTime() + minutes * 60000),
+            handoffCodeHash: hashCode(code),
+            handoffExpiresAt: new Date(now.getTime() + HANDOFF_SECONDS * 1000),
+            ip: requestIp(req),
+            userAgent: String(req.headers['user-agent'] || '').slice(0, 300),
+        });
+        await audit(req, {
+            platformAdminId: req.platformAdmin.id,
+            action: 'SUPPORT_SESSION_STARTED',
+            businessId: business._id,
+            supportSessionId: session._id,
+            reason,
+            details: { mode, targetUserId, allowedPermissions, landingPath, minutes },
         });
 
-        return res.json({
+        const saved = await populateSession(SupportSession.findById(session._id));
+        return res.status(201).json({
             success: true,
-            data: {
-                token: signViewToken(admin, business._id),
-                expiresAt: new Date(Date.now() + VIEW_TTL_SECONDS * 1000),
-                business: { id: business._id, businessName: business.businessName },
-                user: {
-                    id: admin._id,
-                    name: `${admin.name} (super admin)`,
-                    email: admin.email,
-                    role: 'OWNER',
-                    businessId: business._id,
-                },
-                access: {
-                    roleId: null,
-                    roleKey: 'PLATFORM_VIEW',
-                    roleName: 'Super admin (read-only)',
-                    isOwner: true,
-                    permissions: VIEW_PERMISSIONS,
-                    scopes: Object.fromEntries(SCOPED_MODULES.map((m) => [m, 'all'])),
-                    readOnly: true,
-                },
-            },
+            data: { session: describeSession(saved), handoffCode: code, handoffExpiresAt: session.handoffExpiresAt },
         });
     } catch (error) {
         next(error);
     }
 };
 
+const listSupportSessions = async (req, res, next) => {
+    try {
+        const { limit, page, skip } = paging(req.query, { defaultLimit: 50, maxLimit: 200 });
+        const filter = {};
+        const status = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : '';
+        if (status === 'ACTIVE') Object.assign(filter, { status: 'ACTIVE', expiresAt: { $gt: new Date() } });
+        else if (['ENDED', 'REVOKED'].includes(status)) filter.status = status;
+        if (req.query.businessId) {
+            if (!mongoose.isValidObjectId(req.query.businessId)) return fail(res, 400, 'Invalid company');
+            filter.businessId = req.query.businessId;
+        }
+        const [items, total] = await Promise.all([
+            populateSession(SupportSession.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)),
+            SupportSession.countDocuments(filter),
+        ]);
+        return res.json({ success: true, data: { items: items.map(describeSession), total, page, limit } });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/** Ends a support session now. Your own: always; anyone's: sessions.revoke. */
+const revokeSupportSession = async (req, res, next) => {
+    try {
+        const session = mongoose.isValidObjectId(req.params.id) ? await SupportSession.findById(req.params.id) : null;
+        if (!session) return fail(res, 404, 'Support session not found');
+        const own = String(session.platformAdminId) === req.platformAdmin.id;
+        if (!own && !req.platformAdmin.permissions.has('sessions.revoke')) {
+            return fail(res, 403, 'Your administrator role does not allow this', { code: 'PLATFORM_PERMISSION_DENIED' });
+        }
+        if (!session.isLive()) return fail(res, 409, 'This session has already ended');
+
+        const reason = reasonOf(req.body) || (own ? 'Ended by the administrator' : '');
+        if (!own && reason.length < 5) return fail(res, 400, "Give a reason for ending someone else's session");
+        session.set({ status: own ? 'ENDED' : 'REVOKED', endedAt: new Date(), endedBy: { kind: 'ADMIN', id: req.platformAdmin.id }, endReason: reason });
+        await session.save();
+        await audit(req, {
+            platformAdminId: req.platformAdmin.id,
+            action: own ? 'SUPPORT_SESSION_ENDED' : 'SUPPORT_SESSION_REVOKED',
+            businessId: session.businessId,
+            supportSessionId: session._id,
+            reason,
+        });
+        const saved = await populateSession(SupportSession.findById(session._id));
+        return res.json({ success: true, data: describeSession(saved) });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const supportEditOptions = (req, res) => res.json({ success: true, data: { permissions: SUPPORT_EDIT_OPTIONS, maxMinutes: EDIT_SESSION_MINUTES } });
+
+// --- Audit ------------------------------------------------------------------------
+
 const listAudit = async (req, res, next) => {
     try {
         const { limit, page, skip } = paging(req.query, { defaultLimit: 50, maxLimit: 200 });
         const filter = {};
-        if (req.query.businessId) {
-            if (!mongoose.isValidObjectId(req.query.businessId)) return fail(res, 400, 'Invalid workspace');
-            filter.businessId = req.query.businessId;
+        for (const [param, field] of [
+            ['businessId', 'businessId'],
+            ['adminId', 'platformAdminId'],
+            ['supportSessionId', 'supportSessionId'],
+        ]) {
+            if (!req.query[param]) continue;
+            if (!mongoose.isValidObjectId(req.query[param])) return fail(res, 400, `Invalid ${param}`);
+            filter[field] = req.query[param];
         }
+        if (typeof req.query.action === 'string' && req.query.action) filter.action = req.query.action.toUpperCase();
         const [items, total] = await Promise.all([
             PlatformAuditLog.find(filter)
                 .populate('platformAdminId', 'name email')
+                .populate('targetAdminId', 'name email')
                 .populate('businessId', 'businessName')
                 .sort({ createdAt: -1, _id: -1 })
                 .skip(skip)
@@ -349,7 +583,9 @@ const listAudit = async (req, res, next) => {
                     id: e._id,
                     action: e.action,
                     admin: e.platformAdminId ? { id: e.platformAdminId._id, name: e.platformAdminId.name, email: e.platformAdminId.email } : null,
+                    targetAdmin: e.targetAdminId ? { id: e.targetAdminId._id, name: e.targetAdminId.name, email: e.targetAdminId.email } : null,
                     workspace: e.businessId ? { id: e.businessId._id, businessName: e.businessId.businessName } : null,
+                    supportSessionId: e.supportSessionId,
                     reason: e.reason,
                     details: e.details,
                     ip: e.ip,
@@ -368,11 +604,20 @@ const listAudit = async (req, res, next) => {
 module.exports = {
     login,
     me,
+    changePassword,
     listWorkspaces,
     getWorkspace,
     listUsers,
     updateFeatures,
-    openWorkspace,
+    suspendWorkspace,
+    reactivateWorkspace,
+    startSupportSession,
+    listSupportSessions,
+    revokeSupportSession,
+    supportEditOptions,
     listAudit,
+    endSessions,
+    adminView,
     resetLoginLimiter,
+    MIN_PASSWORD,
 };

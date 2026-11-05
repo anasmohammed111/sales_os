@@ -67,6 +67,20 @@ const businessSchema = new mongoose.Schema(
         },
 
         // Optional modules switched on per business (see scripts/admissions-enable.js)
+        // Lifecycle (see services/businessStatus.js). Left unset on older
+        // records, which fall back to isActive; isActive is kept in step.
+        status: { type: String, enum: ['ACTIVE', 'SUSPENDED', 'ARCHIVED'] },
+        statusReason: { type: String, trim: true, default: '', maxlength: 500 },
+        statusChangedAt: { type: Date, default: null },
+        statusChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'PlatformAdmin', default: null },
+
+        // The owner's permission for Kelto support to make changes (support-edit sessions)
+        supportAccess: {
+            editAllowedUntil: { type: Date, default: null },
+            grantedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+            grantedAt: { type: Date, default: null },
+        },
+
         features: {
             admissions: {
                 type: Boolean,

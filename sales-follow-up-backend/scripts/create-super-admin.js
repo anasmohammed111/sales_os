@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-// Manages platform super admins. This is the only way to create one: there is
-// deliberately no HTTP endpoint for it. Uses the database in .env (MONGO_URI).
+// Bootstraps Kelto platform administrators (the first super admin; after that,
+// super admins can also add administrators in the admin app). Uses the
+// database in .env (MONGO_URI).
 //
 //   node scripts/create-super-admin.js --email you@example.com --name "Your Name"
 //       creates the account and prints a strong random password once
+//   ... --role SUPPORT_ADMIN      role for the new account (default SUPER_ADMIN)
 //   ... --password-stdin          read the password from stdin instead (min 12 characters)
 //   node scripts/create-super-admin.js --reset-password --email you@example.com
 //   node scripts/create-super-admin.js --deactivate --email you@example.com
@@ -15,6 +17,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const PlatformAdmin = require('../src/models/PlatformAdmin');
+const { ROLE_KEYS, roleOf } = require('../src/services/platform/roles');
 
 const MIN_PASSWORD = 12;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,10 +72,10 @@ const databaseHost = (uri) => {
     await mongoose.connect(uri);
 
     if (listing) {
-        const admins = await PlatformAdmin.find().select('name email isActive lastLoginAt createdAt').sort({ createdAt: 1 });
+        const admins = await PlatformAdmin.find().select('name email role isActive lastLoginAt createdAt').sort({ createdAt: 1 });
         if (!admins.length) console.log('No super admins yet.');
         for (const a of admins) {
-            console.log(`${a.email.padEnd(36)} ${a.name.padEnd(24)} ${a.isActive ? 'active  ' : 'INACTIVE'} last sign-in ${a.lastLoginAt ? a.lastLoginAt.toISOString() : 'never'}`);
+            console.log(`${a.email.padEnd(36)} ${a.name.padEnd(24)} ${roleOf(a).padEnd(15)} ${a.isActive ? 'active  ' : 'INACTIVE'} last sign-in ${a.lastLoginAt ? a.lastLoginAt.toISOString() : 'never'}`);
         }
     } else if (flag('deactivate') || flag('activate')) {
         const isActive = flag('activate');
@@ -91,12 +94,14 @@ const databaseHost = (uri) => {
         if (generated) console.log(`New password (shown once, store it in a password manager): ${password}`);
     } else {
         if (!name) fail('give a --name');
+        const role = value('role') || 'SUPER_ADMIN';
+        if (!ROLE_KEYS.includes(role)) fail(`--role must be one of ${ROLE_KEYS.join(', ')}`);
         if (await PlatformAdmin.exists({ email })) fail(`${email} is already a super admin (use --reset-password to change the password)`);
         const { password, generated } = await newPassword();
-        await PlatformAdmin.create({ name, email, password: await bcrypt.hash(password, 12) });
-        console.log(`Super admin created: ${name} <${email}>`);
+        await PlatformAdmin.create({ name, email, role, password: await bcrypt.hash(password, 12) });
+        console.log(`Platform administrator created: ${name} <${email}> (${role})`);
         if (generated) console.log(`Password (shown once, store it in a password manager): ${password}`);
-        console.log('Sign in at /platform/login in the web app.');
+        console.log('Sign in to the Kelto admin app.');
     }
 
     await mongoose.disconnect();
