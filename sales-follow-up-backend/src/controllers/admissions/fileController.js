@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const AdmissionDocument = require('../../models/AdmissionDocument');
 const AdmissionFee = require('../../models/AdmissionFee');
+const Business = require('../../models/Business');
+const { isBusinessActive, suspendedResponse } = require('../../services/businessStatus');
 const { getStorage } = require('../../services/storage');
 const { readFileToken } = require('../../services/storage/uploads');
 const { contentDisposition } = require('../../services/storage/fileValidation');
@@ -35,6 +37,12 @@ const serveFile = async (req, res, next) => {
     try {
         const claims = readFileToken(req.params.token);
         if (!claims) return expired(res);
+
+        // Files of a suspended or archived company are not served either
+        const business = mongoose.isValidObjectId(claims.businessId)
+            ? await Business.findById(claims.businessId).select('status isActive').lean()
+            : null;
+        if (!isBusinessActive(business)) return suspendedResponse(res);
 
         const file = await findFile(claims);
         if (!file) return expired(res);

@@ -12,6 +12,8 @@
 const mongoose = require('mongoose');
 const Role = require('../../models/Role');
 const User = require('../../models/User');
+const Business = require('../../models/Business');
+const { businessStatus } = require('../businessStatus');
 const {
     DEFAULT_ROLES,
     normalizePermissions,
@@ -24,12 +26,19 @@ const {
 // ---------------------------------------------------------------------------
 
 const CACHE_MS = 15_000;
-const cache = new Map(); // userId -> { at, access }
+const cache = new Map(); // userId -> { at, access, businessId }
 
 /** Forget cached access (after a role or a person changes), so it applies now */
 const invalidateAccess = (userId = null) => {
     if (userId) cache.delete(String(userId));
     else cache.clear();
+};
+
+/** Forget cached access for everyone in a business (after a suspension, for example) */
+const invalidateBusiness = (businessId) => {
+    for (const [userId, entry] of cache) {
+        if (entry.businessId === String(businessId)) cache.delete(userId);
+    }
 };
 
 const describe = (role) => ({
@@ -57,14 +66,18 @@ const loadAccess = async (userId, businessId) => {
         return null;
     }
 
-    let role = null;
-    if (user.roleId) role = await Role.findOne({ _id: user.roleId, businessId }).lean();
-    if (!role) role = DEFAULT_ROLES[user.role] || DEFAULT_ROLES.SALESPERSON;
+    const [found, business] = await Promise.all([
+        user.roleId ? Role.findOne({ _id: user.roleId, businessId }).lean() : null,
+        Business.findById(businessId).select('status isActive').lean(),
+    ]);
+    let role = found || DEFAULT_ROLES[user.role] || DEFAULT_ROLES.SALESPERSON;
     // The Owner role always belongs to the owner type, whatever the record says
     if (user.role === 'OWNER') role = { ...role, key: 'OWNER' };
 
-    const access = { ...describe(role), legacyRole: user.role };
-    cache.set(String(userId), { at: Date.now(), access });
+    // The company's lifecycle status travels with the access: authMiddleware
+    // refuses every request while it is not ACTIVE
+    const access = { ...describe(role), legacyRole: user.role, businessStatus: businessStatus(business) };
+    cache.set(String(userId), { at: Date.now(), access, businessId: String(businessId) });
     return access;
 };
 
@@ -74,10 +87,10 @@ const publicAccess = (req) => ({
     roleKey: req.user.roleKey,
     roleName: req.user.roleName,
     isOwner: req.user.isOwner,
-    // A super admin's read-only view is told only the read permissions
+    // A support session is told only what it may use (read-only views: reading)
     permissions: [...(req.user.clientPermissions || req.user.permissions || [])],
     scopes: req.user.scopes,
-    readOnly: req.user.isPlatformView === true,
+    readOnly: req.user.readOnly === true,
 });
 
 // ---------------------------------------------------------------------------
@@ -228,6 +241,7 @@ const backfillUserRoles = async (businessId) => {
 module.exports = {
     loadAccess,
     invalidateAccess,
+    invalidateBusiness,
     publicAccess,
     can,
     deny,
