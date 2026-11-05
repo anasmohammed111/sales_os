@@ -224,17 +224,6 @@
       color: var(--kelto-brand-400);
     }
   }
-
-  &.nav-item-disabled {
-    cursor: default;
-    color: var(--kelto-neutral-500);
-    opacity: 0.8;
-
-    &:hover {
-      background: transparent;
-      color: var(--kelto-neutral-500);
-    }
-  }
 }
 
 .nav-text {
@@ -247,34 +236,12 @@
   padding: 2px 7px;
   border-radius: 12px;
 
-  &.active-pill {
-    background: var(--kelto-sidebar-active);
-    color: var(--kelto-text-on-brand);
-  }
-
-  &.count-pill {
-    background: var(--kelto-neutral-800);
-    color: var(--kelto-neutral-300);
-  }
-
   &.urgent-pill {
     min-width: 22px;
     text-align: center;
     background: rgba(229, 96, 62, 0.18);
     color: var(--kelto-brand-300);
   }
-}
-
-.nav-soon {
-  padding: 2px 7px;
-  border: 1px solid var(--kelto-neutral-700);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--kelto-neutral-500);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 /* Sidebar User */
@@ -1051,30 +1018,6 @@
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-
-  &.highlight-card {
-    background: linear-gradient(135deg, var(--kelto-brand-50) 0%, #f0fdf4 100%);
-    border-color: var(--kelto-brand-200);
-
-    .highlight-icon {
-      font-size: 18px;
-      margin-bottom: 6px;
-    }
-
-    h4 {
-      margin: 0 0 6px;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--kelto-brand-900);
-    }
-
-    p {
-      margin: 0;
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--kelto-brand-800);
-    }
-  }
 }
 
 .rail-header {
@@ -1164,14 +1107,6 @@
 
   &.green {
     background: #10b981;
-  }
-
-  &.blue {
-    background: var(--kelto-brand-500);
-  }
-
-  &.purple {
-    background: #8b5cf6;
   }
 }
 
@@ -1368,26 +1303,6 @@
 
         .mobile-menu-chevron {
           color: #94a3b8;
-        }
-      }
-
-      .btn-mobile-logout {
-        width: 34px;
-        height: 34px;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        background: #ffffff;
-        color: #64748b;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.15s ease;
-
-        &:hover, &:active {
-          background: #fef2f2;
-          color: #dc2626;
-          border-color: #fecaca;
         }
       }
     }
@@ -1769,18 +1684,6 @@
           color: #94a3b8;
           flex-shrink: 0;
         }
-
-        .sheet-soon-pill {
-          padding: 3px 8px;
-          border: 1px solid #e2e8f0;
-          border-radius: 999px;
-          background: #ffffff;
-          color: #64748b;
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-        }
       }
     }
 
@@ -1859,7 +1762,6 @@
   }
 
   /* Filter pill bar on mobile */
-  .filter-bar,
   .filter-pills {
     display: flex;
     overflow-x: auto;
@@ -1869,11 +1771,6 @@
 
     &::-webkit-scrollbar {
       display: none;
-    }
-
-    .filter-chip {
-      white-space: nowrap;
-      flex-shrink: 0;
     }
   }
 }
@@ -2003,18 +1900,6 @@
     scrollbar-color: rgba(148, 163, 184, 0.34) transparent;
   }
 
-  .nav-open-hint {
-    display: inline-flex;
-    color: var(--kelto-neutral-500);
-    transition: color 0.15s ease, transform 0.15s ease;
-  }
-
-  .nav-item:hover .nav-open-hint,
-  .nav-item.active .nav-open-hint {
-    color: var(--kelto-brand-300);
-    transform: translateX(2px);
-  }
-
   .sidebar-user {
     padding: 7px;
   }
@@ -2043,10 +1928,6 @@
   .user-profile-link {
     flex: none;
     padding: 0;
-  }
-
-  .nav-open-hint {
-    display: none;
   }
 }
 
@@ -2111,4 +1992,116 @@
   height: 100%;
   border-radius: 7px;
   object-fit: contain;
+}
+
+// Admissions group: its pages listed under it in the sidebar
+.nav-group-chevron {
+  display: inline-flex;
+  color: var(--kelto-neutral-500);
+  transition: transform 0.18s ease, color 0.15s ease;
+}
+
+.nav-group-toggle {
+  &.is-open .nav-group-chevron {
+    transform: rotate(180deg);
+  }
+
+  &.in-section .nav-icon-wrap {
+    color: var(--kelto-brand-400);
+  }
+
+  &:hover .nav-group-chevron {
+    color: var(--kelto-neutral-0);
+  }
+}
+
+.nav-sublist {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 6px 25px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-subitem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--kelto-neutral-400);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  .nav-subicon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--kelto-neutral-500);
+  }
+
+  &:hover {
+    background: rgba(30, 41, 59, 0.7);
+    color: var(--kelto-neutral-0);
+
+    .nav-subicon {
+      color: var(--kelto-neutral-0);
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &.active {
+    background: var(--kelto-neutral-800);
+    color: var(--kelto-neutral-0);
+    font-weight: 600;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      left: -11px;
+      width: 2px;
+      border-radius: 999px;
+      background: var(--kelto-sidebar-active);
+    }
+
+    .nav-subicon {
+      color: var(--kelto-brand-400);
+    }
+  }
+}
+
+// Icon-only sidebar: each admissions page shows as its own icon
+.sidebar.collapsed {
+  .nav-group-chevron {
+    display: none;
+  }
+
+  .nav-sublist {
+    margin: 2px 0 6px;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .nav-subitem {
+    justify-content: center;
+    padding-inline: 5px;
+
+    &.active::before {
+      left: -5px;
+    }
+  }
 }

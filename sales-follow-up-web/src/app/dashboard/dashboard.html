@@ -159,19 +159,58 @@
 
       @if (admissionsEnabled()) {
       <div class="nav-section-title"><span>Student journey</span></div>
-      <button type="button" class="nav-item" [class.active]="currentTab() === 'admissions'"
-        [attr.aria-current]="currentTab() === 'admissions' ? 'page' : null" (click)="goAdmissions('overview')"
+      <!-- Admissions: a group listing its pages (the top tab bar shows only on phones and tablets) -->
+      <button type="button" class="nav-item nav-group-toggle"
+        [class.active]="currentTab() === 'admissions' && !admissionsOpen()"
+        [class.in-section]="currentTab() === 'admissions'" [class.is-open]="admissionsOpen()"
+        [attr.aria-expanded]="admissionsOpen()" aria-controls="admissions-pages" (click)="toggleAdmissions()"
         title="Admissions">
         <span class="nav-icon-wrap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg>
         </span>
         <span class="nav-text">Admissions</span>
-        <span class="nav-open-hint" aria-hidden="true">
+        <span class="nav-group-chevron" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-            stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </span>
       </button>
+      @if (admissionsOpen()) {
+      <div class="nav-sublist" id="admissions-pages" role="group" aria-label="Admissions pages">
+        @for (link of admissionsLinks(); track link.path) {
+        <button type="button" class="nav-subitem" [class.active]="isAdmissionsPath(link.path)"
+          [attr.aria-current]="isAdmissionsPath(link.path) ? 'page' : null" (click)="goAdmissions(link.path)"
+          [title]="link.label">
+          <span class="nav-subicon">
+            @switch (link.path) {
+              @case ('overview') {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+              }
+              @case ('pipeline') {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="5" height="18" rx="1"></rect><rect x="10" y="3" width="5" height="12" rx="1"></rect><rect x="17" y="3" width="4" height="8" rx="1"></rect></svg>
+              }
+              @case ('students') {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              }
+              @case ('assessments') {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+              }
+              @case ('tasks') {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+              }
+              @case ('payments') {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+              }
+              @case ('settings') {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+              }
+            }
+          </span>
+          <span class="nav-text">{{ link.label }}</span>
+        </button>
+        }
+      </div>
+      }
       }
 
       <div class="nav-section-title"><span>Manage</span></div>

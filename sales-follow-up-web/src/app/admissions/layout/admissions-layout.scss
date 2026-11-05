@@ -68,3 +68,11 @@
     display: none;
   }
 }
+
+/* On desktop the admissions pages are listed in the app sidebar; the tab bar
+   stays for phones and tablets, where the sidebar is hidden */
+@media (min-width: 1025px) {
+  .subnav {
+    display: none;
+  }
+}

@@ -94,20 +94,27 @@ export class Dashboard {
         // Still loading or retrying: show it if it was on last time
         (this.admissions.contextState() === 'loading' && this.admissions.wasEnabled()))
   );
-  readonly admissionsLinks = [
-    { path: 'overview', label: 'Overview' },
-    { path: 'pipeline', label: 'Admissions pipeline' },
-    { path: 'students', label: 'Students' },
-    { path: 'tasks', label: 'My tasks' },
-    { path: 'payments', label: 'Payments' },
-  ];
+  /** The admissions pages, listed under Admissions in the sidebar */
+  readonly admissionsLinks = computed(() => [
+    { path: 'overview', label: 'Overview', title: 'Admissions' },
+    { path: 'pipeline', label: 'Pipeline', title: 'Admissions pipeline' },
+    { path: 'students', label: 'Students', title: 'Students' },
+    { path: 'assessments', label: 'Interviews & exams', title: 'Interviews & exams' },
+    { path: 'tasks', label: 'My tasks', title: 'My tasks' },
+    ...(this.permissions.can('admissions.payments') ? [{ path: 'payments', label: 'Payments', title: 'Payments' }] : []),
+    ...(this.permissions.can('admissions.settings')
+      ? [{ path: 'settings', label: 'Settings', title: 'Admissions settings' }]
+      : []),
+  ]);
+  /** Whether the Admissions group in the sidebar is unfolded */
+  readonly admissionsOpen = signal(this.router.url.startsWith('/admissions'));
 
   currentTab = signal<DashboardTab>(tabForUrl(this.router.url));
   user = this.authService.currentUser;
   currentPageLabel = computed(() => {
     if (this.currentTab() === 'admissions') {
-      const section = this.admissionsLinks.find((link) => this.router.url.startsWith(`/admissions/${link.path}`));
-      return section?.label ?? 'Admissions';
+      const section = this.admissionsLinks().find((link) => this.router.url.startsWith(`/admissions/${link.path}`));
+      return section?.title ?? 'Admissions';
     }
 
     const labels: Record<DashboardTab, string> = {
@@ -177,6 +184,24 @@ export class Dashboard {
     this.isMobileMoreOpen.set(false);
     this.router.navigate(['/admissions', path]);
   }
+
+  /**
+   * The Admissions group header: from elsewhere it opens Admissions; inside
+   * Admissions it folds the list of pages in or out.
+   */
+  toggleAdmissions(): void {
+    if (this.currentTab() !== 'admissions') {
+      this.admissionsOpen.set(true);
+      this.goAdmissions('overview');
+      return;
+    }
+    this.admissionsOpen.update((open) => !open);
+  }
+
+  /** Arriving on an admissions page unfolds the group */
+  private readonly openAdmissionsGroup = effect(() => {
+    if (this.currentTab() === 'admissions') untracked(() => this.admissionsOpen.set(true));
+  });
 
   isAdmissionsPath(path: string): boolean {
     return this.currentTab() === 'admissions' && this.router.url.startsWith(`/admissions/${path}`);
