@@ -6,6 +6,7 @@ const Business = require('../models/Business');
 const { generateToken } = require('../services/authService');
 const { sendMail } = require('../services/mailer');
 const { loadAccess, publicAccess, ensureDefaultRoles, invalidateAccess } = require('../services/access');
+const { ensureDefaultPipeline, STANDARD_STAGES } = require('../services/pipelines');
 
 /** What a person may do, sent with every sign-in so the app can show the right buttons */
 const accessFor = async (user) => {
@@ -129,6 +130,7 @@ const register = async (req, res) => {
         business.owner = user._id;
         await business.save();
         await giveOwnerRole(business, user);
+        await ensureDefaultPipeline(business._id, { stages: STANDARD_STAGES });
 
         const token = generateToken(user);
         const access = await accessFor(user);

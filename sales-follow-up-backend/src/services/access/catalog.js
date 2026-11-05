@@ -107,6 +107,7 @@ const MODULES = [
         actions: [
             { key: 'business', label: 'Change business details, logo and name' },
             { key: 'roles', label: 'Create and edit roles and permissions' },
+            { key: 'pipelines', label: 'Set up pipelines and stages' },
         ],
     },
 ];
@@ -121,6 +122,7 @@ const REQUIRES = {
     'admissions.override': ['admissions.move'],
     'team.edit': ['team.view'],
     'settings.roles': ['team.view'],
+    'settings.pipelines': ['pipeline.view'],
 };
 
 /**
@@ -177,6 +179,7 @@ const DEFAULT_ROLES = {
             'team.delete',
             'settings.business',
             'settings.roles',
+            'settings.pipelines',
         ]),
         scopes: normalizeScopes({}, 'team'),
     },
@@ -198,6 +201,7 @@ const DEFAULT_ROLES = {
             'team.delete',
             'settings.business',
             'settings.roles',
+            'settings.pipelines',
         ]),
         scopes: normalizeScopes({}, 'own'),
     },

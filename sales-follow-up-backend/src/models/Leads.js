@@ -96,22 +96,10 @@ const leadSchema = new mongoose.Schema(
             default: null,
         },
 
+        // The key of the lead's stage in its pipeline (see models/Pipeline.js)
         status: {
             type: String,
-            enum: [
-                'NEW',
-                'CONTACTED',
-                'QUALIFIED',
-                'QUOTATION_SENT',
-                'NEGOTIATION',
-                'WON',
-                'ADMISSIONS',
-                'ON_HOLD',
-                'CLOSED',
-                'NO_LONGER_REQUIRED',
-                'UNRESPONSIVE',
-                'LOST',
-            ],
+            match: /^[A-Z0-9_]{1,40}$/,
             default: 'NEW',
             index: true,
         },
@@ -214,6 +202,7 @@ leadSchema.index({
 });
 
 // Duplicate-student warnings match on normalised email and phone
+leadSchema.index({ businessId: 1, pipelineId: 1, status: 1 });
 leadSchema.index({ businessId: 1, email: 1 });
 leadSchema.index({ businessId: 1, phoneDigits: 1 });
 
