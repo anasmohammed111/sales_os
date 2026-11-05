@@ -20,6 +20,7 @@ import { Reports } from '../reports/reports';
 import { RolesSettings } from '../settings/roles/roles-settings';
 import { PermissionService } from '../core/services/permission.service';
 import { CanDirective } from '../shared/can/can.directive';
+import { PlatformViewBanner } from '../shared/platform-view-banner/platform-view-banner';
 
 type DashboardTab =
   | 'dashboard'
@@ -71,7 +72,7 @@ const tabForUrl = (url: string): DashboardTab =>
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Reports, Settings, RolesSettings, NotificationBell, CanDirective],
+  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Reports, Settings, RolesSettings, NotificationBell, CanDirective, PlatformViewBanner],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

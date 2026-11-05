@@ -87,6 +87,12 @@ export const routes: Routes = [
     ],
   },
   {
+    // Platform super admin console: its own sign-in, every workspace
+    path: 'platform',
+    loadChildren: () =>
+      import('./platform/platform.routes').then((m) => m.PLATFORM_ROUTES),
+  },
+  {
     path: 'auth',
     title: 'Account | Kelto',
     loadChildren: () =>
