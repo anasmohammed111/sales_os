@@ -724,7 +724,8 @@
                                         <td class="col-amount text-right">
                                             <span class="live-item-total">
                                                 {{ getItemCalculations($any(itemCtrl)).amount |
-                                                currency:(quotationForm.get('currency')?.value || 'INR'):'symbol':'1.2-2' }}
+                                                currency:(quotationForm.get('currency')?.value ||
+                                                'INR'):'symbol':'1.2-2' }}
                                             </span>
                                         </td>
 
@@ -744,6 +745,7 @@
                                 </tbody>
                             </table>
                         </div>
+
 
                         <!-- Add Item Action Bar -->
                         <div class="items-action-bar">
