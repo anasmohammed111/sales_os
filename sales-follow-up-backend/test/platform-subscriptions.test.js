@@ -74,6 +74,41 @@ test('billing roles manage plans and subscriptions while support roles cannot', 
     assert.strictEqual(company.body.data.subscription.status, 'TRIALING');
 });
 
+test("a plan's modules switch on for the company, and a plan without Admissions switches it off", async () => {
+    const business = await h.makeBusiness({ name: 'FlowOne', admissions: false });
+    const owner = await h.makeUser(business, { role: 'OWNER' });
+    const root = as(await tokenFor('root@kelto.test', 'SUPER_ADMIN'));
+    const growth = (await root.post('/platform/plans', planPayload())).body.data.plan.id;
+    const starter = (await root.post('/platform/plans', planPayload({ key: 'STARTER', name: 'Starter', modules: ['crm'] }))).body.data.plan.id;
+    const subscription = (body) => root.put(`/platform/workspaces/${business._id}/subscription`, body);
+    // What the CRM asks before it shows the Admissions menu
+    const crmAdmissions = async () => (await request(app).get('/api/admissions/context').set(h.auth(owner))).status;
+
+    assert.strictEqual(await crmAdmissions(), 404);
+
+    const assigned = await subscription({ planId: growth, status: 'ACTIVE', reason: 'Signed up for Growth' });
+    assert.strictEqual(assigned.status, 201, JSON.stringify(assigned.body));
+    assert.deepStrictEqual(assigned.body.data.modulesChanged, { admissions: { from: false, to: true } });
+    assert.strictEqual(await crmAdmissions(), 200);
+    const logged = await PlatformAuditLog.findOne({ action: 'FEATURE_CHANGED', businessId: business._id }).lean();
+    assert.deepStrictEqual(
+        [logged.details.feature, logged.details.to, logged.details.source, logged.details.planKey, logged.reason],
+        ['admissions', true, 'subscription', 'GROWTH', 'Signed up for Growth']
+    );
+
+    const downgraded = await subscription({ planId: starter, reason: 'Moved to Starter' });
+    assert.strictEqual(downgraded.status, 200, JSON.stringify(downgraded.body));
+    assert.deepStrictEqual(downgraded.body.data.modulesChanged, { admissions: { from: true, to: false } });
+    assert.strictEqual(await crmAdmissions(), 404);
+
+    // Switched on by hand while on Starter: an edit that keeps the plan leaves it alone
+    assert.strictEqual((await root.patch(`/platform/workspaces/${business._id}/features`, { admissions: true })).status, 200);
+    const noted = await subscription({ notes: 'Pilot of Admissions agreed', reason: 'Added a note' });
+    assert.strictEqual(noted.status, 200, JSON.stringify(noted.body));
+    assert.deepStrictEqual(noted.body.data.modulesChanged, {});
+    assert.strictEqual(await crmAdmissions(), 200);
+});
+
 test('subscriptions preserve assigned prices, enforce lifecycle and feed the SaaS dashboard', async () => {
     const business = await h.makeBusiness({ name: 'Acme Study Abroad' });
     const root = as(await tokenFor('root@kelto.test', 'SUPER_ADMIN'));

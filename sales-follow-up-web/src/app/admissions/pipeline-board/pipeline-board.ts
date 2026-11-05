@@ -17,6 +17,7 @@ import { MoveRequest, StageMoveDialog } from '../shared/stage-move-dialog';
 import { menuOpensUp } from '../../core/utils/menu-placement';
 import { PermissionService } from '../../core/services/permission.service';
 import { CanDirective } from '../../shared/can/can.directive';
+import { ColumnSearch } from '../../shared/column-search/column-search';
 
 interface Column extends StageRef {
   order: number;
@@ -103,6 +104,25 @@ export class PipelineBoard implements OnInit {
         };
       });
   });
+
+  /** A search box inside each column, narrowing that column's students */
+  readonly columnSearch = new ColumnSearch();
+  readonly visibleItems = computed(
+    () =>
+      new Map(
+        this.columns().map((col) => [
+          col.key,
+          this.columnSearch.apply(col.key, col.items, (a) => [
+            a.student.name,
+            a.student.phone,
+            a.student.email,
+            a.student.city,
+            a.finalChoice?.universityName,
+            a.finalChoice?.courseName,
+          ]),
+        ])
+      )
+  );
 
   readonly activeStages = computed(() => this.columns().filter((c) => !c.isArchived));
   readonly selectedColumn = computed(() => {

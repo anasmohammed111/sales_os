@@ -272,10 +272,41 @@ const TRANSITIONS = {
     EXPIRED: new Set(['ACTIVE', 'TRIALING']),
 };
 
+// Plan modules that are switches on the company ('crm' is always on)
+const SWITCHED_MODULES = ['admissions'];
+const IN_USE = ['TRIALING', 'ACTIVE', 'PAST_DUE'];
+
+/**
+ * The company gets the modules its plan includes. Moving to a plan without a
+ * module switches it off (its data is kept); other edits never switch one off,
+ * so a module turned on by hand under Modules survives a note or date change.
+ */
+const applyPlanModules = async (req, business, { modules, planKey, planChanged, status, reason }) => {
+    const changes = {};
+    for (const feature of SWITCHED_MODULES) {
+        const from = business.features?.[feature] === true;
+        const included = modules.includes(feature);
+        const to = included && IN_USE.includes(status) ? true : planChanged && !included ? false : from;
+        if (to !== from) changes[feature] = { from, to };
+    }
+    for (const [feature, change] of Object.entries(changes)) {
+        business.set(`features.${feature}`, change.to);
+        await audit(req, {
+            platformAdminId: req.platformAdmin.id,
+            action: 'FEATURE_CHANGED',
+            businessId: business._id,
+            reason,
+            details: { feature, ...change, source: 'subscription', planKey },
+        });
+    }
+    if (Object.keys(changes).length) await business.save();
+    return changes;
+};
+
 const saveSubscription = async (req, res, next) => {
     try {
         if (!validId(req.params.id)) return fail(res, 404, 'Company not found');
-        const business = await Business.findById(req.params.id).select('businessName email status isActive');
+        const business = await Business.findById(req.params.id).select('businessName email status isActive features');
         if (!business) return fail(res, 404, 'Company not found');
         const body = req.body || {};
         const reason = typeof body.reason === 'string' ? body.reason.trim().slice(0, 500) : '';
@@ -405,9 +436,18 @@ const saveSubscription = async (req, res, next) => {
                 cancelAtPeriodEnd,
             },
         });
+        const modulesChanged = await applyPlanModules(req, business, {
+            modules: commercialSnapshot.modules || [],
+            planKey: plan.key,
+            planChanged,
+            status,
+            reason,
+        });
         await subscription.populate('businessId', 'businessName email status isActive');
         await subscription.populate('planId', 'key name status');
-        return res.status(existing ? 200 : 201).json({ success: true, data: { subscription: subscriptionView(subscription) } });
+        return res
+            .status(existing ? 200 : 201)
+            .json({ success: true, data: { subscription: subscriptionView(subscription), modulesChanged } });
     } catch (error) {
         if (error.code === 11000) return fail(res, 409, 'This company already has a subscription');
         next(error);

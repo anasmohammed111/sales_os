@@ -62,6 +62,7 @@ interface SubscriptionForm {
           </div>
         </div>
         @if (error()) { <p class="pf-error">{{ error() }}</p> }
+        @if (notice()) { <p class="pf-note" role="status">{{ notice() }}</p> }
         @else if (loading()) { <p class="pf-empty">Loading subscriptions…</p> }
         @else if (!items().length) {
           <div class="empty"><span>◎</span><h2>No subscriptions match</h2><p>{{ search || status || plan ? 'Clear a filter or search for another company.' : 'Assign a plan to a company to begin.' }}</p>
@@ -153,6 +154,8 @@ export class SubscriptionsPage implements OnInit, OnDestroy {
   readonly form = signal<SubscriptionForm | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
+  /** Modules the last save switched on or off for the company */
+  readonly notice = signal<string | null>(null);
   readonly statuses: SubscriptionStatus[] = ['TRIALING', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED'];
   readonly statusLabel = STATUS_LABEL;
   search = '';
@@ -220,9 +223,14 @@ export class SubscriptionsPage implements OnInit, OnDestroy {
     if (f.currentPeriodStart) body.currentPeriodStart = f.currentPeriodStart;
     if (f.currentPeriodEnd) body.currentPeriodEnd = f.currentPeriodEnd;
     if (f.status === 'TRIALING' && f.trialEndsAt) body.trialEndsAt = f.trialEndsAt;
-    this.saving.set(true); this.saveError.set(null);
+    this.saving.set(true); this.saveError.set(null); this.notice.set(null);
+    const company = this.companies().find((c) => c.id === f.companyId)?.businessName ?? 'the company';
     this.api.saveSubscription(f.companyId, body).subscribe({
-      next: () => { this.saving.set(false); this.form.set(null); this.companyFocus = ''; this.loadCompaniesAndSubscriptions(); },
+      next: ({ modulesChanged }) => {
+        this.saving.set(false); this.form.set(null); this.companyFocus = ''; this.loadCompaniesAndSubscriptions();
+        const changes = Object.entries(modulesChanged ?? {}).map(([module, c]) => `${module[0].toUpperCase()}${module.slice(1)} switched ${c.to ? 'on' : 'off'}`);
+        if (changes.length) this.notice.set(`${changes.join(', ')} for ${company}, following its plan.`);
+      },
       error: (e: HttpErrorResponse) => { this.saving.set(false); this.saveError.set(e.error?.message || 'The subscription could not be saved.'); },
     });
   }

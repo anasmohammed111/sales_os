@@ -72,5 +72,6 @@ describe('Login navigation', () => {
     http.match(() => true).forEach((request) => request.error(new ProgressEvent('error')));
 
     expect(router.url).toBe('/dashboard');
-  });
+    // Lazy-loads the whole dashboard chunk: ~2.5s alone, past the 5s default when every spec runs at once
+  }, 15000);
 });

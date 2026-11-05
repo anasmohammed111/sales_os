@@ -216,10 +216,52 @@
             </span>
           </div>
 
-          <div class="stage-total-val" [class.won-val]="stage.id === 'WON'" [class.lost-val]="stage.id === 'LOST'">
-            {{ stage.totalEstimatedValue | currency:currency():'symbol-narrow':'1.0-0' }}
+          <div class="column-header-actions">
+            <div class="stage-total-val" [class.won-val]="stage.id === 'WON'" [class.lost-val]="stage.id === 'LOST'">
+              {{ stage.totalEstimatedValue | currency:currency():'symbol-narrow':'1.0-0' }}
+            </div>
+            <button type="button" class="column-search-btn" [class.is-active]="columnSearch.isOpen(stage.id)"
+              (click)="columnSearch.toggle(stage.id)" [attr.aria-expanded]="columnSearch.isOpen(stage.id)"
+              [attr.aria-controls]="columnSearch.inputId(stage.id)" [title]="'Search in ' + stage.name"
+              [attr.aria-label]="'Search in ' + stage.name">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
           </div>
         </div>
+
+        @if (columnSearch.isOpen(stage.id)) {
+        <div class="column-search">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="search" [id]="columnSearch.inputId(stage.id)" [value]="columnSearch.value(stage.id)"
+            (input)="columnSearch.set(stage.id, $any($event.target).value)" (keydown.escape)="columnSearch.close(stage.id)"
+            [placeholder]="'Search ' + stage.name + '…'" autocomplete="off"
+            [attr.aria-label]="'Search leads in ' + stage.name" />
+          <button type="button" class="column-search-close" (click)="columnSearch.close(stage.id)"
+            aria-label="Close search">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        @if (columnSearch.isFiltering(stage.id)) {
+        <p class="column-search-note" aria-live="polite">
+          {{ visibleLeads().get(stage.id)?.length ?? 0 }} of {{ stage.leads.length }} match
+          @if (stage.totalLeads > stage.leads.length) {
+          &middot; the first {{ stage.leads.length }} of {{ stage.totalLeads }} are searched here; the search bar above searches them all
+          }
+        </p>
+        }
+        }
 
         <!-- Vertical Stack of Lead Cards with Independent Scrolling -->
         <div class="column-cards-scroll">
@@ -242,7 +284,7 @@
           </div>
           } @else {
           <!-- Lead Cards List -->
-          @for (lead of stage.leads; track lead._id) {
+          @for (lead of visibleLeads().get(stage.id) ?? stage.leads; track lead._id) {
           <div class="lead-card" [class.lead-card-won]="stage.id === 'WON'" [class.lead-card-lost]="stage.id === 'LOST'"
             [attr.draggable]="canMove() ? 'true' : null" (dragstart)="onDragStart($event, lead)" (dragend)="onDragEnd()"
             (click)="openLeadDetails(lead)" (keydown.enter)="$event.target === $event.currentTarget && openLeadDetails(lead)"
@@ -399,6 +441,10 @@
               </button>
             </div>
             }
+          </div>
+          } @empty {
+          <div class="column-empty-state">
+            <span class="empty-stage-text">No leads here match “{{ columnSearch.value(stage.id).trim() }}”.</span>
           </div>
           }
           }

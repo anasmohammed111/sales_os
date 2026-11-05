@@ -263,7 +263,10 @@ export class AdminApi {
     return this.get<Paged<Subscription>>('/subscriptions', query);
   }
   saveSubscription(companyId: string, body: SubscriptionInput) {
-    return this.put<{ subscription: Subscription }>(`/workspaces/${companyId}/subscription`, body);
+    return this.put<{ subscription: Subscription; modulesChanged?: Record<string, { from: boolean; to: boolean }> }>(
+      `/workspaces/${companyId}/subscription`,
+      body
+    );
   }
 
   // Companies

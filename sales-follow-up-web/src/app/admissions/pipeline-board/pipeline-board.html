@@ -214,18 +214,59 @@
                 <h3 class="stage-name" [title]="col.name">{{ col.name }}</h3>
                 <span class="stage-count-badge">{{ col.items.length }}</span>
               </div>
-              @if (col.stuck) {
-                <span class="stage-flag" [title]="col.stuck + ' past the time limit for this stage'">{{ col.stuck }} stuck</span>
-              }
+              <div class="column-header-actions">
+                @if (col.stuck) {
+                  <span class="stage-flag" [title]="col.stuck + ' past the time limit for this stage'">{{ col.stuck }} stuck</span>
+                }
+                <button type="button" class="column-search-btn" [class.is-active]="columnSearch.isOpen(col.key)"
+                  (click)="columnSearch.toggle(col.key)" [attr.aria-expanded]="columnSearch.isOpen(col.key)"
+                  [attr.aria-controls]="columnSearch.inputId(col.key)" [title]="'Search in ' + col.name"
+                  [attr.aria-label]="'Search in ' + col.name">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </button>
+              </div>
             </div>
+            @if (columnSearch.isOpen(col.key)) {
+              <div class="column-search">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="search" [id]="columnSearch.inputId(col.key)" [value]="columnSearch.value(col.key)"
+                  (input)="columnSearch.set(col.key, $any($event.target).value)" (keydown.escape)="columnSearch.close(col.key)"
+                  [placeholder]="'Search ' + col.name + '…'" autocomplete="off" [attr.aria-label]="'Search students in ' + col.name" />
+                <button type="button" class="column-search-close" (click)="columnSearch.close(col.key)" aria-label="Close search">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+              @if (columnSearch.isFiltering(col.key)) {
+                <p class="column-search-note" aria-live="polite">
+                  {{ visibleItems().get(col.key)?.length ?? 0 }} of {{ col.items.length }} match
+                </p>
+              }
+            }
             @if (col.isArchived) {
               <p class="column-note">Archived stage. Move these students on.</p>
             }
 
             <div class="column-cards-scroll">
-              @for (app of col.items; track app.id) {
+              @for (app of visibleItems().get(col.key) ?? col.items; track app.id) {
                 <ng-container *ngTemplateOutlet="card; context: { $implicit: app, drag: true }" />
               } @empty {
+                @if (columnSearch.isFiltering(col.key)) {
+                  <div class="column-empty-state">
+                    <span class="empty-stage-text">No students here match “{{ columnSearch.value(col.key).trim() }}”.</span>
+                  </div>
+                } @else {
                 <div class="column-empty-state">
                   <div class="empty-stage-icon">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -239,6 +280,7 @@
                     <span class="empty-stage-hint">Drag students here</span>
                   }
                 </div>
+                }
               }
             </div>
           </section>

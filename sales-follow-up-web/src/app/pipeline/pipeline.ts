@@ -12,6 +12,7 @@ import { menuOpensUp } from '../core/utils/menu-placement';
 import { PermissionService } from '../core/services/permission.service';
 import { RoleService } from '../core/services/role.service';
 import { CanDirective } from '../shared/can/can.directive';
+import { ColumnSearch } from '../shared/column-search/column-search';
 import { AuthService, AuthUser } from '../core/services/auth.service';
 import { TeamMember, TeamService } from '../core/services/team.service';
 import {
@@ -166,6 +167,18 @@ export class Pipeline implements OnInit {
   canManageTeam = computed(() => this.permissions.scope('leads') !== 'own');
   /** Moving cards (drag, arrow or menu) follows "pipeline.move" */
   readonly canMove = computed(() => this.permissions.can('pipeline.move'));
+
+  /** A search box inside each column, narrowing the cards that column has loaded */
+  readonly columnSearch = new ColumnSearch();
+  readonly visibleLeads = computed(
+    () =>
+      new Map(
+        this.stages().map((stage) => [
+          stage.id,
+          this.columnSearch.apply(stage.id, stage.leads, (l) => [l.customerName, l.companyName, l.email, l.phone, l.interestedIn]),
+        ])
+      )
+  );
 
   hasActiveFilters = computed(() => {
     return (

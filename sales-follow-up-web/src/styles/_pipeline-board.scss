@@ -537,6 +537,121 @@ button.summary-card {
   min-width: 0;
 }
 
+/* ---- Search inside a column ---------------------------------------------- */
+
+.column-header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.column-search-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--kelto-neutral-400);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--kelto-border);
+    background: var(--kelto-bg);
+    color: var(--kelto-text);
+  }
+
+  &.is-active {
+    border-color: var(--kelto-brand-200);
+    background: var(--kelto-brand-50);
+    color: var(--kelto-brand-600);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.column-search {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  margin: 10px 10px 0;
+  padding: 0 5px 0 10px;
+  border: 1px solid var(--kelto-border-strong);
+  border-radius: 9px;
+  background: var(--kelto-bg);
+  color: var(--kelto-neutral-400);
+  animation: column-search-in 0.16s ease-out;
+
+  &:focus-within {
+    border-color: var(--kelto-brand-400);
+    box-shadow: var(--focus-ring);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--kelto-text);
+    font: inherit;
+    font-size: 13px;
+
+    // The box around it already shows focus
+    &:focus-visible {
+      box-shadow: none;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.column-search-close {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--kelto-neutral-400);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--kelto-bg-muted);
+    color: var(--kelto-text);
+  }
+}
+
+.column-search-note {
+  flex-shrink: 0;
+  margin: 6px 12px 0;
+  color: var(--kelto-text-subtle);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+@keyframes column-search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 .stage-dot {
   flex-shrink: 0;
   width: 8px;
