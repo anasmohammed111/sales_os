@@ -23,6 +23,7 @@ const AdmissionApplication = require('../src/models/AdmissionApplication');
 const AdmissionFee = require('../src/models/AdmissionFee');
 const AdmissionDocument = require('../src/models/AdmissionDocument');
 const AdmissionActivity = require('../src/models/AdmissionActivity');
+const PlatformAdmin = require('../src/models/PlatformAdmin');
 const { runMigrations } = require('../src/migrations');
 const { ensureConfig, getActiveStages } = require('../src/services/admissions/configService');
 const { buildChecklist, setItemStatus, isApplicable, checkRule } = require('../src/services/admissions/checklist');
@@ -82,6 +83,9 @@ const seed = async () => {
     const rahul = await mk('Rahul Counsellor', 'rahul@syb.test', 'SALESPERSON', manager._id);
     const divya = await mk('Divya Counsellor', 'divya@syb.test', 'SALESPERSON');
     const counsellors = [anu, rahul, divya];
+
+    // Demo-only platform super admin, to try the /platform console
+    await PlatformAdmin.create({ name: 'Demo Super Admin', email: 'superadmin@kelto.test', password });
 
     const config = await ensureConfig(business._id);
     const stages = getActiveStages(config);
@@ -293,6 +297,7 @@ const main = async () => {
     app.listen(port, () => {
         console.log(`[dev:memory] Demo API on http://localhost:${port} with ${STUDENTS.length} synthetic students.`);
         console.log('[dev:memory] Sign in: admin@syb.test / Password123 (also manager@, anu@, rahul@, divya@ syb.test).');
+        console.log('[dev:memory] Super admin console: /platform/login with superadmin@kelto.test / Password123.');
         console.log('[dev:memory] Data disappears when you stop this process.');
     });
     startAdmissionsReminderJob();
