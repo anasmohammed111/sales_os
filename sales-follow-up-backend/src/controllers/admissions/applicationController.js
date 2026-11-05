@@ -24,6 +24,7 @@ const { buildApplicationQuery, toDate } = require('../../services/admissions/fil
 const { serializeApplication, serializeApplicationDetail } = require('../../services/admissions/serialize');
 const { logActivity } = require('../../services/admissions/activity');
 const reminders = require('../../services/admissions/reminders');
+const { raiseFees } = require('../../services/admissions/feeSchedule');
 
 const COUNSELLOR_FIELDS = 'name email role isActive';
 const ASSESSMENT_REVIEW_REASONS = ['Interview failed', 'Entrance exam failed', 'Interview and entrance exam failed'];
@@ -196,6 +197,7 @@ const createApplication = async (req, res, next) => {
             type: 'APPLICATION_CREATED',
             message: `Application created: ${application.studyLevel === 'MASTER' ? "Master's" : "Bachelor's"}, intake ${application.intakeMonth}/${application.intakeYear}`,
         });
+        await raiseFees({ req, application, config, event: { type: 'STAGES_ENTERED', stageKeys: [firstStage.key] }, now });
 
         const saved = await loadForResponse(application._id);
         return res.status(201).json({
@@ -326,6 +328,14 @@ const updateApplication = async (req, res, next) => {
         const application = await findApplicationInScope(req, req.params.id);
         if (!application) return fail(res, 404, 'Student application not found');
 
+        // Fee conditions read these; fees whose condition becomes true are added after saving
+        const before = {
+            studyLevel: application.studyLevel,
+            assessment: {
+                interviewRequired: application.assessment?.interviewRequired ?? null,
+                examRequired: application.assessment?.examRequired ?? null,
+            },
+        };
         const changes = [];
 
         if (body.student !== undefined) {
@@ -413,6 +423,7 @@ const updateApplication = async (req, res, next) => {
         if (!changes.length) return fail(res, 400, 'Nothing to update');
 
         await application.save();
+        await raiseFees({ req, application, config, event: { type: 'CONDITIONS_CHANGED', before } });
         await reminders.syncRemindersForApplication(application._id);
 
         const type = body.assessment !== undefined && changes.length === 1

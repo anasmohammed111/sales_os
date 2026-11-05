@@ -1,5 +1,14 @@
 const mongoose = require('mongoose');
-const { CONDITIONS, RULES, GATES, PAYMENT_CATEGORIES } = require('../services/admissions/defaultConfig');
+const {
+    CONDITIONS,
+    RULES,
+    GATES,
+    PAYMENT_CATEGORIES,
+    FEE_TRIGGERS,
+    FEE_CONDITIONS,
+    FEE_HOLDS,
+} = require('../services/admissions/defaultConfig');
+const { CURRENCIES } = require('../services/admissions/money');
 
 const KEY_PATTERN = /^[a-z0-9_]{2,60}$/;
 
@@ -32,6 +41,29 @@ const stageSchema = new mongoose.Schema(
     { _id: false }
 );
 
+// One entry of the fee list: what is charged, at which step, and what waits for it
+const feeScheduleSchema = new mongoose.Schema(
+    {
+        key: { type: String, required: true, match: KEY_PATTERN },
+        name: { type: String, required: true, trim: true, maxlength: 120 },
+        category: { type: String, enum: PAYMENT_CATEGORIES, required: true },
+        // null: differs per student, entered on the student's payments
+        amountMinor: { type: Number, min: 1, default: null },
+        currency: { type: String, enum: CURRENCIES, default: 'INR' },
+        stageKey: { type: String, required: true },
+        trigger: { type: String, enum: FEE_TRIGGERS, default: 'STAGE_ENTERED' },
+        triggerItemKey: { type: String, default: null },
+        condition: { type: String, enum: [...FEE_CONDITIONS, null], default: null },
+        dueInDays: { type: Number, min: 0, max: 365, default: 7 },
+        hold: { type: String, enum: FEE_HOLDS, default: 'NONE' },
+        holdItemKey: { type: String, default: null },
+        autoCompleteItem: { type: Boolean, default: false },
+        refundable: { type: Boolean, default: false },
+        isArchived: { type: Boolean, default: false },
+    },
+    { _id: false }
+);
+
 const admissionConfigSchema = new mongoose.Schema(
     {
         businessId: {
@@ -42,6 +74,8 @@ const admissionConfigSchema = new mongoose.Schema(
         },
 
         stages: [stageSchema],
+
+        fees: [feeScheduleSchema],
 
         documentTypes: [
             {

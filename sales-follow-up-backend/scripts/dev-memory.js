@@ -218,7 +218,7 @@ const seed = async () => {
             const agency = new AdmissionFee({
                 businessId: business._id,
                 applicationId: application._id,
-                category: 'AGENCY_FEE',
+                category: 'SERVICE_FEE',
                 amountDueMinor: 15000000,
                 currency: 'INR',
                 dueDate: index % 4 === 0 ? ago(6) : ahead(15),
@@ -233,7 +233,7 @@ const seed = async () => {
             await AdmissionFee.create({
                 businessId: business._id,
                 applicationId: application._id,
-                category: 'NOSTRIFICATION_FEE',
+                category: 'STUDENT_EXPENSE',
                 amountDueMinor: 300000,
                 currency: 'CZK',
                 dueDate: ahead(7),

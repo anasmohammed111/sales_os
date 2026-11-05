@@ -6,6 +6,8 @@ const { can } = require('../../services/access');
 const { getActiveStages } = require('../../services/admissions/configService');
 const { logActivity } = require('../../services/admissions/activity');
 const reminders = require('../../services/admissions/reminders');
+const { itemFeeHold } = require('../../services/admissions/feeRules');
+const { raiseFees, stagesEntered } = require('../../services/admissions/feeSchedule');
 const { getApplication } = require('./applicationController');
 
 const STATUS_WORDS = { COMPLETED: 'completed', NOT_APPLICABLE: 'not applicable', PENDING: 'pending' };
@@ -19,7 +21,12 @@ const updateChecklistItem = async (req, res, next) => {
         if (!application) return fail(res, 404, 'Student application not found');
         if (application.status !== 'ACTIVE') return fail(res, 409, 'This application is closed');
 
-        syncChecklist(application, req.admissionsConfig);
+        const config = req.admissionsConfig;
+        syncChecklist(application, config);
+        if (status === 'COMPLETED') {
+            const held = itemFeeHold(application, config, req.params.itemKey);
+            if (held) return fail(res, 400, held, { code: 'PAYMENT_REQUIRED' });
+        }
         const result = setItemStatus(application, req.params.itemKey, { status, reason, userId: req.user.userId });
         if (!result.ok) return fail(res, result.status, result.message);
 
@@ -33,6 +40,10 @@ const updateChecklistItem = async (req, res, next) => {
             message: `"${result.entry.label}" marked ${STATUS_WORDS[status]}${why}`,
             meta: { itemKey: result.entry.itemKey, from: result.previous, to: status },
         });
+
+        if (status === 'COMPLETED' && result.previous !== 'COMPLETED') {
+            await raiseFees({ req, application, config, event: { type: 'ITEM_COMPLETED', itemKey: result.entry.itemKey } });
+        }
 
         return getApplication(req, res, next);
     } catch (error) {
@@ -81,6 +92,14 @@ const changeStage = async (req, res, next) => {
                 overriddenItems: result.overriddenItems,
             },
         });
+        if (result.direction === 'FORWARD') {
+            await raiseFees({
+                req,
+                application,
+                config: req.admissionsConfig,
+                event: { type: 'STAGES_ENTERED', stageKeys: stagesEntered(req.admissionsConfig, fromStageKey, result.to.key) },
+            });
+        }
         await reminders.syncRemindersForApplication(application._id);
 
         return getApplication(req, res, next);
@@ -139,7 +158,6 @@ const recordVisaOutcome = async (req, res, next) => {
         }
 
         await application.save();
-        await reminders.syncRemindersForApplication(application._id);
 
         await logActivity({
             req,
@@ -150,6 +168,10 @@ const recordVisaOutcome = async (req, res, next) => {
                 : `Visa ${outcome === 'APPROVED' ? 'approved' : 'rejected'}`,
             meta: { from: previous, to: outcome },
         });
+        if (outcome === 'APPROVED' && previous !== 'APPROVED') {
+            await raiseFees({ req, application, config, event: { type: 'VISA_APPROVED' }, now });
+        }
+        await reminders.syncRemindersForApplication(application._id);
 
         return getApplication(req, res, next);
     } catch (error) {

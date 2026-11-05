@@ -1,6 +1,7 @@
 const University = require('../../models/University');
 const { getAllStages } = require('../../services/admissions/configService');
 const { isAdmin, getAssignableCounsellors } = require('../../services/admissions/access');
+const { formatMinor } = require('../../services/admissions/money');
 
 /** Configuration as clients see it: stages in order, archived entries flagged. */
 const serializeConfig = (config) => ({
@@ -20,6 +21,24 @@ const serializeConfig = (config) => ({
             paymentCategory: item.paymentCategory,
             isArchived: item.isArchived,
         })),
+    })),
+    fees: (config.fees || []).map((fee) => ({
+        key: fee.key,
+        name: fee.name,
+        category: fee.category,
+        amountMinor: fee.amountMinor ?? null,
+        amount: fee.amountMinor ? formatMinor(fee.amountMinor) : '',
+        currency: fee.currency,
+        stageKey: fee.stageKey,
+        trigger: fee.trigger,
+        triggerItemKey: fee.triggerItemKey ?? null,
+        condition: fee.condition ?? null,
+        dueInDays: fee.dueInDays,
+        hold: fee.hold,
+        holdItemKey: fee.holdItemKey ?? null,
+        autoCompleteItem: fee.autoCompleteItem === true,
+        refundable: fee.refundable === true,
+        isArchived: fee.isArchived === true,
     })),
     documentTypes: config.documentTypes,
     leadSources: config.leadSources,

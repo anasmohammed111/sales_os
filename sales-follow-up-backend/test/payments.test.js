@@ -29,7 +29,7 @@ const setup = async () => {
 
 const addFee = (user, applicationId, body = {}) =>
     api(user).post(`/applications/${applicationId}/fees`, {
-        category: 'AGENCY_FEE',
+        category: 'SERVICE_FEE',
         amountDue: '1000',
         currency: 'INR',
         dueDate: new Date(Date.now() + 10 * DAY).toISOString(),
@@ -162,7 +162,7 @@ test('payment tracker is scoped, filterable and totals by currency', async () =>
     const { owner, counsellorA, counsellorB, applicationId } = await setup();
     const inr = (await addFee(counsellorA, applicationId, { amountDue: '1000', currency: 'INR' })).body.data;
     await addFee(counsellorA, applicationId, {
-        category: 'NOSTRIFICATION_FEE',
+        category: 'STUDENT_EXPENSE',
         amountDue: '200',
         currency: 'EUR',
         dueDate: new Date(Date.now() - 2 * DAY).toISOString(),
@@ -184,7 +184,7 @@ test('payment tracker is scoped, filterable and totals by currency', async () =>
     assert.strictEqual((await api(counsellorB).get('/payments')).body.data.items.length, 0);
     assert.strictEqual((await api(owner).get('/payments', { status: 'OVERDUE' })).body.data.items.length, 1);
     assert.strictEqual((await api(owner).get('/payments', { status: 'PARTIALLY_PAID' })).body.data.items.length, 1);
-    assert.strictEqual((await api(owner).get('/payments', { category: 'NOSTRIFICATION_FEE' })).body.data.items.length, 1);
+    assert.strictEqual((await api(owner).get('/payments', { category: 'STUDENT_EXPENSE' })).body.data.items.length, 1);
 
     const application = await AdmissionApplication.findById(applicationId);
     assert.ok(application.paymentSummary.nextDueAt < new Date(), 'overdue fee drives nextDueAt');

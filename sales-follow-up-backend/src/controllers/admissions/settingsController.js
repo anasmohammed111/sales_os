@@ -1,7 +1,17 @@
 const mongoose = require('mongoose');
 const University = require('../../models/University');
 const AdmissionApplication = require('../../models/AdmissionApplication');
-const { CONDITIONS, RULES, GATES, PAYMENT_CATEGORIES } = require('../../services/admissions/defaultConfig');
+const AdmissionFee = require('../../models/AdmissionFee');
+const {
+    CONDITIONS,
+    RULES,
+    GATES,
+    PAYMENT_CATEGORIES,
+    FEE_TRIGGERS,
+    FEE_CONDITIONS,
+    FEE_HOLDS,
+} = require('../../services/admissions/defaultConfig');
+const { CURRENCIES, parseMoney } = require('../../services/admissions/money');
 const { isAdmin } = require('../../services/admissions/access');
 const { isValidTimeZone } = require('../../services/admissions/time');
 const reminders = require('../../services/admissions/reminders');
@@ -134,6 +144,78 @@ const validateNamedList = (input, current, what, extra = () => ({})) => {
     return list;
 };
 
+/** The fee list. Stage and item links are checked against the stages being saved. */
+const validateFees = (input, stages) => {
+    if (!Array.isArray(input) || input.length > 100) reject('Add at most 100 fees');
+    const used = new Set();
+
+    return input.map((raw) => {
+        const name = textField(raw?.name, 120, 'Fee name');
+        const key = claimKey(raw, name, used, 'Fee');
+        const where = `"${name}"`;
+
+        if (!PAYMENT_CATEGORIES.includes(raw.category)) reject(`${where}: choose service fee, student expense or university fee`);
+        if (!CURRENCIES.includes(raw.currency)) reject(`${where}: currency must be one of ${CURRENCIES.join(', ')}`);
+
+        let amountMinor = null;
+        const amountInput = raw.amount ?? (Number.isInteger(raw.amountMinor) ? (raw.amountMinor / 100).toFixed(2) : null);
+        if (amountInput !== null && amountInput !== '') {
+            const parsed = parseMoney(amountInput);
+            if (!parsed.ok) reject(`${where}: ${parsed.message}`);
+            amountMinor = parsed.minor;
+        }
+
+        const stage = stages.find((s) => s.key === raw.stageKey);
+        if (!stage) reject(`${where}: choose the stage this fee belongs to`);
+        const itemInStage = (itemKey) => stage.items.some((i) => i.key === itemKey);
+
+        const trigger = raw.trigger ?? 'STAGE_ENTERED';
+        if (!FEE_TRIGGERS.includes(trigger)) reject(`${where}: choose when the fee is added`);
+        if (trigger === 'ITEM_COMPLETED' && !itemInStage(raw.triggerItemKey)) {
+            reject(`${where}: choose which "${stage.name}" checklist item adds this fee`);
+        }
+
+        const hold = raw.hold ?? 'NONE';
+        if (!FEE_HOLDS.includes(hold)) reject(`${where}: choose what waits for this payment`);
+        if (hold === 'ITEM' && !itemInStage(raw.holdItemKey)) {
+            reject(`${where}: choose which "${stage.name}" checklist item waits for this payment`);
+        }
+
+        const dueInDays = Number(raw.dueInDays ?? 7);
+        if (!Number.isInteger(dueInDays) || dueInDays < 0 || dueInDays > 365) {
+            reject(`${where}: days until due must be a whole number from 0 to 365`);
+        }
+
+        return {
+            key,
+            name,
+            category: raw.category,
+            amountMinor,
+            currency: raw.currency,
+            stageKey: stage.key,
+            trigger,
+            triggerItemKey: trigger === 'ITEM_COMPLETED' ? raw.triggerItemKey : null,
+            condition: enumOrNull(raw.condition, FEE_CONDITIONS, 'fee condition'),
+            dueInDays,
+            hold,
+            holdItemKey: hold === 'ITEM' ? raw.holdItemKey : null,
+            autoCompleteItem: hold === 'ITEM' && raw.autoCompleteItem === true,
+            refundable: raw.refundable === true,
+            isArchived: raw.isArchived === true,
+        };
+    });
+};
+
+/** Fees already on students' payments cannot be deleted from the list, only archived. */
+const ensureFeesKept = async (businessId, current, next) => {
+    const nextKeys = new Set(next.map((f) => f.key));
+    const removed = current.filter((f) => !nextKeys.has(f.key));
+    if (!removed.length) return;
+    const inUse = await AdmissionFee.distinct('scheduleKey', { businessId, scheduleKey: { $in: removed.map((f) => f.key) } });
+    const first = removed.find((f) => inUse.includes(f.key));
+    if (first) reject(`Fee "${first.name}" is on students' payments — archive it instead of removing it`);
+};
+
 const validateReminders = (input, current) => {
     const value = {};
     for (const [field, max] of Object.entries(REMINDER_LIMITS)) {
@@ -159,6 +241,8 @@ const updateSettings = async (req, res, next) => {
         const plain = config.toObject();
 
         const stages = body.stages !== undefined ? validateStages(body.stages, plain.stages) : plain.stages;
+        const fees = body.fees !== undefined ? validateFees(body.fees, stages) : plain.fees || [];
+        if (body.fees !== undefined) await ensureFeesKept(req.user.businessId, plain.fees || [], fees);
         const documentTypes =
             body.documentTypes !== undefined
                 ? validateNamedList(body.documentTypes, plain.documentTypes, 'Document type', (raw) => ({ hasExpiry: raw.hasExpiry === true }))
@@ -174,7 +258,7 @@ const updateSettings = async (req, res, next) => {
 
         const remindersChanged = JSON.stringify(reminderDefaults) !== JSON.stringify(plain.reminderDefaults);
 
-        config.set({ stages, documentTypes, leadSources, reminderDefaults, timezone });
+        config.set({ stages, fees, documentTypes, leadSources, reminderDefaults, timezone });
         await config.save();
 
         if (remindersChanged) {

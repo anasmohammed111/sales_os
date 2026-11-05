@@ -10,11 +10,13 @@ const { buildApplicationQuery, toDate } = require('../../services/admissions/fil
 const { logActivity } = require('../../services/admissions/activity');
 const reminders = require('../../services/admissions/reminders');
 const { storeUpload, issueFileLink } = require('../../services/storage/uploads');
+const { findFee } = require('../../services/admissions/feeRules');
+const { feeFromEntry, autoCompleteHeldItems, planFor, amountText } = require('../../services/admissions/feeSchedule');
 
 const CATEGORY_NAMES = {
-    AGENCY_FEE: 'Agency fee',
+    SERVICE_FEE: 'Service fee',
+    STUDENT_EXPENSE: 'Student expense',
     UNIVERSITY_FEE: 'University fee',
-    NOSTRIFICATION_FEE: 'Nostrification fee',
 };
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
@@ -40,6 +42,10 @@ const serializeFee = (fee, now = new Date()) => ({
     outstandingMinor: fee.outstandingMinor,
     outstanding: formatMinor(fee.outstandingMinor),
     status: fee.status,
+    needsAmount: fee.needsAmount === true,
+    scheduleKey: fee.scheduleKey || null,
+    stageKey: fee.stageKey || null,
+    refundable: fee.refundable === true,
     dueDate: fee.dueDate,
     isOverdue: Boolean(fee.dueDate && fee.outstandingMinor > 0 && fee.dueDate < now),
     notes: fee.notes,
@@ -60,8 +66,10 @@ const serializeFee = (fee, now = new Date()) => ({
     createdAt: fee.createdAt,
 });
 
-const afterChange = async (application) => {
+const afterChange = async (req, application) => {
     await refreshApplicationPayments(application._id);
+    // Items that only waited for this money are ticked (and may add their own fees)
+    await autoCompleteHeldItems({ req, applicationId: application._id, config: req.admissionsConfig });
     await reminders.syncRemindersForApplication(application._id);
 };
 
@@ -96,20 +104,66 @@ const listFees = async (req, res, next) => {
 
         return res.json({
             success: true,
-            data: { fees: fees.map((f) => serializeFee(f)), summary: serializeSummary(summarize(fees)) },
+            data: {
+                fees: fees.map((f) => serializeFee(f)),
+                summary: serializeSummary(summarize(fees)),
+                // Fee-list entries not on the student: coming up, missed, optional
+                plan: planFor(application, req.admissionsConfig, fees),
+            },
         });
     } catch (error) {
         next(error);
     }
 };
 
+/** A fee from the fee list, added by hand (optional fees, or ones the student missed). */
+const createFromFeeList = async (req, res, application, body) => {
+    const entry = findFee(req.admissionsConfig, body.scheduleKey);
+    if (!entry || entry.isArchived) return fail(res, 400, 'That fee is not in the fee list');
+
+    const values = feeFromEntry(entry, {
+        businessId: req.user.businessId,
+        applicationId: application._id,
+        userId: req.user.userId,
+    });
+    if (body.amountDue !== undefined && body.amountDue !== null && body.amountDue !== '') {
+        const amount = parseMoney(body.amountDue);
+        if (!amount.ok) return fail(res, 400, amount.message);
+        Object.assign(values, { amountDueMinor: amount.minor, needsAmount: false });
+    }
+    const due = parseDueDate(body.dueDate);
+    if (due.error) return fail(res, 400, due.error);
+    if (!due.skip) values.dueDate = due.value;
+
+    let fee;
+    try {
+        fee = await AdmissionFee.create(values);
+    } catch (error) {
+        if (error.code === 11000) return fail(res, 409, `${entry.name} is already on this student's payments`);
+        throw error;
+    }
+
+    await afterChange(req, application);
+    await logActivity({
+        req,
+        application,
+        type: 'FEE_ADDED',
+        message: `${fee.label} added from the fee list: ${amountText(fee)}`,
+        meta: { feeId: fee._id, scheduleKey: fee.scheduleKey },
+    });
+    return respondFee(res, fee, 201);
+};
+
 const createFee = async (req, res, next) => {
     try {
-        const { category, label, amountDue, currency, dueDate, notes } = req.body || {};
+        const body = req.body || {};
+        const { category, label, amountDue, currency, dueDate, notes, refundable } = body;
         const application = await findApplicationInScope(req, req.params.id);
         if (!application) return fail(res, 404, 'Student application not found');
 
-        if (!PAYMENT_CATEGORIES.includes(category)) return fail(res, 400, 'Choose agency, university or nostrification fee');
+        if (body.scheduleKey) return await createFromFeeList(req, res, application, body);
+
+        if (!PAYMENT_CATEGORIES.includes(category)) return fail(res, 400, 'Choose service fee, student expense or university fee');
         if (!CURRENCIES.includes(currency)) return fail(res, 400, `Currency must be one of ${CURRENCIES.join(', ')}`);
         const amount = parseMoney(amountDue);
         if (!amount.ok) return fail(res, 400, amount.message);
@@ -125,15 +179,16 @@ const createFee = async (req, res, next) => {
             currency,
             dueDate: due.skip ? null : due.value,
             notes: typeof notes === 'string' ? notes.trim().slice(0, 1000) : '',
+            refundable: typeof refundable === 'boolean' ? refundable : category === 'SERVICE_FEE',
             createdBy: req.user.userId,
         });
 
-        await afterChange(application);
+        await afterChange(req, application);
         await logActivity({
             req,
             application,
             type: 'FEE_ADDED',
-            message: `${CATEGORY_NAMES[category]} added: ${formatMinor(amount.minor)} ${currency}`,
+            message: `${fee.label || CATEGORY_NAMES[category]} added: ${formatMinor(amount.minor)} ${currency}`,
             meta: { feeId: fee._id },
         });
 
@@ -155,6 +210,7 @@ const updateFee = async (req, res, next) => {
             if (!amount.ok) return fail(res, 400, amount.message);
             if (amount.minor < fee.paidMinor) return fail(res, 400, 'Amount due cannot be less than what has already been paid');
             fee.amountDueMinor = amount.minor;
+            fee.needsAmount = false;
         }
 
         if (currency !== undefined && currency !== fee.currency) {
@@ -176,7 +232,7 @@ const updateFee = async (req, res, next) => {
         }
 
         await fee.save();
-        await afterChange(application);
+        await afterChange(req, application);
         await logActivity({
             req,
             application,
@@ -198,6 +254,7 @@ const recordPayment = async (req, res, next) => {
         if (!found) return fail(res, 404, 'Fee not found');
         const { fee, application } = found;
 
+        if (fee.needsAmount) return fail(res, 400, `Set the amount for ${fee.label || 'this fee'} first`);
         const parsed = parseMoney(amount);
         if (!parsed.ok) return fail(res, 400, parsed.message);
         if (parsed.minor > fee.outstandingMinor) {
@@ -230,7 +287,7 @@ const recordPayment = async (req, res, next) => {
         });
         await fee.save();
 
-        await afterChange(application);
+        await afterChange(req, application);
         await logActivity({
             req,
             application,
@@ -263,7 +320,7 @@ const voidPayment = async (req, res, next) => {
         tx.voidedAt = new Date();
         await fee.save();
 
-        await afterChange(application);
+        await afterChange(req, application);
         await logActivity({
             req,
             application,

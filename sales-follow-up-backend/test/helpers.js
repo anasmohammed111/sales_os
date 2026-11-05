@@ -81,8 +81,18 @@ module.exports = {
 
 // A business with the admissions module and a typical team:
 // counsellorA reports to the manager; counsellorB has no manager.
-const makeAdmissionsTeam = async () => {
+/**
+ * A business with an owner, a manager and two counsellors. Its admissions
+ * config starts with an empty fee list unless `fees: true`, so tests that are
+ * not about fees don't get fees (and their holds) added automatically.
+ */
+const makeAdmissionsTeam = async ({ fees = false } = {}) => {
     const business = await makeBusiness();
+    if (!fees) {
+        const AdmissionConfig = require('../src/models/AdmissionConfig');
+        const { buildDefaultConfig } = require('../src/services/admissions/configService');
+        await AdmissionConfig.create({ ...buildDefaultConfig(business._id), fees: [] });
+    }
     const owner = await makeUser(business, { role: 'OWNER', name: 'Owner' });
     const manager = await makeUser(business, { role: 'SALES_MANAGER', name: 'Manager' });
     const counsellorA = await makeUser(business, { role: 'SALESPERSON', managerId: manager._id, name: 'Counsellor A' });

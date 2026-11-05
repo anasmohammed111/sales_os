@@ -139,6 +139,18 @@ const admissionApplicationSchema = new mongoose.Schema(
                     outstandingMinor: Number,
                 },
             ],
+            // Unpaid fees from the fee list; stage and checklist holds read these
+            openScheduledFees: [
+                {
+                    _id: false,
+                    feeId: ObjectId,
+                    scheduleKey: String,
+                    name: String,
+                    outstandingMinor: Number,
+                    currency: String,
+                    needsAmount: Boolean,
+                },
+            ],
         },
     },
     { timestamps: true }

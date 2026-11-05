@@ -1,7 +1,7 @@
 const Migration = require('../models/Migration');
 
 // Ordered list. Migrations must be additive and safe to re-run.
-const MIGRATIONS = [require('./001-lead-phone-digits'), require('./002-default-roles')];
+const MIGRATIONS = [require('./001-lead-phone-digits'), require('./002-default-roles'), require('./003-fee-list')];
 
 /** Applies pending migrations in order; returns the ids applied this run. */
 const runMigrations = async () => {

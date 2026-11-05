@@ -1,4 +1,5 @@
 // Checklist rules. Works on Mongoose documents and plain objects alike.
+const { itemFeeHold, stageFeeHolds } = require('./feeRules');
 
 const ITEM_STATUSES = ['PENDING', 'COMPLETED', 'NOT_APPLICABLE'];
 const MIN_REASON_LENGTH = 3;
@@ -168,13 +169,16 @@ const evaluateStage = (application, stageKey, config) => {
         if (entry.stageKey !== stageKey || !entry.required || !isApplicable(entry, application)) continue;
 
         let reason = null;
-        if (entry.status === 'PENDING') reason = 'Not completed yet';
+        if (entry.status === 'PENDING') reason = itemFeeHold(application, config, entry.itemKey) || 'Not completed yet';
         else if (entry.status === 'COMPLETED') reason = checkRule(entry, application);
 
         if (reason) {
             missing.push({ stageKey, itemKey: entry.itemKey, label: entry.label, reason });
         }
     }
+
+    // Unpaid fees from the fee list that must be paid before leaving this stage
+    missing.push(...stageFeeHolds(application, config, stageKey));
 
     const gateError = gateErrorFor(stage, application);
     return { satisfied: missing.length === 0 && !gateError, missing, gateError };

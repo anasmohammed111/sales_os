@@ -31,7 +31,15 @@ const admissionFeeSchema = new mongoose.Schema(
         applicationId: { type: ObjectId, ref: 'AdmissionApplication', required: true },
         category: { type: String, enum: PAYMENT_CATEGORIES, required: true },
         label: { type: String, trim: true, default: '', maxlength: 120 },
-        amountDueMinor: { type: Number, required: true, min: 1 },
+        // 0 only while needsAmount is true
+        amountDueMinor: { type: Number, required: true, min: 0 },
+        // Added from the fee list without a fixed amount; staff set it per student
+        needsAmount: { type: Boolean, default: false },
+        // The fee-list entry this came from (null for fees added by hand)
+        scheduleKey: { type: String, default: null },
+        stageKey: { type: String, default: null },
+        // Counted when a refund rule applies
+        refundable: { type: Boolean, default: false },
         currency: { type: String, enum: CURRENCIES, required: true },
         dueDate: { type: Date, default: null },
         notes: { type: String, trim: true, default: '', maxlength: 1000 },
@@ -55,6 +63,11 @@ admissionFeeSchema.pre('save', function () {
 });
 
 admissionFeeSchema.index({ businessId: 1, applicationId: 1 });
+// A fee-list entry is on a student at most once (removed ones may be added again)
+admissionFeeSchema.index(
+    { applicationId: 1, scheduleKey: 1 },
+    { unique: true, partialFilterExpression: { scheduleKey: { $type: 'string' }, isArchived: false } }
+);
 admissionFeeSchema.index({ businessId: 1, status: 1, dueDate: 1 });
 
 module.exports = mongoose.model('AdmissionFee', admissionFeeSchema);

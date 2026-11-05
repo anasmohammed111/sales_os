@@ -54,7 +54,7 @@ const setup = async () => {
         { $set: { status: 'CLOSED', 'visa.outcome': 'APPROVED', 'visa.outcomeAt': new Date() } }
     );
 
-    await api(counsellorA).post(`/applications/${stuck.id}/fees`, { category: 'AGENCY_FEE', amountDue: '50000', currency: 'INR' });
+    await api(counsellorA).post(`/applications/${stuck.id}/fees`, { category: 'SERVICE_FEE', amountDue: '50000', currency: 'INR' });
     await api(owner).post(`/applications/${approved.id}/fees`, { category: 'UNIVERSITY_FEE', amountDue: '3000', currency: 'EUR' });
 
     return { ...team, ids: { stuck: stuck.id, overdue: overdue.id, approved: approved.id } };

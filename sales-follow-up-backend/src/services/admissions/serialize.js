@@ -1,5 +1,6 @@
 const { findStage, getActiveStages } = require('./configService');
 const { evaluateStage, isApplicable, checkRule } = require('./checklist');
+const { itemFeeHold } = require('./feeRules');
 const { DAY_MS } = require('./filters');
 
 const personOf = (value) =>
@@ -91,13 +92,15 @@ const serializeApplicationDetail = (application, config, now = new Date()) => {
             (e) => e.stageKey === stage.key && e.required && isApplicable(e, application)
         );
         const evaluation = evaluateStage(application, stage.key, config);
+        const missingItems = evaluation.missing.filter((m) => !m.feeKey).length;
         return {
             key: stage.key,
             name: stage.name,
             order: stage.order,
             isArchived: stage.isArchived,
             required: entries.length,
-            done: entries.length - evaluation.missing.length,
+            done: entries.length - missingItems,
+            unpaidFees: evaluation.missing.length - missingItems,
             satisfied: evaluation.satisfied,
         };
     });
@@ -116,7 +119,8 @@ const serializeApplicationDetail = (application, config, now = new Date()) => {
             paymentCategory: entry.paymentCategory,
             isRetired: entry.isRetired,
             isApplicable: isApplicable(entry, application),
-            blockedBy: entry.status === 'PENDING' ? checkRule(entry, application) : null,
+            blockedBy:
+                entry.status === 'PENDING' ? checkRule(entry, application) || itemFeeHold(application, config, entry.itemKey) : null,
             status: entry.status,
             naReason: entry.naReason,
             completedBy: personOf(entry.completedBy) || idOf(entry.completedBy),

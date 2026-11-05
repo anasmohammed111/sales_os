@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+/** A fee still waiting for money: no amount set yet, or a balance left. */
+const isOpen = (fee) => fee.needsAmount === true || fee.outstandingMinor > 0;
+
 /** Paid / outstanding / status for one fee, from its non-voided transactions. */
 const computeFee = (fee) => {
     const paidMinor = (fee.transactions || [])
@@ -47,10 +50,20 @@ const refreshApplicationPayments = async (applicationId) => {
                     status: overallStatus(fees),
                     nextDueAt: dueDates.length ? new Date(Math.min(...dueDates)) : null,
                     byCurrency: summarize(fees),
+                    openScheduledFees: fees
+                        .filter((f) => f.scheduleKey && isOpen(f))
+                        .map((f) => ({
+                            feeId: f._id,
+                            scheduleKey: f.scheduleKey,
+                            name: f.label,
+                            outstandingMinor: f.outstandingMinor,
+                            currency: f.currency,
+                            needsAmount: f.needsAmount === true,
+                        })),
                 },
             },
         }
     );
 };
 
-module.exports = { computeFee, summarize, overallStatus, refreshApplicationPayments };
+module.exports = { isOpen, computeFee, summarize, overallStatus, refreshApplicationPayments };

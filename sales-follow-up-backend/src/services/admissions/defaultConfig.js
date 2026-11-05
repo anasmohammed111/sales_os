@@ -17,7 +17,29 @@ const RULES = [
 
 const GATES = ['ASSESSMENT_PASSED'];
 
-const PAYMENT_CATEGORIES = ['AGENCY_FEE', 'UNIVERSITY_FEE', 'NOSTRIFICATION_FEE'];
+// SERVICE_FEE: the agency's own charge (income). STUDENT_EXPENSE: collected and
+// paid on to someone else (apostille office, embassy, courier). UNIVERSITY_FEE:
+// tuition and other money owed to the university.
+const PAYMENT_CATEGORIES = ['SERVICE_FEE', 'STUDENT_EXPENSE', 'UNIVERSITY_FEE'];
+
+// Older names, mapped by migration 003
+const LEGACY_PAYMENT_CATEGORIES = { AGENCY_FEE: 'SERVICE_FEE', NOSTRIFICATION_FEE: 'STUDENT_EXPENSE' };
+
+// When a fee from the fee list is added to a student:
+// STAGE_ENTERED  the student reaches the fee's stage
+// ITEM_COMPLETED a checklist item of that stage is ticked
+// VISA_APPROVED  the visa result is recorded as approved
+// MANUAL         never automatically; staff add it when it applies
+const FEE_TRIGGERS = ['STAGE_ENTERED', 'ITEM_COMPLETED', 'VISA_APPROVED', 'MANUAL'];
+
+// Fees can be limited to some students
+const FEE_CONDITIONS = ['INTERVIEW_REQUIRED', 'EXAM_REQUIRED', 'INTERVIEW_OR_EXAM', 'BACHELOR', 'MASTER'];
+
+// What waits for an unpaid fee:
+// NONE  nothing, the fee is only tracked
+// ITEM  a checklist item of the fee's stage cannot be ticked until it is paid
+// STAGE the student cannot move past the fee's stage until it is paid
+const FEE_HOLDS = ['NONE', 'ITEM', 'STAGE'];
 
 const item = (key, label, { required = true, condition = null, rule = null, paymentCategory = null } = {}) => ({
     key,
@@ -95,7 +117,7 @@ const DEFAULT_STAGES = [
         item('nostrification_form_completed', 'Nostrification form completed'),
         item('documents_couriered_cz', 'Documents couriered to the Czech Republic'),
         item('nostrification_payment_completed', 'Nostrification payment completed', {
-            paymentCategory: 'NOSTRIFICATION_FEE',
+            paymentCategory: 'STUDENT_EXPENSE',
         }),
         item('nostrification_confirmation_received', 'Confirmation received'),
     ]),
@@ -121,6 +143,85 @@ const DEFAULT_STAGES = [
             rule: 'VISA_OUTCOME_SET',
         }),
     ]),
+];
+
+const fee = (key, name, category, rupees, stageKey, options = {}) => ({
+    key,
+    name,
+    category,
+    // null: the amount differs per student and is entered on the student's payments
+    amountMinor: rupees === null ? null : rupees * 100,
+    currency: options.currency ?? 'INR',
+    stageKey,
+    trigger: options.trigger ?? 'STAGE_ENTERED',
+    triggerItemKey: options.triggerItemKey ?? null,
+    condition: options.condition ?? null,
+    dueInDays: options.dueInDays ?? 7,
+    hold: options.hold ?? 'NONE',
+    holdItemKey: options.holdItemKey ?? null,
+    // Tick the held item by itself once the fee is fully paid
+    autoCompleteItem: options.autoCompleteItem ?? false,
+    // Counted when a refund rule applies (for example a rejected visa)
+    refundable: options.refundable ?? category === 'SERVICE_FEE',
+    isArchived: false,
+});
+
+// SYB's service charges and student expenses. Every entry can be edited,
+// moved to another stage, archived or extended in admissions settings.
+const DEFAULT_FEES = [
+    fee('registration_fee', 'Registration fee', 'SERVICE_FEE', 5000, 'lead_counselling', { hold: 'STAGE' }),
+    fee('apostille', 'Apostille', 'STUDENT_EXPENSE', 4000, 'apostille', {
+        hold: 'ITEM',
+        holdItemKey: 'documents_sent_for_apostille',
+    }),
+    fee('university_application_fee', 'University application fee', 'STUDENT_EXPENSE', null, 'university_application', {
+        hold: 'ITEM',
+        holdItemKey: 'application_submitted',
+    }),
+    fee('interview_exam_preparation', 'Interview / entrance exam preparation', 'SERVICE_FEE', 10000, 'university_application', {
+        condition: 'INTERVIEW_OR_EXAM',
+        hold: 'STAGE',
+    }),
+    fee('translation', 'Translation', 'STUDENT_EXPENSE', 10000, 'nostrification', {
+        hold: 'ITEM',
+        holdItemKey: 'documents_couriered_cz',
+    }),
+    fee('document_courier', 'Document courier service', 'STUDENT_EXPENSE', 10000, 'nostrification', {
+        hold: 'ITEM',
+        holdItemKey: 'documents_couriered_cz',
+    }),
+    fee('nostrification', 'Nostrification', 'STUDENT_EXPENSE', 15000, 'nostrification', {
+        hold: 'ITEM',
+        holdItemKey: 'nostrification_payment_completed',
+        autoCompleteItem: true,
+    }),
+    fee('offer_letter', 'Offer letter', 'SERVICE_FEE', 25000, 'offer_letter', {
+        trigger: 'ITEM_COMPLETED',
+        triggerItemKey: 'offer_letter_received',
+        hold: 'STAGE',
+    }),
+    fee('tuition', 'Tuition fee', 'UNIVERSITY_FEE', null, 'offer_letter', {
+        hold: 'ITEM',
+        holdItemKey: 'university_fee_paid',
+        autoCompleteItem: true,
+    }),
+    fee('embassy_interview', 'Embassy interview', 'STUDENT_EXPENSE', 11000, 'visa', {
+        trigger: 'ITEM_COMPLETED',
+        triggerItemKey: 'visa_appointment_registered',
+        hold: 'ITEM',
+        holdItemKey: 'visa_documents_ready',
+    }),
+    fee('embassy_date', 'Embassy date', 'SERVICE_FEE', 30000, 'visa', {
+        trigger: 'ITEM_COMPLETED',
+        triggerItemKey: 'visa_appointment_registered',
+        hold: 'ITEM',
+        holdItemKey: 'visa_documents_ready',
+    }),
+    fee('visa_approval', 'Visa approval', 'SERVICE_FEE', 30000, 'visa', { trigger: 'VISA_APPROVED' }),
+    fee('alternative_accommodation', 'Alternative accommodation contract', 'STUDENT_EXPENSE', 5000, 'offer_letter', {
+        currency: 'CZK',
+        trigger: 'MANUAL',
+    }),
 ];
 
 const DEFAULT_DOCUMENT_TYPES = [
@@ -160,7 +261,12 @@ module.exports = {
     RULES,
     GATES,
     PAYMENT_CATEGORIES,
+    LEGACY_PAYMENT_CATEGORIES,
+    FEE_TRIGGERS,
+    FEE_CONDITIONS,
+    FEE_HOLDS,
     DEFAULT_STAGES,
+    DEFAULT_FEES,
     DEFAULT_DOCUMENT_TYPES,
     DEFAULT_LEAD_SOURCES,
     DEFAULT_REMINDERS,
