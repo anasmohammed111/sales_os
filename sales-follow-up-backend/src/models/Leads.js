@@ -89,6 +89,13 @@ const leadSchema = new mongoose.Schema(
         },
 
         // Current sales stage
+        // The sales pipeline this lead is in; null means the company's default pipeline
+        pipelineId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Pipeline',
+            default: null,
+        },
+
         status: {
             type: String,
             enum: [
