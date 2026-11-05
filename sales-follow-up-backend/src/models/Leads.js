@@ -159,6 +159,12 @@ const leadSchema = new mongoose.Schema(
                     type: String,
                     required: true,
                 },
+                // The pipeline the lead was in after this move, so stage keys stay readable
+                pipelineId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Pipeline',
+                    default: null,
+                },
                 changedBy: {
                     type: mongoose.Schema.Types.ObjectId,
                     ref: 'User',
