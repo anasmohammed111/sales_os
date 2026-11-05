@@ -3,7 +3,10 @@ import {
   ApplicationStatus,
   DocumentStatus,
   FeeCategory,
+  FeeCondition,
+  FeeHold,
   FeeStatus,
+  FeeTrigger,
   MoneyRow,
   StudyLevel,
   TaskPriority,
@@ -118,10 +121,48 @@ export const DOC_STATUS_TONE: Record<DocumentStatus, 'muted' | 'route' | 'ok' | 
 };
 
 export const FEE_CATEGORY_LABELS: Record<FeeCategory, string> = {
-  AGENCY_FEE: 'Agency fee',
+  SERVICE_FEE: 'Service fee',
+  STUDENT_EXPENSE: 'Student expense',
   UNIVERSITY_FEE: 'University fee',
-  NOSTRIFICATION_FEE: 'Nostrification fee',
 };
+
+export const FEE_CATEGORY_HINTS: Record<FeeCategory, string> = {
+  SERVICE_FEE: 'Your own charge (income)',
+  STUDENT_EXPENSE: 'Collected and paid on to someone else',
+  UNIVERSITY_FEE: 'Tuition or other money owed to the university',
+};
+
+export const FEE_CONDITION_LABELS: Record<FeeCondition, string> = {
+  INTERVIEW_REQUIRED: 'Only if an interview is required',
+  EXAM_REQUIRED: 'Only if an entrance exam is required',
+  INTERVIEW_OR_EXAM: 'Only if an interview or exam is required',
+  BACHELOR: "Only for Bachelor's students",
+  MASTER: "Only for Master's students",
+};
+
+/** "When …" sentence for a fee-list entry */
+export function feeTriggerText(
+  fee: { trigger: FeeTrigger; stageName?: string },
+  itemLabel: string | null
+): string {
+  switch (fee.trigger) {
+    case 'STAGE_ENTERED':
+      return fee.stageName ? `When the student reaches ${fee.stageName}` : 'When the student reaches this stage';
+    case 'ITEM_COMPLETED':
+      return `When "${itemLabel ?? 'a checklist item'}" is ticked`;
+    case 'VISA_APPROVED':
+      return 'When the visa is approved';
+    default:
+      return 'Added by hand when it applies';
+  }
+}
+
+/** "Must be paid before …" sentence for a fee-list entry, or null */
+export function feeHoldText(fee: { hold: FeeHold; stageName?: string }, itemLabel: string | null): string | null {
+  if (fee.hold === 'STAGE') return fee.stageName ? `Must be paid before leaving ${fee.stageName}` : 'Must be paid before leaving the stage';
+  if (fee.hold === 'ITEM') return `Must be paid before "${itemLabel ?? 'a checklist item'}" can be ticked`;
+  return null;
+}
 
 export const FEE_STATUS_LABELS: Record<FeeStatus, string> = {
   UNPAID: 'Unpaid',

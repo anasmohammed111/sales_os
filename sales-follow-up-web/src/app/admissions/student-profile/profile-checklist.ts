@@ -73,6 +73,13 @@ export class ProfileChecklist {
     return this.application().checklist.filter((e) => e.stageKey === stageKey && !(e.isRetired && e.status === 'PENDING'));
   }
 
+  /** What still keeps the student in the current stage: checklist items and unpaid fees, counted apart */
+  readonly blockers = computed(() => {
+    const missing = this.application().currentRequirements.missing;
+    const fees = missing.filter((m) => m.feeKey);
+    return { items: missing.length - fees.length, fees };
+  });
+
   hasRule(stageKey: string, prefix: 'ASSESSMENT' | 'VISA'): boolean {
     return this.entriesFor(stageKey).some((e) =>
       prefix === 'ASSESSMENT' ? e.rule === 'ASSESSMENT_REQUIREMENTS_SET' : e.rule?.startsWith('VISA_')

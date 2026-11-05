@@ -157,7 +157,7 @@
                       <button type="button" class="adm-link fix-link" (click)="openFinalChoice.emit()">Record final choice</button>
                     }
                   }
-                  @if (entry.paymentCategory && entry.status === 'PENDING') {
+                  @if (entry.paymentCategory && entry.status === 'PENDING' && !entry.blockedBy) {
                     <small>Ticking this doesn't record money. Add the payment in the Payments tab.</small>
                   }
 
@@ -194,8 +194,12 @@
                 <button *ktCan="'admissions.move'" type="button" class="adm-btn adm-btn--route" (click)="moveNext.emit()">Move to {{ app.nextStage?.name }}</button>
               } @else if (app.nextStage) {
                 <span class="adm-num">
-                  {{ app.currentRequirements.missing.length }}
-                  {{ app.currentRequirements.missing.length === 1 ? 'item' : 'items' }} left before {{ app.nextStage.name }}.
+                  @if (blockers().items) {
+                    {{ blockers().items }} {{ blockers().items === 1 ? 'item' : 'items' }} left before {{ app.nextStage.name }}.
+                  }
+                  @for (hold of blockers().fees; track hold.itemKey) {
+                    <span class="is-warn fee-hold">Waiting for payment before {{ app.nextStage.name }}: {{ hold.label }} ({{ hold.reason }})</span>
+                  }
                 </span>
               }
             </div>

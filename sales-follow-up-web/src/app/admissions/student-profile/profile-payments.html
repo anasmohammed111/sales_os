@@ -17,7 +17,7 @@
         }
       </dl>
     } @else {
-      <p class="adm-muted">No fees recorded yet. Add the agency, university or nostrification fee when it's agreed.</p>
+      <p class="adm-muted">No fees on this student yet. Fees from your fee list are added as the student reaches each step.</p>
     }
     <button *ktCan="'admissions.record_payments'" type="button" class="adm-btn adm-btn--primary" (click)="addingFee.set(true)">Add fee</button>
   </div>
@@ -29,12 +29,16 @@
           <div>
             <h3>{{ fee.label }}</h3>
             <small>
-              {{ categoryLabels[fee.category] }}{{ fee.dueDate ? ', due ' + formatDate(fee.dueDate, tz()) : '' }}
+              {{ categoryLabels[fee.category] }}{{ stageName(fee.stageKey) ? ' · ' + stageName(fee.stageKey) : '' }}{{ fee.dueDate ? ', due ' + formatDate(fee.dueDate, tz()) : '' }}
             </small>
           </div>
-          <span class="adm-chip" [class]="'adm-chip adm-chip--' + (fee.isOverdue ? 'bad' : statusTone[fee.status])">
-            {{ fee.isOverdue ? 'Overdue' : statusLabels[fee.status] }}
-          </span>
+          @if (fee.needsAmount) {
+            <span class="adm-chip adm-chip--warn">Amount to set</span>
+          } @else {
+            <span class="adm-chip" [class]="'adm-chip adm-chip--' + (fee.isOverdue ? 'bad' : statusTone[fee.status])">
+              {{ fee.isOverdue ? 'Overdue' : statusLabels[fee.status] }}
+            </span>
+          }
         </div>
 
         <div class="bar" role="progressbar" [attr.aria-valuenow]="paidPercent(fee)" aria-valuemin="0" aria-valuemax="100"
@@ -42,8 +46,12 @@
           <span [style.width.%]="paidPercent(fee)"></span>
         </div>
         <p class="amounts adm-num">
-          <span>{{ money(fee.paidMinor, fee.currency) }} paid</span>
-          <span>{{ money(fee.outstandingMinor, fee.currency) }} left of {{ money(fee.amountDueMinor, fee.currency) }}</span>
+          @if (fee.needsAmount) {
+            <span>This fee varies per student. Set the amount before recording payments.</span>
+          } @else {
+            <span>{{ money(fee.paidMinor, fee.currency) }} paid</span>
+            <span>{{ money(fee.outstandingMinor, fee.currency) }} left of {{ money(fee.amountDueMinor, fee.currency) }}</span>
+          }
         </p>
 
         @if (fee.transactions.length) {
@@ -70,7 +78,11 @@
           </ul>
         }
 
-        @if (fee.outstandingMinor > 0) {
+        @if (fee.needsAmount) {
+          <div class="fee-foot">
+            <button *ktCan="'admissions.record_payments'" type="button" class="adm-btn adm-btn--sm adm-btn--primary" (click)="startSetAmount(fee)">Set amount</button>
+          </div>
+        } @else if (fee.outstandingMinor > 0) {
           <div class="fee-foot">
             <button *ktCan="'admissions.record_payments'" type="button" class="adm-btn adm-btn--sm" (click)="startPayment(fee)">Record payment</button>
           </div>
@@ -78,6 +90,79 @@
       </li>
     }
   </ul>
+
+  @if (upcoming().length) {
+    <section class="plan">
+      <h3>Coming up from your fee list</h3>
+      <p class="adm-muted">Added automatically when the student gets there.</p>
+      <ul class="plan-list">
+        @for (entry of upcoming(); track entry.key) {
+          <li>
+            <span class="plan-name">
+              <strong>{{ entry.name }}</strong>
+              <small>{{ categoryLabels[entry.category] }} · {{ entry.stageName }}</small>
+            </span>
+            <span class="plan-amount adm-num">{{ planAmount(entry) }}</span>
+            <span class="plan-when">
+              {{ planWhen(entry) }}{{ entry.condition ? ' · ' + conditionLabels[entry.condition].toLowerCase() : '' }}
+              @if (planHold(entry); as hold) {
+                <em>{{ hold }}</em>
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (addable().length) {
+    <section class="plan" *ktCan="'admissions.record_payments'">
+      <button type="button" class="plan-toggle" (click)="showAddable.set(!showAddable())" [attr.aria-expanded]="showAddable()">
+        <h3>Add from your fee list ({{ addable().length }})</h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true" [class.is-open]="showAddable()"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      @if (showAddable()) {
+        <ul class="plan-list">
+          @for (entry of addable(); track entry.key) {
+            <li>
+              <span class="plan-name">
+                <strong>{{ entry.name }}</strong>
+                <small>{{ categoryLabels[entry.category] }} · {{ entry.stageName }}</small>
+              </span>
+              <span class="plan-amount adm-num">{{ planAmount(entry) }}</span>
+              <span class="plan-when">{{ planReasons[entry.state] }}</span>
+              <button type="button" class="adm-btn adm-btn--sm" [disabled]="saving()" (click)="addFromList(entry)">Add</button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+}
+
+@if (settingAmount(); as fee) {
+  <div *ktCan="'admissions.record_payments'" class="adm-dialog-backdrop" (click)="settingAmount.set(null)" role="presentation">
+    <form class="adm-dialog" role="dialog" aria-modal="true" aria-labelledby="amount-title" (click)="$event.stopPropagation()" (ngSubmit)="saveAmount()">
+      <div class="adm-dialog__head">
+        <div>
+          <h2 id="amount-title">Set amount: {{ fee.label }}</h2>
+          <p>This fee differs per student. Enter what this student owes.</p>
+        </div>
+      </div>
+      <div class="adm-dialog__body adm-form">
+        <label class="adm-field">
+          <span>Amount ({{ fee.currency }})</span>
+          <input name="amountInput" inputmode="decimal" [(ngModel)]="amountInput" placeholder="1500.00" required />
+          <small>Numbers only, no commas.</small>
+        </label>
+      </div>
+      <div class="adm-dialog__foot">
+        <button type="button" class="adm-btn" (click)="settingAmount.set(null)">Cancel</button>
+        <button type="submit" class="adm-btn adm-btn--primary" [disabled]="saving() || !amountInput.trim()">Save amount</button>
+      </div>
+    </form>
+  </div>
 }
 
 @if (addingFee()) {

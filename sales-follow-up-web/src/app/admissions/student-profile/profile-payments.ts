@@ -2,12 +2,15 @@ import { Component, computed, effect, inject, input, output, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { toast } from 'ngx-sonner';
 import { AdmissionsService } from '../../core/services/admissions.service';
-import { ApplicationDetail, Currency, Fee, FeeCategory, MoneyRow, Transaction } from '../admissions.models';
+import { ApplicationDetail, Currency, Fee, FeeCategory, FeePlanEntry, MoneyRow, Transaction } from '../admissions.models';
 import {
   CURRENCIES,
   errorMessage,
   FEE_CATEGORY_LABELS,
+  FEE_CONDITION_LABELS,
   FEE_STATUS_LABELS,
+  feeHoldText,
+  feeTriggerText,
   FEE_STATUS_TONE,
   formatDate,
   fromLocalInput,
@@ -37,12 +40,20 @@ export class ProfilePayments {
 
   readonly fees = signal<Fee[]>([]);
   readonly summary = signal<MoneyRow[]>([]);
+  /** Fee-list entries not on the student */
+  readonly plan = signal<FeePlanEntry[]>([]);
+  readonly upcoming = computed(() => this.plan().filter((p) => p.state === 'UPCOMING'));
+  readonly addable = computed(() => this.plan().filter((p) => p.state !== 'UPCOMING'));
+  readonly showAddable = signal(false);
+
+  readonly settingAmount = signal<Fee | null>(null);
+  amountInput = '';
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly saving = signal(false);
 
   readonly addingFee = signal(false);
-  feeCategory: FeeCategory = 'AGENCY_FEE';
+  feeCategory: FeeCategory = 'SERVICE_FEE';
   feeLabel = '';
   feeAmount = '';
   feeCurrency: Currency = 'INR';
@@ -63,6 +74,13 @@ export class ProfilePayments {
   readonly categoryLabels = FEE_CATEGORY_LABELS;
   readonly statusLabels = FEE_STATUS_LABELS;
   readonly statusTone = FEE_STATUS_TONE;
+  readonly conditionLabels = FEE_CONDITION_LABELS;
+  readonly planReasons: Record<FeePlanEntry['state'], string> = {
+    UPCOMING: '',
+    NOT_ADDED: 'Not added: the student passed this point before it was in the fee list',
+    OPTIONAL: 'Added by hand when it applies',
+    NOT_NEEDED: "Doesn't apply to this student",
+  };
   readonly money = money;
   readonly formatDate = formatDate;
 
@@ -75,9 +93,10 @@ export class ProfilePayments {
 
   load(): void {
     this.admissions.listFees(this.application().id).subscribe({
-      next: ({ fees, summary }) => {
+      next: ({ fees, summary, plan }) => {
         this.fees.set(fees);
         this.summary.set(summary);
+        this.plan.set(plan ?? []);
         this.loading.set(false);
       },
       error: (err) => {
@@ -88,7 +107,50 @@ export class ProfilePayments {
   }
 
   paidPercent(fee: Fee): number {
+    if (!fee.amountDueMinor) return 0;
     return Math.min(100, Math.round((fee.paidMinor / fee.amountDueMinor) * 100));
+  }
+
+  stageName(key: string | null): string | null {
+    return key ? (this.ctx()?.config.stages.find((s) => s.key === key)?.name ?? null) : null;
+  }
+
+  planWhen(entry: FeePlanEntry): string {
+    return feeTriggerText(entry, entry.triggerItemLabel);
+  }
+
+  planHold(entry: FeePlanEntry): string | null {
+    return feeHoldText(entry, entry.holdItemLabel);
+  }
+
+  planAmount(entry: FeePlanEntry): string {
+    return entry.amountMinor ? money(entry.amountMinor, entry.currency) : 'Varies';
+  }
+
+  addFromList(entry: FeePlanEntry): void {
+    this.saving.set(true);
+    this.admissions.createFee(this.application().id, { scheduleKey: entry.key }).subscribe({
+      next: () => this.done(`${entry.name} added`),
+      error: (err) => this.failed(err, 'The fee could not be added.'),
+    });
+  }
+
+  startSetAmount(fee: Fee): void {
+    this.settingAmount.set(fee);
+    this.amountInput = '';
+  }
+
+  saveAmount(): void {
+    const fee = this.settingAmount();
+    if (!fee) return;
+    this.saving.set(true);
+    this.admissions.updateFee(fee.id, { amountDue: this.amountInput.trim() }).subscribe({
+      next: () => {
+        this.settingAmount.set(null);
+        this.done('Amount set');
+      },
+      error: (err) => this.failed(err, 'The amount could not be saved.'),
+    });
   }
 
   private done(message: string): void {

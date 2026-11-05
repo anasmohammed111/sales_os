@@ -8,7 +8,12 @@ export type VisaOutcome = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ApplicationStatus = 'ACTIVE' | 'CLOSED' | 'WITHDRAWN';
 export type PaymentStatus = 'NONE' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
 export type FeeStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
-export type FeeCategory = 'AGENCY_FEE' | 'UNIVERSITY_FEE' | 'NOSTRIFICATION_FEE';
+export type FeeCategory = 'SERVICE_FEE' | 'STUDENT_EXPENSE' | 'UNIVERSITY_FEE';
+/** When a fee from the fee list is added to a student */
+export type FeeTrigger = 'STAGE_ENTERED' | 'ITEM_COMPLETED' | 'VISA_APPROVED' | 'MANUAL';
+export type FeeCondition = 'INTERVIEW_REQUIRED' | 'EXAM_REQUIRED' | 'INTERVIEW_OR_EXAM' | 'BACHELOR' | 'MASTER';
+/** What waits for an unpaid fee */
+export type FeeHold = 'NONE' | 'ITEM' | 'STAGE';
 export type Currency = 'INR' | 'EUR' | 'CZK' | 'USD';
 export type DocumentStatus = 'MISSING' | 'UPLOADED' | 'VERIFIED' | 'REJECTED';
 export type TaskStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
@@ -81,10 +86,51 @@ export interface ReminderDefaults {
 
 export interface AdmissionsConfig {
   stages: ConfigStage[];
+  fees: FeeScheduleEntry[];
   documentTypes: DocumentType[];
   leadSources: NamedEntry[];
   reminderDefaults: ReminderDefaults;
   timezone: string;
+}
+
+/** One entry of the fee list in admissions settings */
+export interface FeeScheduleEntry {
+  key: string;
+  name: string;
+  category: FeeCategory;
+  amountMinor: number | null;
+  /** '' when the amount differs per student */
+  amount: string;
+  currency: Currency;
+  stageKey: string;
+  trigger: FeeTrigger;
+  triggerItemKey: string | null;
+  condition: FeeCondition | null;
+  dueInDays: number;
+  hold: FeeHold;
+  holdItemKey: string | null;
+  autoCompleteItem: boolean;
+  refundable: boolean;
+  isArchived: boolean;
+}
+
+/** A fee-list entry not on the student: coming up, missed, optional or not needed */
+export interface FeePlanEntry {
+  key: string;
+  name: string;
+  category: FeeCategory;
+  amountMinor: number | null;
+  amount: string | null;
+  currency: Currency;
+  stageKey: string;
+  stageName: string;
+  stageOrder: number;
+  trigger: FeeTrigger;
+  triggerItemLabel: string | null;
+  condition: FeeCondition | null;
+  hold: FeeHold;
+  holdItemLabel: string | null;
+  state: 'UPCOMING' | 'NOT_ADDED' | 'OPTIONAL' | 'NOT_NEEDED';
 }
 
 export interface Person {
@@ -256,6 +302,8 @@ export interface MissingItem {
   itemKey: string;
   label: string;
   reason: string;
+  /** Set when an unpaid fee from the fee list holds the stage */
+  feeKey?: string;
 }
 
 export interface ApplicationDetail extends Application {
@@ -345,6 +393,11 @@ export interface Fee {
   outstandingMinor: number;
   outstanding: string;
   status: FeeStatus;
+  /** Added from the fee list without a fixed amount; set it before payments */
+  needsAmount: boolean;
+  scheduleKey: string | null;
+  stageKey: string | null;
+  refundable: boolean;
   dueDate: string | null;
   isOverdue: boolean;
   notes: string;

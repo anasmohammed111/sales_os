@@ -18,6 +18,7 @@
 
   <div class="adm-tabs" role="tablist" aria-label="Settings sections">
     <button type="button" role="tab" [attr.aria-selected]="section() === 'stages'" (click)="section.set('stages')">Stages and checklists</button>
+    <button type="button" role="tab" [attr.aria-selected]="section() === 'fees'" (click)="section.set('fees')">Fees and payments</button>
     <button type="button" role="tab" [attr.aria-selected]="section() === 'lists'" (click)="section.set('lists')">Documents and lead sources</button>
     <button type="button" role="tab" [attr.aria-selected]="section() === 'universities'" (click)="section.set('universities')">Universities</button>
     <button type="button" role="tab" [attr.aria-selected]="section() === 'reminders'" (click)="section.set('reminders')">Reminders and time</button>
@@ -93,6 +94,208 @@
           }
         </ol>
         <button type="button" class="adm-btn" (click)="addStage()">Add stage</button>
+      }
+
+      @case ('fees') {
+        <section class="adm-panel fee-intro">
+          <div>
+            <h2>Your fee list</h2>
+            <p>
+              Attach each fee to a stage. It's added to a student's payments automatically at the moment you choose, and
+              can keep a checklist item or the whole stage waiting until it's paid. Changes apply from the next time a
+              student reaches that moment; fees already on students keep their amount.
+            </p>
+          </div>
+          @let all = totals(c.fees);
+          @if (all.length) {
+            <dl class="fee-total">
+              <dt>A student going through every stage</dt>
+              <dd class="adm-num">
+                @for (t of all; track t.currency; let last = $last) {
+                  <strong>{{ t.text }}</strong>{{ last ? '' : ' + ' }}
+                }
+                @if (hasVarying(c.fees)) {
+                  <small>plus fees that vary per student</small>
+                }
+              </dd>
+            </dl>
+          }
+        </section>
+
+        <ol class="fee-stages">
+          @for (stage of feeStages(c); track stage.key; let i = $index) {
+            <li class="adm-panel fee-stage" [class.is-archived]="stage.isArchived">
+              <header class="fee-stage-head">
+                <span class="station adm-num">{{ i + 1 }}</span>
+                <h3>{{ stage.name }}{{ stage.isArchived ? ' (archived stage)' : '' }}</h3>
+                <span class="fee-stage-sum adm-num">
+                  @for (t of totals(feesFor(c, stage.key)); track t.currency; let last = $last) {
+                    {{ t.text }}{{ last ? '' : ' + ' }}
+                  }
+                </span>
+                @if (!stage.isArchived) {
+                  <button type="button" class="adm-btn adm-btn--sm" (click)="addFee(stage)">Add fee</button>
+                }
+              </header>
+
+              @if (feesFor(c, stage.key).length) {
+                <ul class="fee-rows">
+                  @for (fee of feesFor(c, stage.key); track fee) {
+                    <li class="fee-row" [class.is-archived]="fee.isArchived" [class.is-open]="editingFee() === fee">
+                      <button type="button" class="fee-summary" (click)="toggleFee(fee)" [attr.aria-expanded]="editingFee() === fee">
+                        <span class="fee-name">
+                          <strong>{{ fee.name || 'New fee' }}</strong>
+                          <span class="adm-chip" [class.adm-chip--route]="fee.category === 'SERVICE_FEE'">{{ categoryLabels[fee.category] }}</span>
+                          @if (fee.isArchived) {
+                            <span class="adm-chip adm-chip--muted">Archived</span>
+                          }
+                        </span>
+                        <span class="fee-amount adm-num">{{ amountText(fee) }}</span>
+                        <span class="fee-when">
+                          {{ whenText(c, fee) }}{{ fee.condition ? ' · ' + conditionLabels[fee.condition].toLowerCase() : '' }}
+                          @if (holdText(c, fee); as hold) {
+                            <em>{{ hold }}{{ fee.autoCompleteItem ? ', and ticks it once paid' : '' }}</em>
+                          }
+                        </span>
+                        <svg class="fee-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                      </button>
+
+                      @if (editingFee() === fee) {
+                        <div class="fee-editor adm-form">
+                          <div class="adm-form-row">
+                            <label class="adm-field grow2">
+                              <span>Name</span>
+                              <input [(ngModel)]="fee.name" (ngModelChange)="touch()" name="feeName" placeholder="For example: Registration fee" />
+                            </label>
+                            <label class="adm-field">
+                              <span>Type</span>
+                              <select [ngModel]="fee.category" (ngModelChange)="setFeeCategory(fee, $event)" name="feeCategory">
+                                @for (cat of categories; track cat[0]) {
+                                  <option [value]="cat[0]">{{ cat[1] }}</option>
+                                }
+                              </select>
+                              <small>{{ categoryHints[fee.category] }}</small>
+                            </label>
+                          </div>
+
+                          <div class="adm-form-row">
+                            <label class="adm-field">
+                              <span>Amount</span>
+                              <input [(ngModel)]="fee.amount" (ngModelChange)="touch()" name="feeAmount" inputmode="decimal" placeholder="Leave empty if it varies" />
+                              <small>Empty: entered on each student's payments.</small>
+                            </label>
+                            <label class="adm-field">
+                              <span>Currency</span>
+                              <select [(ngModel)]="fee.currency" (ngModelChange)="touch()" name="feeCurrency">
+                                @for (cur of currencies; track cur) {
+                                  <option [value]="cur">{{ cur }}</option>
+                                }
+                              </select>
+                            </label>
+                            <label class="adm-field">
+                              <span>Due</span>
+                              <span class="inline-days">
+                                <input type="number" min="0" max="365" [(ngModel)]="fee.dueInDays" (ngModelChange)="touch()" name="feeDue" />
+                                days after it's added
+                              </span>
+                            </label>
+                          </div>
+
+                          <div class="adm-form-row">
+                            <label class="adm-field">
+                              <span>Stage</span>
+                              <select [ngModel]="fee.stageKey" (ngModelChange)="setFeeStage(fee, $event)" name="feeStage">
+                                @for (s of c.stages; track s.key) {
+                                  @if (s.key && (!s.isArchived || s.key === fee.stageKey)) {
+                                    <option [value]="s.key">{{ s.name }}</option>
+                                  }
+                                }
+                              </select>
+                            </label>
+                            <label class="adm-field">
+                              <span>Added to the student</span>
+                              <select [ngModel]="fee.trigger" (ngModelChange)="setFeeTrigger(fee, $event)" name="feeTrigger">
+                                <option value="STAGE_ENTERED">When they reach this stage</option>
+                                <option value="ITEM_COMPLETED">When a checklist item is ticked</option>
+                                <option value="VISA_APPROVED">When the visa is approved</option>
+                                <option value="MANUAL">Only by hand, when it applies</option>
+                              </select>
+                            </label>
+                            @if (fee.trigger === 'ITEM_COMPLETED') {
+                              <label class="adm-field grow2">
+                                <span>Which item</span>
+                                <select [(ngModel)]="fee.triggerItemKey" (ngModelChange)="touch()" name="feeTriggerItem">
+                                  @for (item of itemsFor(c, fee.stageKey, fee.triggerItemKey); track item.key) {
+                                    <option [value]="item.key">{{ item.label }}</option>
+                                  }
+                                </select>
+                              </label>
+                            }
+                          </div>
+
+                          <div class="adm-form-row">
+                            <label class="adm-field">
+                              <span>Applies to</span>
+                              <select [ngModel]="fee.condition ?? ''" (ngModelChange)="setFeeCondition(fee, $event)" name="feeCondition">
+                                <option value="">Every student</option>
+                                @for (cond of conditions; track cond[0]) {
+                                  <option [value]="cond[0]">{{ cond[1] }}</option>
+                                }
+                              </select>
+                            </label>
+                            <label class="adm-field">
+                              <span>Until it's paid</span>
+                              <select [ngModel]="fee.hold" (ngModelChange)="setFeeHold(fee, $event)" name="feeHold">
+                                <option value="NONE">Nothing waits, just track it</option>
+                                <option value="ITEM">A checklist item can't be ticked</option>
+                                <option value="STAGE">The student can't leave this stage</option>
+                              </select>
+                            </label>
+                            @if (fee.hold === 'ITEM') {
+                              <label class="adm-field grow2">
+                                <span>Which item waits</span>
+                                <select [(ngModel)]="fee.holdItemKey" (ngModelChange)="touch()" name="feeHoldItem">
+                                  @for (item of itemsFor(c, fee.stageKey, fee.holdItemKey); track item.key) {
+                                    <option [value]="item.key">{{ item.label }}</option>
+                                  }
+                                </select>
+                              </label>
+                            }
+                          </div>
+
+                          @if (fee.hold === 'ITEM') {
+                            <label class="adm-check">
+                              <input type="checkbox" [(ngModel)]="fee.autoCompleteItem" (ngModelChange)="touch()" name="feeAuto" />
+                              Tick that item automatically once the fee is paid
+                            </label>
+                          }
+                          @if (fee.hold === 'STAGE') {
+                            <p class="adm-muted hold-note">People allowed to override stage requirements can still move the student, with a reason.</p>
+                          }
+
+                          <div class="fee-editor-foot">
+                            @if (fee.key) {
+                              <label class="adm-check">
+                                <input type="checkbox" [(ngModel)]="fee.isArchived" (ngModelChange)="touch()" name="feeArchived" />
+                                Archived (no longer added to students)
+                              </label>
+                            } @else {
+                              <button type="button" class="adm-btn adm-btn--sm adm-btn--ghost" (click)="removeUnsavedFee(fee)">Remove</button>
+                            }
+                            <button type="button" class="adm-btn adm-btn--sm" (click)="editingFee.set(null)">Done</button>
+                          </div>
+                        </div>
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="adm-muted fee-empty">No fees at this stage.</p>
+              }
+            </li>
+          }
+        </ol>
       }
 
       @case ('lists') {

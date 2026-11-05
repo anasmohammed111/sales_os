@@ -16,6 +16,7 @@ import {
   DocumentType,
   DuplicateMatch,
   Fee,
+  FeePlanEntry,
   ListResult,
   MoneyRow,
   PaymentRow,
@@ -239,9 +240,9 @@ export class AdmissionsService {
   }
 
   // Payments
-  listFees(id: string): Observable<{ fees: Fee[]; summary: MoneyRow[] }> {
+  listFees(id: string): Observable<{ fees: Fee[]; summary: MoneyRow[]; plan: FeePlanEntry[] }> {
     return this.http
-      .get<ApiResponse<{ fees: Fee[]; summary: MoneyRow[] }>>(`${this.base}/applications/${id}/fees`)
+      .get<ApiResponse<{ fees: Fee[]; summary: MoneyRow[]; plan: FeePlanEntry[] }>>(`${this.base}/applications/${id}/fees`)
       .pipe(map((r) => r.data));
   }
 
