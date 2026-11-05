@@ -1,0 +1,87 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Quotations
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - heading "Quotations" [level=1]
+  - paragraph: Create, manage and track customer quotations.
+  - button "Create Quotation":
+    - generic: Create Quotation
+  - generic "Quotations Summary Overview":
+    - generic: Total Quotations
+    - generic: "0"
+    - generic: All generated proposals
+    - generic: Draft
+    - generic: "0"
+    - generic: Awaiting review or dispatch
+    - generic: Sent
+    - generic: "0"
+    - generic: Delivered to client
+    - generic: Accepted
+    - generic: "0"
+    - generic: Approved & ready to bill
+  - generic "Quotation Status Filters":
+    - button "All":
+      - generic: All
+    - button "Draft":
+      - generic: Draft
+    - button "Sent":
+      - generic: Sent
+    - button "Accepted":
+      - generic: Accepted
+    - button "Rejected":
+      - generic: Rejected
+    - button "Expired":
+      - generic: Expired
+  - textbox "Search Quotations":
+    - /placeholder: "Search by quote #, customer, company, email..."
+  - combobox "Filter by Assigned Salesperson":
+    - 'option "Assigned: All Members" [selected]'
+    - option "Founder Admin (Rep)"
+  - textbox "Start Date"
+  - generic: –
+  - textbox "End Date"
+  - button "Clear Filters":
+    - generic: Clear Filters
+  - table "Quotations Table":
+    - rowgroup:
+      - row "Quotation Number Customer / Company Lead Reference Date Valid Until Total Amount Assigned To Status Actions":
+        - columnheader "Quotation Number"
+        - columnheader "Customer / Company"
+        - columnheader "Lead Reference"
+        - columnheader "Date"
+        - columnheader "Valid Until"
+        - columnheader "Total Amount"
+        - columnheader "Assigned To"
+        - columnheader "Status"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "No quotations yet Create your first quotation to start managing customer proposals, pricing estimates, and formal deal agreements.":
+        - cell "No quotations yet Create your first quotation to start managing customer proposals, pricing estimates, and formal deal agreements.":
+          - heading "No quotations yet" [level=2]
+          - paragraph: Create your first quotation to start managing customer proposals, pricing estimates, and formal deal agreements.
+  - text: Showing
+  - strong: "0"
+  - text: of
+  - strong: "0"
+  - text: quotations
+  - button "Previous page" [disabled]:
+  - generic: Page 1 of 1
+  - button "Next page" [disabled]:
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

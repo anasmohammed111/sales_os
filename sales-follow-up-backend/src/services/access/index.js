@@ -74,8 +74,10 @@ const publicAccess = (req) => ({
     roleKey: req.user.roleKey,
     roleName: req.user.roleName,
     isOwner: req.user.isOwner,
-    permissions: [...(req.user.permissions || [])],
+    // A super admin's read-only view is told only the read permissions
+    permissions: [...(req.user.clientPermissions || req.user.permissions || [])],
     scopes: req.user.scopes,
+    readOnly: req.user.isPlatformView === true,
 });
 
 // ---------------------------------------------------------------------------

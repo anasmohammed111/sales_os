@@ -21,11 +21,15 @@ const fail = (res, status, message) => res.status(status).json({ success: false,
 
 const text = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : undefined);
 
-const loadSettings = async (userId, businessId) => {
-    const [user, business] = await Promise.all([
-        User.findById(userId).select('name email phone role password googleId'),
+const loadSettings = async (userId, businessId, platformView = null) => {
+    const [found, business] = await Promise.all([
+        platformView ? null : User.findById(userId).select('name email phone role password googleId'),
         Business.findById(businessId).select('businessName email phone address gstin currency features logo'),
     ]);
+    // A super admin viewing the workspace sees their own name as the profile
+    const user = platformView
+        ? { _id: platformView.platformAdminId, name: `${platformView.platformAdminName} (super admin)`, email: platformView.platformAdminEmail, role: 'OWNER' }
+        : found;
     if (!user || !business) return null;
 
     return {
@@ -143,7 +147,7 @@ const removeBusinessLogo = async (req, res, next) => {
 };
 
 const respond = async (req, res, message) => {
-    const data = await loadSettings(req.user.userId, req.user.businessId);
+    const data = await loadSettings(req.user.userId, req.user.businessId, req.user.isPlatformView ? req.user : null);
     if (!data) return fail(res, 404, 'Account not found');
     return res.json({ success: true, ...(message && { message }), data });
 };

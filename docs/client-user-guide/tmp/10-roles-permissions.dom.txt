@@ -1,0 +1,30 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Roles & permissions
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - link "Settings":
+    - /url: /settings
+    - text: Settings
+  - heading "Roles & permissions" [level=1]
+  - paragraph: Decide what each role can see and do. Every button in the CRM follows these settings, and changes apply straight away.
+  - button "New role":
+    - text: New role
+  - generic: Loading roles…
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

@@ -1,0 +1,284 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Follow-ups
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - heading "Follow-ups" [level=1]
+  - paragraph: Manage customer interactions, scheduled activities, and pending follow-up tasks.
+  - button "Active"
+  - button "Archived"
+  - button "Schedule Follow-up":
+    - generic: Schedule Follow-up
+  - region "Follow-up Statistics":
+    - generic: Today
+    - generic: Today's Follow-ups
+    - generic: "4"
+    - generic: Scheduled for today
+    - generic: Action Required
+    - generic: Overdue Follow-ups
+    - generic: "7"
+    - generic: Deadline passed, pending action
+    - generic: Upcoming
+    - generic: Upcoming Follow-ups
+    - generic: "10"
+    - generic: Scheduled for upcoming dates
+    - generic: Completed
+    - generic: Completed Follow-ups
+    - generic: "0"
+    - generic: Resolved and logged interactions
+  - region "Follow-up Filters and Search":
+    - textbox "Search follow-ups":
+      - /placeholder: Search by customer name or company...
+    - button "Filter":
+      - generic: Filter
+  - region "Follow-up List":
+    - table:
+      - rowgroup:
+        - row "Lead Follow up Type Scheduled Date & Time Assigned To Status Notes Actions":
+          - columnheader "Lead"
+          - columnheader "Follow up Type"
+          - columnheader "Scheduled Date & Time"
+          - columnheader "Assigned To"
+          - columnheader "Status"
+          - columnheader "Notes"
+          - columnheader "Actions"
+      - rowgroup:
+        - row "View follow-up details for Lakshmi Prasad Payment Nov 3, 2026 11:00 AM Overdue A Anu Counsellor Overdue — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Lakshmi Prasad":
+            - button "View follow-up details for Lakshmi Prasad": Lakshmi Prasad
+          - cell "Payment":
+            - generic: Payment
+          - cell "Nov 3, 2026 11:00 AM Overdue":
+            - text: Nov 3, 2026
+            - generic: 11:00 AM
+            - generic: Overdue
+          - cell "A Anu Counsellor":
+            - generic: A
+            - generic: Anu Counsellor
+          - cell "Overdue":
+            - generic: Overdue
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Vishnu Nair Payment Nov 3, 2026 11:00 AM Overdue D Divya Counsellor Overdue — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Vishnu Nair":
+            - button "View follow-up details for Vishnu Nair": Vishnu Nair
+          - cell "Payment":
+            - generic: Payment
+          - cell "Nov 3, 2026 11:00 AM Overdue":
+            - text: Nov 3, 2026
+            - generic: 11:00 AM
+            - generic: Overdue
+          - cell "D Divya Counsellor":
+            - generic: D
+            - generic: Divya Counsellor
+          - cell "Overdue":
+            - generic: Overdue
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Sahil Ahmed Payment Nov 3, 2026 11:00 AM Overdue R Rahul Counsellor Overdue — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Sahil Ahmed":
+            - button "View follow-up details for Sahil Ahmed": Sahil Ahmed
+          - cell "Payment":
+            - generic: Payment
+          - cell "Nov 3, 2026 11:00 AM Overdue":
+            - text: Nov 3, 2026
+            - generic: 11:00 AM
+            - generic: Overdue
+          - cell "R Rahul Counsellor":
+            - generic: R
+            - generic: Rahul Counsellor
+          - cell "Overdue":
+            - generic: Overdue
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Aisha Rahman Payment Nov 3, 2026 11:00 AM Overdue A Anu Counsellor Overdue — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Aisha Rahman":
+            - button "View follow-up details for Aisha Rahman": Aisha Rahman
+          - cell "Payment":
+            - generic: Payment
+          - cell "Nov 3, 2026 11:00 AM Overdue":
+            - text: Nov 3, 2026
+            - generic: 11:00 AM
+            - generic: Overdue
+          - cell "A Anu Counsellor":
+            - generic: A
+            - generic: Anu Counsellor
+          - cell "Overdue":
+            - generic: Overdue
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Sneha Joseph Payment Nov 4, 2026 11:00 AM Overdue R Rahul Counsellor Overdue — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Sneha Joseph":
+            - button "View follow-up details for Sneha Joseph": Sneha Joseph
+          - cell "Payment":
+            - generic: Payment
+          - cell "Nov 4, 2026 11:00 AM Overdue":
+            - text: Nov 4, 2026
+            - generic: 11:00 AM
+            - generic: Overdue
+          - cell "R Rahul Counsellor":
+            - generic: R
+            - generic: Rahul Counsellor
+          - cell "Overdue":
+            - generic: Overdue
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Anjali Thomas Payment Nov 4, 2026 11:00 AM Overdue A Anu Counsellor Overdue — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Anjali Thomas":
+            - button "View follow-up details for Anjali Thomas": Anjali Thomas
+          - cell "Payment":
+            - generic: Payment
+          - cell "Nov 4, 2026 11:00 AM Overdue":
+            - text: Nov 4, 2026
+            - generic: 11:00 AM
+            - generic: Overdue
+          - cell "A Anu Counsellor":
+            - generic: A
+            - generic: Anu Counsellor
+          - cell "Overdue":
+            - generic: Overdue
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Imran Khan Payment Nov 4, 2026 11:00 AM Overdue D Divya Counsellor Overdue — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Imran Khan":
+            - button "View follow-up details for Imran Khan": Imran Khan
+          - cell "Payment":
+            - generic: Payment
+          - cell "Nov 4, 2026 11:00 AM Overdue":
+            - text: Nov 4, 2026
+            - generic: 11:00 AM
+            - generic: Overdue
+          - cell "D Divya Counsellor":
+            - generic: D
+            - generic: Divya Counsellor
+          - cell "Overdue":
+            - generic: Overdue
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Rohan Menon WhatsApp Nov 5, 2026 5:00 PM R Rahul Counsellor Pending — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Rohan Menon":
+            - button "View follow-up details for Rohan Menon": Rohan Menon
+          - cell "WhatsApp":
+            - generic: WhatsApp
+          - cell "Nov 5, 2026 5:00 PM":
+            - text: Nov 5, 2026
+            - generic: 5:00 PM
+          - cell "R Rahul Counsellor":
+            - generic: R
+            - generic: Rahul Counsellor
+          - cell "Pending":
+            - generic: Pending
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Meera Krishnan WhatsApp Nov 5, 2026 5:00 PM A Anu Counsellor Pending — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Meera Krishnan":
+            - button "View follow-up details for Meera Krishnan": Meera Krishnan
+          - cell "WhatsApp":
+            - generic: WhatsApp
+          - cell "Nov 5, 2026 5:00 PM":
+            - text: Nov 5, 2026
+            - generic: 5:00 PM
+          - cell "A Anu Counsellor":
+            - generic: A
+            - generic: Anu Counsellor
+          - cell "Pending":
+            - generic: Pending
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+        - row "View follow-up details for Devika Suresh WhatsApp Nov 5, 2026 5:00 PM D Divya Counsellor Pending — Mark completed View details Edit follow-up Archive":
+          - cell "View follow-up details for Devika Suresh":
+            - button "View follow-up details for Devika Suresh": Devika Suresh
+          - cell "WhatsApp":
+            - generic: WhatsApp
+          - cell "Nov 5, 2026 5:00 PM":
+            - text: Nov 5, 2026
+            - generic: 5:00 PM
+          - cell "D Divya Counsellor":
+            - generic: D
+            - generic: Divya Counsellor
+          - cell "Pending":
+            - generic: Pending
+          - cell "—":
+            - generic "No notes": —
+          - cell "Mark completed View details Edit follow-up Archive":
+            - button "Mark completed":
+            - button "View details":
+            - button "Edit follow-up":
+            - button "Archive":
+    - text: Showing
+    - strong: "1"
+    - text: to
+    - strong: "10"
+    - text: of
+    - strong: "21"
+    - text: follow-ups
+    - generic: "Rows:"
+    - combobox "Rows:":
+      - option "10" [selected]
+      - option "25"
+      - option "50"
+    - button "Previous page" [disabled]:
+    - generic: Page 1 of 3
+    - button "Next page":
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

@@ -61,7 +61,7 @@ const getContext = async (req, res, next) => {
                 roleName: req.user.roleName,
                 // Runs admissions for the whole business (can change admissions settings)
                 isAdmin: isAdmin(req),
-                permissions: [...req.user.permissions].filter((p) => p.startsWith('admissions.')),
+                permissions: [...(req.user.clientPermissions || req.user.permissions)].filter((p) => p.startsWith('admissions.')),
                 userId: req.user.userId,
                 businessName: req.business.businessName,
                 config: serializeConfig(req.admissionsConfig),

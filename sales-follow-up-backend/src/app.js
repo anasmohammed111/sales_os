@@ -12,6 +12,8 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const homeDashboardRoutes = require('./routes/homeDashboardRoutes');
 const roleRoutes = require('./routes/roleRoutes');
+const platformRoutes = require('./routes/platformRoutes');
+const { platformViewGuard } = require('./middleware/platformAuth');
 
 const app = express();
 
@@ -61,6 +63,10 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// A super admin viewing a workspace may read, never write (before every route)
+app.use('/api', platformViewGuard);
+
+app.use('/api/platform', platformRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/follow-ups', followUpRoutes);

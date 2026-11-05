@@ -23,6 +23,29 @@ export interface UserAccess {
   isOwner: boolean;
   permissions: string[];
   scopes: Partial<Record<'leads' | 'followups' | 'quotations' | 'admissions', DataScope>>;
+  /** True while a platform super admin is looking at the workspace (nothing can be changed) */
+  readOnly?: boolean;
+}
+
+/** A super admin's read-only look inside one workspace */
+export interface PlatformViewInfo {
+  businessName: string;
+  expiresAt: string;
+}
+
+const VIEW_KEY = 'kelto_platform_view';
+/** The normal session that was open before a super admin view started */
+const SAVED_KEY = 'kelto_saved_session';
+const AUTH_KEYS = ['auth_token', 'auth_user', 'auth_access'] as const;
+
+function readJson<T>(key: string): T | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? (JSON.parse(stored) as T) : null;
+  } catch {
+    return null;
+  }
 }
 
 export interface AuthBusiness {
@@ -92,6 +115,9 @@ export class AuthService {
 
   /** Set when Google sign-in finds no account, so the register page can finish signup. */
   readonly pendingGoogleSignup = signal<PendingGoogleSignup | null>(null);
+
+  /** Set while a platform super admin is viewing this workspace read-only */
+  readonly platformView = signal<PlatformViewInfo | null>(readJson<PlatformViewInfo>(VIEW_KEY));
 
   register(payload: RegisterPayload): Observable<AuthData> {
     return this.http
@@ -199,7 +225,47 @@ export class AuthService {
     return user ? JSON.parse(user) : null;
   }
 
+  /**
+   * Switches the app to a super admin's read-only view of a workspace. A
+   * normal session that was open is kept and comes back on exit.
+   */
+  startPlatformView(view: { token: string; user: AuthUser; access: UserAccess; business: AuthBusiness; expiresAt: string }): void {
+    if (typeof localStorage === 'undefined') return;
+    if (!this.platformView()) {
+      const saved = Object.fromEntries(AUTH_KEYS.map((key) => [key, localStorage.getItem(key)]));
+      if (saved['auth_token']) localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
+      else localStorage.removeItem(SAVED_KEY);
+    }
+    const info: PlatformViewInfo = { businessName: view.business.businessName, expiresAt: view.expiresAt };
+    localStorage.setItem(VIEW_KEY, JSON.stringify(info));
+    this.platformView.set(info);
+    this.setSession({ token: view.token, user: view.user, business: view.business, access: view.access });
+  }
+
+  /** Leaves the read-only view: restores the previous session, or signs out of the workspace. */
+  exitPlatformView(goTo: string | null = '/platform'): void {
+    if (typeof localStorage !== 'undefined') {
+      const saved = readJson<Record<string, string | null>>(SAVED_KEY);
+      localStorage.removeItem(VIEW_KEY);
+      localStorage.removeItem(SAVED_KEY);
+      for (const key of AUTH_KEYS) {
+        const value = saved?.[key];
+        if (value) localStorage.setItem(key, value);
+        else localStorage.removeItem(key);
+      }
+    }
+    this.platformView.set(null);
+    this.currentUser.set(this.getUser());
+    this.access.set(this.getStoredAccess());
+    // A full reload so nothing cached from the viewed workspace survives
+    if (goTo && typeof window !== 'undefined') window.location.assign(goTo);
+  }
+
   logout(): void {
+    if (this.platformView()) {
+      this.exitPlatformView();
+      return;
+    }
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
@@ -213,7 +279,9 @@ export class AuthService {
   isTokenExpired(token: string | null = this.getToken()): boolean {
     if (!token) return true;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      // JWT parts are base64url: map to base64 before decoding
+      const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), '=')));
       return payload.exp ? Date.now() >= payload.exp * 1000 : false;
     } catch {
       return true;

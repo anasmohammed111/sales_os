@@ -1,0 +1,160 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Reports
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - region "Reports & analytics":
+    - paragraph: Sales workspace
+    - heading "Reports & analytics" [level=1]
+    - paragraph: A clear view of lead generation, pipeline health, and follow-up activity.
+    - group "Report period":
+      - button "7 days"
+      - button "30 days" [pressed]
+      - button "90 days"
+    - button "Export CSV":
+      - text: Export CSV
+    - paragraph: Showing Last 30 days · Updated just now
+    - region "Key sales metrics":
+      - article:
+        - generic: New leads
+        - strong: "20"
+        - generic: Created last 30 days
+      - article:
+        - generic: Open pipeline
+        - strong: $0
+        - generic: 20 active opportunities
+      - article:
+        - generic: Follow-ups
+        - strong: "7"
+        - generic: 0 completed last 30 days
+      - article:
+        - generic: Lead win rate
+        - strong: —
+        - generic: No leads closed in this period
+    - region "Sales report charts":
+      - article:
+        - heading "Lead generation" [level=2]
+        - paragraph: New leads over last 30 days
+        - generic: 20 leads
+        - 'img "New lead trend: 20 leads over last 30 days"':
+          - generic: Oct 7
+          - generic: Oct 11
+          - generic: Oct 15
+          - generic: Oct 19
+          - generic: Oct 23
+          - generic: Oct 28
+          - generic: "20"
+          - generic: Nov 1
+      - article:
+        - heading "Lead sources" [level=2]
+        - paragraph: Where new leads came from
+        - generic: Instagram
+        - strong: "6"
+        - progressbar "Instagram"
+        - generic: Referral
+        - strong: "5"
+        - progressbar "Referral"
+        - generic: Website
+        - strong: "4"
+        - progressbar "Website"
+        - generic: WhatsApp
+        - strong: "2"
+        - progressbar "WhatsApp"
+        - generic: Walk-in
+        - strong: "2"
+        - progressbar "Walk-in"
+        - generic: Other
+        - strong: "1"
+        - progressbar "Other"
+      - article:
+        - heading "Pipeline by stage" [level=2]
+        - paragraph: Current opportunity distribution
+        - generic: 20 open
+        - table "Lead pipeline by stage":
+          - row "New 20 $0":
+            - cell "New": New
+            - cell
+            - cell "20"
+            - cell "$0"
+          - row "Contacted 0 $0":
+            - cell "Contacted": Contacted
+            - cell
+            - cell "0"
+            - cell "$0"
+          - row "Qualified 0 $0":
+            - cell "Qualified": Qualified
+            - cell
+            - cell "0"
+            - cell "$0"
+          - row "Quotation sent 0 $0":
+            - cell "Quotation sent": Quotation sent
+            - cell
+            - cell "0"
+            - cell "$0"
+          - row "Negotiation 0 $0":
+            - cell "Negotiation": Negotiation
+            - cell
+            - cell "0"
+            - cell "$0"
+          - row "Won 0 $0":
+            - cell "Won": Won
+            - cell
+            - cell "0"
+            - cell "$0"
+          - row "Lost 0 $0":
+            - cell "Lost": Lost
+            - cell
+            - cell "0"
+            - cell "$0"
+      - article:
+        - heading "Follow-up activity" [level=2]
+        - paragraph: Scheduled by interaction type
+        - generic: 7 total
+        - generic: Payment
+        - strong: "7"
+        - progressbar "Payment"
+    - heading "Recent follow-ups" [level=2]
+    - paragraph: Latest scheduled customer touchpoints for this period
+    - generic: 7 in period
+    - article:
+      - strong: Sneha Joseph
+      - generic: Payment
+      - time: Nov 4, 2026
+      - generic: Pending
+    - article:
+      - strong: Anjali Thomas
+      - generic: Payment
+      - time: Nov 4, 2026
+      - generic: Pending
+    - article:
+      - strong: Imran Khan
+      - generic: Payment
+      - time: Nov 4, 2026
+      - generic: Pending
+    - article:
+      - strong: Aisha Rahman
+      - generic: Payment
+      - time: Nov 3, 2026
+      - generic: Pending
+    - article:
+      - strong: Vishnu Nair
+      - generic: Payment
+      - time: Nov 3, 2026
+      - generic: Pending
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

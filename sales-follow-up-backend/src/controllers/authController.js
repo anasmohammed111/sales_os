@@ -598,8 +598,28 @@ const resetPassword = async (req, res) => {
     }
 };
 
+/** A super admin viewing a workspace has no user there: describe them instead. */
+const platformViewProfile = (req) => ({
+    _id: req.user.platformAdminId,
+    id: req.user.platformAdminId,
+    name: `${req.user.platformAdminName} (super admin)`,
+    email: req.user.platformAdminEmail,
+    role: 'OWNER',
+    businessId: req.user.businessId,
+    isActive: true,
+    isPlatformView: true,
+});
+
 const getMe = async (req, res) => {
     try {
+        if (req.user.isPlatformView) {
+            const business = await Business.findById(req.user.businessId).select('businessName email phone address gstin');
+            return res.status(200).json({
+                success: true,
+                data: { user: platformViewProfile(req), access: publicAccess(req), business },
+            });
+        }
+
         const user = await User.findById(
             req.user.userId
         ).select('-password');

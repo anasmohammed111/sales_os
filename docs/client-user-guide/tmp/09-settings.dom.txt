@@ -1,0 +1,27 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Settings
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - generic: Workspace preferences
+  - heading "Settings" [level=1]
+  - paragraph: Manage your account, security, and business preferences in one place.
+  - strong: Loading settings
+  - generic: Getting your latest account preferences…
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

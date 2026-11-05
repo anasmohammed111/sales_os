@@ -1,0 +1,329 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Sales pipeline
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - heading "Sales Pipeline" [level=1]
+  - paragraph: Track deals and move opportunities forward.
+  - button "Go to Lead Management":
+    - generic: Go to Lead Management
+  - region "Pipeline Summary Overview":
+    - generic: "20"
+    - generic: Total Leads
+    - generic: $0
+    - generic: Pipeline Value
+    - generic: "0"
+    - generic: Won Deals
+    - generic: "0"
+    - generic: Lost Deals
+  - region "Filter pipeline leads":
+    - searchbox "Search leads"
+    - generic: "Assigned:"
+    - combobox "Assigned:":
+      - option "All Assignees" [selected]
+      - option "Anu Counsellor ()"
+      - option "Divya Counsellor ()"
+      - option "Founder Admin ()"
+      - option "Maya Manager ()"
+      - option "Rahul Counsellor ()"
+    - generic: "Priority:"
+    - combobox "Priority:":
+      - option "All Priorities" [selected]
+      - option "High Priority"
+      - option "Medium Priority"
+      - option "Low Priority"
+  - heading "New" [level=3]
+  - generic: "20"
+  - generic: $0
+  - button "Open Kavya Menon":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Kavya Menon" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Rahul Counsellor":
+      - generic: RC
+      - generic: Rahul Counsellor
+  - button "Open Yusuf Ali":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Yusuf Ali" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Anu Counsellor":
+      - generic: AC
+      - generic: Anu Counsellor
+  - button "Open Neha George":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Neha George" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Divya Counsellor":
+      - generic: DC
+      - generic: Divya Counsellor
+  - button "Open Hari Shankar":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Hari Shankar" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Rahul Counsellor":
+      - generic: RC
+      - generic: Rahul Counsellor
+  - button "Open Lakshmi Prasad":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Lakshmi Prasad" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Anu Counsellor":
+      - generic: AC
+      - generic: Anu Counsellor
+  - button "Open Imran Khan":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Imran Khan" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Divya Counsellor":
+      - generic: DC
+      - generic: Divya Counsellor
+  - button "Open Riya Mathew":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Riya Mathew" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Rahul Counsellor":
+      - generic: RC
+      - generic: Rahul Counsellor
+  - button "Open Gautham Raj":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Gautham Raj" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Anu Counsellor":
+      - generic: AC
+      - generic: Anu Counsellor
+  - button "Open Devika Suresh":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Devika Suresh" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Divya Counsellor":
+      - generic: DC
+      - generic: Divya Counsellor
+  - button "Open Sahil Ahmed":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Sahil Ahmed" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Rahul Counsellor":
+      - generic: RC
+      - generic: Rahul Counsellor
+  - button "Open Anjali Thomas":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Anjali Thomas" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Anu Counsellor":
+      - generic: AC
+      - generic: Anu Counsellor
+  - button "Open Nikhil Varghese":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Nikhil Varghese" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Divya Counsellor":
+      - generic: DC
+      - generic: Divya Counsellor
+  - button "Open Adil Hussain":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Adil Hussain" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Rahul Counsellor":
+      - generic: RC
+      - generic: Rahul Counsellor
+  - button "Open Meera Krishnan":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Meera Krishnan" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Anu Counsellor":
+      - generic: AC
+      - generic: Anu Counsellor
+  - button "Open Vishnu Nair":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Vishnu Nair" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Divya Counsellor":
+      - generic: DC
+      - generic: Divya Counsellor
+  - button "Open Sneha Joseph":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Sneha Joseph" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Rahul Counsellor":
+      - generic: RC
+      - generic: Rahul Counsellor
+  - button "Open Arjun Pillai":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Arjun Pillai" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Anu Counsellor":
+      - generic: AC
+      - generic: Anu Counsellor
+  - button "Open Fathima Nazar":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Fathima Nazar" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Divya Counsellor":
+      - generic: DC
+      - generic: Divya Counsellor
+  - button "Open Rohan Menon":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Rohan Menon" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Rahul Counsellor":
+      - generic: RC
+      - generic: Rahul Counsellor
+  - button "Open Aisha Rahman":
+    - generic "Individual"
+    - generic: MEDIUM
+    - button "Move lead to next level (opens transition details)":
+    - button "Lead Actions":
+    - heading "Aisha Rahman" [level=4]
+    - generic: $0
+    - generic: No follow-up set
+    - generic "Assigned to Anu Counsellor":
+      - generic: AC
+      - generic: Anu Counsellor
+  - heading "Contacted" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Qualified" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Quotation Sent" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Negotiation" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Won" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Admissions" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "On Hold" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Closed" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Not Required" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Unresponsive" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+  - heading "Lost" [level=3]
+  - generic: "0"
+  - generic: $0
+  - generic: No leads in this stage.
+  - generic: Drag leads here
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

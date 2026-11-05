@@ -1,0 +1,53 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Team
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - heading "Team Management" [level=1]
+  - paragraph: Manage your team, roles, and account access.
+  - button "Add Team Member":
+    - generic: Add Team Member
+  - region "Team Overview Metrics":
+    - generic: Total Members
+    - generic: "0"
+    - generic: All registered accounts
+    - generic: Active Members
+    - generic: "0"
+    - generic: Currently active
+    - generic: Inactive Members
+    - generic: "0"
+    - generic: Deactivated accounts
+    - generic: Sales Managers
+    - generic: "0"
+    - generic: Managers & supervisors
+    - generic: Sales Representatives
+    - generic: "0"
+    - generic: Field reps & executives
+  - region "Team Filters and Search":
+    - searchbox "Search team members"
+    - generic: "Role:"
+    - combobox "Filter by role":
+      - option "All Roles" [selected]
+    - generic: "Status:"
+    - combobox "Filter by status":
+      - option "All Status" [selected]
+      - option "Active"
+      - option "Inactive"
+  - region "Team Members List"
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

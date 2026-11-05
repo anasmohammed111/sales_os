@@ -1,0 +1,339 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Leads
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - main:
+    - heading "Leads" [level=1]
+    - paragraph: Track, qualify and convert prospects throughout your sales and follow-up lifecycle.
+    - button "Import (soon)" [disabled]:
+      - generic: Import (soon)
+    - button "Export (soon)" [disabled]:
+      - generic: Export (soon)
+    - button "Add Lead":
+      - generic: Add Lead
+    - region "Lead Filters and Search":
+      - searchbox "Search leads"
+      - button "Filter":
+        - generic: Filter
+    - region "Leads Data Table":
+      - table:
+        - rowgroup:
+          - row "Customer / Contact Source Interested In Estimated Value Status Priority Assigned To Next Follow-up Created At Actions":
+            - columnheader "Customer / Contact":
+              - generic: Customer / Contact
+            - columnheader "Source":
+              - generic: Source
+            - columnheader "Interested In":
+              - generic: Interested In
+            - columnheader "Estimated Value":
+              - generic: Estimated Value
+            - columnheader "Status":
+              - generic: Status
+            - columnheader "Priority":
+              - generic: Priority
+            - columnheader "Assigned To"
+            - columnheader "Next Follow-up":
+              - generic: Next Follow-up
+            - columnheader "Created At":
+              - generic: Created At
+            - columnheader "Actions"
+        - rowgroup:
+          - row "Open Kavya Menon":
+            - cell "Kavya Menon kavya19@student.test +91 9800150461":
+              - generic: KM
+              - generic: Kavya Menon
+              - link "kavya19@student.test":
+                - /url: mailto:kavya19@student.test
+              - link "+91 9800150461":
+                - /url: tel:+91 9800150461
+            - cell "Website":
+              - generic: Website
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Rahul Counsellor":
+              - generic: RC
+              - generic: Rahul Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Yusuf Ali":
+            - cell "Yusuf Ali yusuf18@student.test +91 9800142542":
+              - generic: YA
+              - generic: Yusuf Ali
+              - link "yusuf18@student.test":
+                - /url: mailto:yusuf18@student.test
+              - link "+91 9800142542":
+                - /url: tel:+91 9800142542
+            - cell "Referral":
+              - generic: Referral
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Anu Counsellor":
+              - generic: AC
+              - generic: Anu Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Neha George":
+            - cell "Neha George neha17@student.test +91 9800134623":
+              - generic: NG
+              - generic: Neha George
+              - link "neha17@student.test":
+                - /url: mailto:neha17@student.test
+              - link "+91 9800134623":
+                - /url: tel:+91 9800134623
+            - cell "Instagram":
+              - generic: Instagram
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Divya Counsellor":
+              - generic: DC
+              - generic: Divya Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Hari Shankar":
+            - cell "Hari Shankar hari16@student.test +91 9800126704":
+              - generic: HS
+              - generic: Hari Shankar
+              - link "hari16@student.test":
+                - /url: mailto:hari16@student.test
+              - link "+91 9800126704":
+                - /url: tel:+91 9800126704
+            - cell "WhatsApp":
+              - generic: WhatsApp
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Rahul Counsellor":
+              - generic: RC
+              - generic: Rahul Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Lakshmi Prasad":
+            - cell "Lakshmi Prasad lakshmi15@student.test +91 9800118785":
+              - generic: LP
+              - generic: Lakshmi Prasad
+              - link "lakshmi15@student.test":
+                - /url: mailto:lakshmi15@student.test
+              - link "+91 9800118785":
+                - /url: tel:+91 9800118785
+            - cell "Referral":
+              - generic: Referral
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Anu Counsellor":
+              - generic: AC
+              - generic: Anu Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Imran Khan":
+            - cell "Imran Khan imran14@student.test +91 9800110866":
+              - generic: IK
+              - generic: Imran Khan
+              - link "imran14@student.test":
+                - /url: mailto:imran14@student.test
+              - link "+91 9800110866":
+                - /url: tel:+91 9800110866
+            - cell "Instagram":
+              - generic: Instagram
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Divya Counsellor":
+              - generic: DC
+              - generic: Divya Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Riya Mathew":
+            - cell "Riya Mathew riya13@student.test +91 9800102947":
+              - generic: RM
+              - generic: Riya Mathew
+              - link "riya13@student.test":
+                - /url: mailto:riya13@student.test
+              - link "+91 9800102947":
+                - /url: tel:+91 9800102947
+            - cell "Website":
+              - generic: Website
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Rahul Counsellor":
+              - generic: RC
+              - generic: Rahul Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Gautham Raj":
+            - cell "Gautham Raj gautham12@student.test +91 9800095028":
+              - generic: GR
+              - generic: Gautham Raj
+              - link "gautham12@student.test":
+                - /url: mailto:gautham12@student.test
+              - link "+91 9800095028":
+                - /url: tel:+91 9800095028
+            - cell "Walk-in":
+              - generic: Walk-in
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Anu Counsellor":
+              - generic: AC
+              - generic: Anu Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Devika Suresh":
+            - cell "Devika Suresh devika11@student.test +91 9800087109":
+              - generic: DS
+              - generic: Devika Suresh
+              - link "devika11@student.test":
+                - /url: mailto:devika11@student.test
+              - link "+91 9800087109":
+                - /url: tel:+91 9800087109
+            - cell "Instagram":
+              - generic: Instagram
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Divya Counsellor":
+              - generic: DC
+              - generic: Divya Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+          - row "Open Sahil Ahmed":
+            - cell "Sahil Ahmed sahil10@student.test +91 9800079190":
+              - generic: SA
+              - generic: Sahil Ahmed
+              - link "sahil10@student.test":
+                - /url: mailto:sahil10@student.test
+              - link "+91 9800079190":
+                - /url: tel:+91 9800079190
+            - cell "Referral":
+              - generic: Referral
+            - cell "—"
+            - cell "$0":
+              - strong: $0
+            - cell "New":
+              - generic: New
+            - cell "MEDIUM":
+              - generic: MEDIUM
+            - cell "Rahul Counsellor":
+              - generic: RC
+              - generic: Rahul Counsellor
+            - cell "Not scheduled"
+            - cell "1 min ago"
+            - cell "View lead details Edit lead Archive lead":
+              - button "View lead details":
+              - button "Edit lead":
+              - button "Archive lead":
+      - generic "Table pagination":
+        - text: Showing
+        - strong: "1"
+        - text: to
+        - strong: "10"
+        - text: of
+        - strong: "20"
+        - text: leads
+        - generic: "Rows per page:"
+        - combobox "Rows per page:":
+          - option "10" [selected]
+          - option "25"
+          - option "50"
+          - option "100"
+        - navigation "Pages":
+          - button "First page" [disabled]:
+          - button "Previous page" [disabled]:
+          - button "Page 1": "1"
+          - button "Page 2": "2"
+          - button "Next page":
+          - button "Last page":
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More

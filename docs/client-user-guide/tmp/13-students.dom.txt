@@ -1,0 +1,448 @@
+- link "Skip to main content":
+  - /url: "#workspace-main"
+- banner "Mobile Navigation Bar":
+  - button "Go to dashboard":
+    - generic "SYB Education (demo)"
+    - generic: Students
+  - button "Notifications":
+  - button "F Founder":
+    - generic: F
+    - generic: Founder
+- main:
+  - navigation "Admissions":
+    - link "Overview":
+      - /url: /admissions/overview
+    - link "Pipeline":
+      - /url: /admissions/pipeline
+    - link "Students":
+      - /url: /admissions/students
+    - link "Interviews & exams":
+      - /url: /admissions/assessments
+    - link "My tasks":
+      - /url: /admissions/tasks
+    - link "Payments":
+      - /url: /admissions/payments
+    - link "Settings":
+      - /url: /admissions/settings
+  - heading "Students" [level=1]
+  - paragraph: 18 students match these filters.
+  - button "Export CSV"
+  - button "Export Excel"
+  - button "Add student":
+    - text: Add student
+  - region "Filters":
+    - generic: Search students
+    - searchbox "Search students"
+    - combobox "Stage":
+      - option "All stages" [selected]
+      - option "1. Lead / Counselling"
+      - option "2. University Selection"
+      - option "3. Apostille"
+      - option "4. University Application"
+      - option "5. Pre-enrollment"
+      - option "6. Nostrification"
+      - option "7. Offer Letter"
+      - option "8. Visa"
+    - combobox "Level":
+      - option "Any level" [selected]
+      - option "Bachelor's"
+      - option "Master's"
+    - combobox "Intake month":
+      - option "Any intake month" [selected]
+      - option "Jan"
+      - option "Feb"
+      - option "Mar"
+      - option "Apr"
+      - option "May"
+      - option "Jun"
+      - option "Jul"
+      - option "Aug"
+      - option "Sep"
+      - option "Oct"
+      - option "Nov"
+      - option "Dec"
+    - combobox "Intake year":
+      - option "Any year" [selected]
+      - option "2025"
+      - option "2026"
+      - option "2027"
+      - option "2028"
+      - option "2029"
+    - combobox "Counsellor":
+      - option "All counsellors" [selected]
+      - option "Anu Counsellor"
+      - option "Divya Counsellor"
+      - option "Founder Admin"
+      - option "Maya Manager"
+      - option "Rahul Counsellor"
+      - option "Unassigned"
+    - combobox "University":
+      - option "Any university" [selected]
+      - option "Charles University"
+      - option "Czech Technical University in Prague"
+      - option "Masaryk University"
+    - combobox "Status":
+      - option "Active" [selected]
+      - option "Closed (visa result)"
+      - option "Withdrawn"
+      - option "All statuses"
+    - combobox "Payments":
+      - option "Any payment status" [selected]
+      - option "Money outstanding"
+      - option "Payment overdue"
+      - option "Unpaid"
+      - option "Partly paid"
+      - option "Fully paid"
+      - option "No fees yet"
+    - combobox "Visa outcome":
+      - option "Any visa outcome" [selected]
+      - option "Visa pending"
+      - option "Visa approved"
+      - option "Visa rejected"
+    - button "Follow-up overdue"
+    - button "Stuck"
+    - button "Needs review"
+  - table:
+    - rowgroup:
+      - row "Student Stage Intake Counsellor Next follow-up Needs attention":
+        - columnheader "Student"
+        - columnheader "Stage"
+        - columnheader "Intake"
+        - columnheader "Counsellor"
+        - columnheader "Next follow-up"
+        - columnheader "Needs attention"
+    - rowgroup:
+      - row "FN Fathima Nazar +91 9800015838 1 Lead / Counselling 1 day here Sep 2027 Master's Divya Counsellor tomorrow, 1:30 pm":
+        - cell "FN Fathima Nazar +91 9800015838":
+          - link "FN Fathima Nazar +91 9800015838":
+            - /url: /admissions/students/6aec2d744c860e9554825ce9
+            - generic: FN
+            - strong: Fathima Nazar
+            - generic: +91 9800015838
+        - cell "1 Lead / Counselling 1 day here":
+          - generic: "1"
+          - text: Lead / Counselling
+          - generic: 1 day here
+        - cell "Sep 2027 Master's":
+          - text: Sep 2027
+          - generic: Master's
+        - cell "Divya Counsellor"
+        - cell "tomorrow, 1:30 pm"
+        - cell
+      - row "AR Aisha Rahman +91 9800000000 1 Lead / Counselling 2 days here Feb 2027 Master's Anu Counsellor 2 days ago, 1:30 pm Follow-up overdue":
+        - cell "AR Aisha Rahman +91 9800000000":
+          - link "AR Aisha Rahman +91 9800000000":
+            - /url: /admissions/students/6aec2d744c860e9554825bf5
+            - generic: AR
+            - strong: Aisha Rahman
+            - generic: +91 9800000000
+        - cell "1 Lead / Counselling 2 days here":
+          - generic: "1"
+          - text: Lead / Counselling
+          - generic: 2 days here
+        - cell "Feb 2027 Master's":
+          - text: Feb 2027
+          - generic: Master's
+        - cell "Anu Counsellor"
+        - cell "2 days ago, 1:30 pm"
+        - cell "Follow-up overdue":
+          - generic: Follow-up overdue
+      - row "RM Rohan Menon +91 9800007919 1 Lead / Counselling 9 days here Sep 2027 Bachelor's Rahul Counsellor today, 7:30 pm Stuck":
+        - cell "RM Rohan Menon +91 9800007919":
+          - link "RM Rohan Menon +91 9800007919":
+            - /url: /admissions/students/6aec2d744c860e9554825c6f
+            - generic: RM
+            - strong: Rohan Menon
+            - generic: +91 9800007919
+        - cell "1 Lead / Counselling 9 days here":
+          - generic: "1"
+          - text: Lead / Counselling
+          - generic: 9 days here
+        - cell "Sep 2027 Bachelor's":
+          - text: Sep 2027
+          - generic: Bachelor's
+        - cell "Rahul Counsellor"
+        - cell "today, 7:30 pm"
+        - cell "Stuck":
+          - generic: Stuck
+      - row "AP Arjun Pillai +91 9800023757 2 University Selection 4 days here Feb 2027 Master's Anu Counsellor in 4 days, 1:30 pm":
+        - cell "AP Arjun Pillai +91 9800023757":
+          - link "AP Arjun Pillai +91 9800023757":
+            - /url: /admissions/students/6aec2d744c860e9554825d63
+            - generic: AP
+            - strong: Arjun Pillai
+            - generic: +91 9800023757
+        - cell "2 University Selection 4 days here":
+          - generic: "2"
+          - text: University Selection
+          - generic: 4 days here
+        - cell "Feb 2027 Master's":
+          - text: Feb 2027
+          - generic: Master's
+        - cell "Anu Counsellor"
+        - cell "in 4 days, 1:30 pm"
+        - cell
+      - row "SJ Sneha Joseph +91 9800031676 2 University Selection 12 days here Sep 2027 Bachelor's Rahul Counsellor yesterday, 1:30 pm Stuck Follow-up overdue":
+        - cell "SJ Sneha Joseph +91 9800031676":
+          - link "SJ Sneha Joseph +91 9800031676":
+            - /url: /admissions/students/6aec2d744c860e9554825ddd
+            - generic: SJ
+            - strong: Sneha Joseph
+            - generic: +91 9800031676
+        - cell "2 University Selection 12 days here":
+          - generic: "2"
+          - text: University Selection
+          - generic: 12 days here
+        - cell "Sep 2027 Bachelor's":
+          - text: Sep 2027
+          - generic: Bachelor's
+        - cell "Rahul Counsellor"
+        - cell "yesterday, 1:30 pm"
+        - cell "Stuck Follow-up overdue":
+          - generic: Stuck
+          - generic: Follow-up overdue
+      - row "VN Vishnu Nair +91 9800039595 3 Apostille 3 days here Sep 2027 Master's Divya Counsellor 2 days ago, 1:30 pm Follow-up overdue":
+        - cell "VN Vishnu Nair +91 9800039595":
+          - link "VN Vishnu Nair +91 9800039595":
+            - /url: /admissions/students/6aec2d744c860e9554825e7f
+            - generic: VN
+            - strong: Vishnu Nair
+            - generic: +91 9800039595
+        - cell "3 Apostille 3 days here":
+          - generic: "3"
+          - text: Apostille
+          - generic: 3 days here
+        - cell "Sep 2027 Master's":
+          - text: Sep 2027
+          - generic: Master's
+        - cell "Divya Counsellor"
+        - cell "2 days ago, 1:30 pm"
+        - cell "Follow-up overdue":
+          - generic: Follow-up overdue
+      - row "MK Meera Krishnan +91 9800047514 3 Apostille 6 days here Feb 2027 Master's Anu Counsellor today, 7:30 pm":
+        - cell "MK Meera Krishnan +91 9800047514":
+          - link "MK Meera Krishnan +91 9800047514":
+            - /url: /admissions/students/6aec2d744c860e9554825ef9
+            - generic: MK
+            - strong: Meera Krishnan
+            - generic: +91 9800047514
+        - cell "3 Apostille 6 days here":
+          - generic: "3"
+          - text: Apostille
+          - generic: 6 days here
+        - cell "Feb 2027 Master's":
+          - text: Feb 2027
+          - generic: Master's
+        - cell "Anu Counsellor"
+        - cell "today, 7:30 pm"
+        - cell
+      - row "AT Anjali Thomas +91 9800071271 4 University Application 2 days here Feb 2027 Master's Anu Counsellor yesterday, 1:30 pm Follow-up overdue":
+        - cell "AT Anjali Thomas +91 9800071271":
+          - link "AT Anjali Thomas +91 9800071271":
+            - /url: /admissions/students/6aec2d744c860e955482606a
+            - generic: AT
+            - strong: Anjali Thomas
+            - generic: +91 9800071271
+        - cell "4 University Application 2 days here":
+          - generic: "4"
+          - text: University Application
+          - generic: 2 days here
+        - cell "Feb 2027 Master's":
+          - text: Feb 2027
+          - generic: Master's
+        - cell "Anu Counsellor"
+        - cell "yesterday, 1:30 pm"
+        - cell "Follow-up overdue":
+          - generic: Follow-up overdue
+      - row "AH Adil Hussain +91 9800055433 3 Apostille 15 days here Sep 2027 Bachelor's Rahul Counsellor tomorrow, 1:30 pm Stuck":
+        - cell "AH Adil Hussain +91 9800055433":
+          - link "AH Adil Hussain +91 9800055433":
+            - /url: /admissions/students/6aec2d744c860e9554825f73
+            - generic: AH
+            - strong: Adil Hussain
+            - generic: +91 9800055433
+        - cell "3 Apostille 15 days here":
+          - generic: "3"
+          - text: Apostille
+          - generic: 15 days here
+        - cell "Sep 2027 Bachelor's":
+          - text: Sep 2027
+          - generic: Bachelor's
+        - cell "Rahul Counsellor"
+        - cell "tomorrow, 1:30 pm"
+        - cell "Stuck":
+          - generic: Stuck
+      - row "NV Nikhil Varghese +91 9800063352 4 University Application 5 days here Sep 2027 Master's Divya Counsellor in 4 days, 1:30 pm Payment overdue":
+        - cell "NV Nikhil Varghese +91 9800063352":
+          - link "NV Nikhil Varghese +91 9800063352":
+            - /url: /admissions/students/6aec2d744c860e9554825fed
+            - generic: NV
+            - strong: Nikhil Varghese
+            - generic: +91 9800063352
+        - cell "4 University Application 5 days here":
+          - generic: "4"
+          - text: University Application
+          - generic: 5 days here
+        - cell "Sep 2027 Master's":
+          - text: Sep 2027
+          - generic: Master's
+        - cell "Divya Counsellor"
+        - cell "in 4 days, 1:30 pm"
+        - cell "Payment overdue":
+          - generic: Payment overdue
+      - row "DS Devika Suresh +91 9800087109 5 Pre-enrollment 3 days here Sep 2027 Master's Divya Counsellor today, 7:30 pm":
+        - cell "DS Devika Suresh +91 9800087109":
+          - link "DS Devika Suresh +91 9800087109":
+            - /url: /admissions/students/6aec2d744c860e955482618a
+            - generic: DS
+            - strong: Devika Suresh
+            - generic: +91 9800087109
+        - cell "5 Pre-enrollment 3 days here":
+          - generic: "5"
+          - text: Pre-enrollment
+          - generic: 3 days here
+        - cell "Sep 2027 Master's":
+          - text: Sep 2027
+          - generic: Master's
+        - cell "Divya Counsellor"
+        - cell "today, 7:30 pm"
+        - cell
+      - row "SA Sahil Ahmed +91 9800079190 4 University Application 20 days here Sep 2027 Bachelor's Rahul Counsellor 2 days ago, 1:30 pm Needs review Stuck Follow-up overdue":
+        - cell "SA Sahil Ahmed +91 9800079190":
+          - link "SA Sahil Ahmed +91 9800079190":
+            - /url: /admissions/students/6aec2d744c860e955482610d
+            - generic: SA
+            - strong: Sahil Ahmed
+            - generic: +91 9800079190
+        - cell "4 University Application 20 days here":
+          - generic: "4"
+          - text: University Application
+          - generic: 20 days here
+        - cell "Sep 2027 Bachelor's":
+          - text: Sep 2027
+          - generic: Bachelor's
+        - cell "Rahul Counsellor"
+        - cell "2 days ago, 1:30 pm"
+        - cell "Needs review Stuck Follow-up overdue":
+          - generic: Needs review
+          - generic: Stuck
+          - generic: Follow-up overdue
+      - row "GR Gautham Raj +91 9800095028 5 Pre-enrollment 11 days here Feb 2027 Master's Anu Counsellor tomorrow, 1:30 pm Stuck Payment overdue":
+        - cell "GR Gautham Raj +91 9800095028":
+          - link "GR Gautham Raj +91 9800095028":
+            - /url: /admissions/students/6aec2d744c860e9554826207
+            - generic: GR
+            - strong: Gautham Raj
+            - generic: +91 9800095028
+        - cell "5 Pre-enrollment 11 days here":
+          - generic: "5"
+          - text: Pre-enrollment
+          - generic: 11 days here
+        - cell "Feb 2027 Master's":
+          - text: Feb 2027
+          - generic: Master's
+        - cell "Anu Counsellor"
+        - cell "tomorrow, 1:30 pm"
+        - cell "Stuck Payment overdue":
+          - generic: Stuck
+          - generic: Payment overdue
+      - row "IK Imran Khan +91 9800110866 6 Nostrification 1 day here Sep 2027 Master's Divya Counsellor yesterday, 1:30 pm Follow-up overdue":
+        - cell "IK Imran Khan +91 9800110866":
+          - link "IK Imran Khan +91 9800110866":
+            - /url: /admissions/students/6aec2d754c860e9554826300
+            - generic: IK
+            - strong: Imran Khan
+            - generic: +91 9800110866
+        - cell "6 Nostrification 1 day here":
+          - generic: "6"
+          - text: Nostrification
+          - generic: 1 day here
+        - cell "Sep 2027 Master's":
+          - text: Sep 2027
+          - generic: Master's
+        - cell "Divya Counsellor"
+        - cell "yesterday, 1:30 pm"
+        - cell "Follow-up overdue":
+          - generic: Follow-up overdue
+      - row "RM Riya Mathew +91 9800102947 6 Nostrification 4 days here Sep 2027 Bachelor's Rahul Counsellor in 4 days, 1:30 pm":
+        - cell "RM Riya Mathew +91 9800102947":
+          - link "RM Riya Mathew +91 9800102947":
+            - /url: /admissions/students/6aec2d744c860e9554826282
+            - generic: RM
+            - strong: Riya Mathew
+            - generic: +91 9800102947
+        - cell "6 Nostrification 4 days here":
+          - generic: "6"
+          - text: Nostrification
+          - generic: 4 days here
+        - cell "Sep 2027 Bachelor's":
+          - text: Sep 2027
+          - generic: Bachelor's
+        - cell "Rahul Counsellor"
+        - cell "in 4 days, 1:30 pm"
+        - cell
+      - row "HS Hari Shankar +91 9800126704 7 Offer Letter 2 days here Sep 2027 Bachelor's Rahul Counsellor today, 7:30 pm Payment overdue":
+        - cell "HS Hari Shankar +91 9800126704":
+          - link "HS Hari Shankar +91 9800126704":
+            - /url: /admissions/students/6aec2d754c860e9554826425
+            - generic: HS
+            - strong: Hari Shankar
+            - generic: +91 9800126704
+        - cell "7 Offer Letter 2 days here":
+          - generic: "7"
+          - text: Offer Letter
+          - generic: 2 days here
+        - cell "Sep 2027 Bachelor's":
+          - text: Sep 2027
+          - generic: Bachelor's
+        - cell "Rahul Counsellor"
+        - cell "today, 7:30 pm"
+        - cell "Payment overdue":
+          - generic: Payment overdue
+      - row "LP Lakshmi Prasad +91 9800118785 7 Offer Letter 8 days here Feb 2027 Master's Anu Counsellor 2 days ago, 1:30 pm Stuck Follow-up overdue":
+        - cell "LP Lakshmi Prasad +91 9800118785":
+          - link "LP Lakshmi Prasad +91 9800118785":
+            - /url: /admissions/students/6aec2d754c860e95548263a6
+            - generic: LP
+            - strong: Lakshmi Prasad
+            - generic: +91 9800118785
+        - cell "7 Offer Letter 8 days here":
+          - generic: "7"
+          - text: Offer Letter
+          - generic: 8 days here
+        - cell "Feb 2027 Master's":
+          - text: Feb 2027
+          - generic: Master's
+        - cell "Anu Counsellor"
+        - cell "2 days ago, 1:30 pm"
+        - cell "Stuck Follow-up overdue":
+          - generic: Stuck
+          - generic: Follow-up overdue
+      - row "NG Neha George +91 9800134623 8 Visa 5 days here Sep 2027 Master's Divya Counsellor tomorrow, 1:30 pm":
+        - cell "NG Neha George +91 9800134623":
+          - link "NG Neha George +91 9800134623":
+            - /url: /admissions/students/6aec2d754c860e95548264a6
+            - generic: NG
+            - strong: Neha George
+            - generic: +91 9800134623
+        - cell "8 Visa 5 days here":
+          - generic: "8"
+          - text: Visa
+          - generic: 5 days here
+        - cell "Sep 2027 Master's":
+          - text: Sep 2027
+          - generic: Master's
+        - cell "Divya Counsellor"
+        - cell "tomorrow, 1:30 pm"
+        - cell
+- navigation "Bottom Navigation":
+  - button "Home Dashboard":
+    - generic: Home
+  - button "Leads":
+    - generic: Leads
+  - button "Follow-ups":
+    - generic: Follow-ups
+  - button "Team Management":
+    - generic: Team
+  - button "More Menu":
+    - generic: More
