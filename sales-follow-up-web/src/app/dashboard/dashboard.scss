@@ -2132,6 +2132,8 @@
 // Folds by height (0fr to 1fr) and opacity; inert while folded so its links are out of the tab order
 .nav-sublist-wrap {
   display: grid;
+  // overflow: hidden lets a flex item shrink to nothing; a tall menu must scroll instead
+  flex-shrink: 0;
   grid-template-rows: 0fr;
   margin: 0;
   opacity: 0;
