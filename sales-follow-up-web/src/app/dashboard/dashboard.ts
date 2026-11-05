@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, ElementRef, HostListener, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterOutlet } from '@angular/router';
@@ -21,6 +21,7 @@ import { RolesSettings } from '../settings/roles/roles-settings';
 import { PermissionService } from '../core/services/permission.service';
 import { CanDirective } from '../shared/can/can.directive';
 import { SupportBanner } from '../shared/support-banner/support-banner';
+import { HomeInsights } from './home-insights/home-insights';
 
 type DashboardTab =
   | 'dashboard'
@@ -72,7 +73,7 @@ const tabForUrl = (url: string): DashboardTab =>
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Reports, Settings, RolesSettings, NotificationBell, CanDirective, SupportBanner],
+  imports: [CommonModule, FormsModule, RouterOutlet, Leads, FollowUps, Team, Pipeline, Quotations, Reports, Settings, RolesSettings, NotificationBell, CanDirective, SupportBanner, HomeInsights],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -267,6 +268,13 @@ export class Dashboard {
 
   searchQuery = signal('');
   activeFilter = signal<'all' | 'urgent' | 'call' | 'overdue' | 'completed'>('all');
+  private readonly queueSection = viewChild<ElementRef<HTMLElement>>('queueSection');
+
+  /** From the "Overdue follow-ups" card: show only overdue items in the queue below */
+  focusOverdue(): void {
+    this.activeFilter.set('overdue');
+    this.queueSection()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   isQuickAddOpen = signal(false);
 
   // Home dashboard: everything below comes from GET /api/dashboard/summary

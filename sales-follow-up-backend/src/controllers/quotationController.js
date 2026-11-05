@@ -712,6 +712,7 @@ const deleteQuotation = async (req, res) => {
 };
 
 module.exports = {
+    getQuotationScope,
     createQuotation,
     getQuotations,
     getQuotationById,

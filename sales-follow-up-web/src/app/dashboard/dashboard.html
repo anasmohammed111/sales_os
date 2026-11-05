@@ -475,10 +475,12 @@
     </section>
     }
 
+    <app-home-insights [summary]="summary()" (showOverdue)="focusOverdue()" />
+
     <!-- Content Columns -->
     <div class="layout-grid">
       <!-- Left Column: Follow-up Queue -->
-      <section class="queue-section">
+      <section class="queue-section" #queueSection>
         <div class="section-top">
           <div class="section-title-wrap">
             <h2>Today's Follow-up Queue</h2>

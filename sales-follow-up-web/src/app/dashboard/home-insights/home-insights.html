@@ -1,0 +1,186 @@
+@if (canSeeLeads() || canSeeFollowUps() || canSeeQuotations() || showAdmissions()) {
+<section class="insights" aria-label="Needs attention">
+  @if (canSeeLeads() || canSeeFollowUps()) {
+  <article class="card">
+    <header class="card-head">
+      <span class="card-icon is-amber" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </span>
+      <div class="card-title">
+        <h3>Needs attention</h3>
+        <p>Work that has slipped</p>
+      </div>
+      @if (allClear()) {
+      <span class="badge is-ok">All clear</span>
+      }
+    </header>
+
+    @if (attention(); as a) {
+    <div class="rows">
+      @if (canSeeFollowUps()) {
+      <button type="button" class="row" [class.is-warn]="a.overdueFollowUps.count > 0" (click)="showOverdue.emit()">
+        <span class="row-text">
+          <strong>Overdue follow-ups</strong>
+          <span>{{ overdueDetail(a.overdueFollowUps.oldestAt) }}</span>
+        </span>
+        <span class="row-num">{{ a.overdueFollowUps.count }}</span>
+      </button>
+      }
+
+      @if (canSeeLeads()) {
+      <button type="button" class="row" [class.is-warn]="a.neglectedLeads.count > 0" (click)="open('/leads')">
+        <span class="row-text">
+          <strong>Neglected leads</strong>
+          <span>No follow-up planned, nothing done in {{ a.neglectedLeads.idleDays }}+ days</span>
+        </span>
+        <span class="row-num">{{ a.neglectedLeads.count }}</span>
+      </button>
+
+      @if (a.neglectedLeads.items.length) {
+      <ul class="mini-list" aria-label="Largest neglected leads">
+        @for (lead of a.neglectedLeads.items; track lead.id) {
+        <li>
+          <span class="mini-line">
+            <strong>{{ lead.name }}</strong>
+            <span class="mini-amount">{{ money(lead.value, summary()!.currency) }}</span>
+          </span>
+          <span class="mini-meta">
+            {{ lead.statusLabel }} &middot; idle {{ lead.idleDays }} days &middot; {{ lead.assignedTo || 'Unassigned' }}
+          </span>
+        </li>
+        }
+      </ul>
+      }
+
+      <button type="button" class="row" [class.is-warn]="a.unassignedLeads > 0" (click)="open('/leads')">
+        <span class="row-text">
+          <strong>Unassigned leads</strong>
+          <span>Open leads nobody owns yet</span>
+        </span>
+        <span class="row-num">{{ a.unassignedLeads }}</span>
+      </button>
+      }
+    </div>
+    } @else {
+    <p class="muted" aria-busy="true">Loading…</p>
+    }
+  </article>
+  }
+
+  @if (canSeeQuotations()) {
+  <article class="card">
+    <header class="card-head">
+      <span class="card-icon is-blue" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      </span>
+      <div class="card-title">
+        <h3>Quotations</h3>
+        <p>Waiting on customers</p>
+      </div>
+    </header>
+
+    @if (quotations(); as q) {
+    <button type="button" class="headline" (click)="open('/quotations')">
+      <span class="headline-num">{{ q.awaiting.count }}</span>
+      <span class="row-text">
+        <strong>Sent, awaiting a reply</strong>
+        <span>{{ q.awaiting.count ? totals(q.awaiting.totals) : 'Nothing out with customers' }}</span>
+      </span>
+    </button>
+
+    <div class="sub-head">
+      <span>Expiring in the next {{ q.expiringSoon.withinDays }} days</span>
+      <span class="badge" [class.is-warn]="q.expiringSoon.count > 0">{{ q.expiringSoon.count }}</span>
+    </div>
+    <ul class="mini-list">
+      @for (item of q.expiringSoon.items; track item.id) {
+      <li>
+        <span class="mini-line">
+          <strong>{{ item.number }} &middot; {{ item.customer }}</strong>
+          <span class="mini-amount">{{ money(item.amount, item.currency) }}</span>
+        </span>
+        <span class="mini-meta" [class.is-urgent]="item.daysLeft <= 2">{{ expiresIn(item.daysLeft) }}</span>
+      </li>
+      } @empty {
+      <li class="muted">None expiring this week.</li>
+      }
+    </ul>
+
+    <p class="card-foot">
+      Accepted this month: <strong>{{ q.acceptedThisMonth.count }}</strong>
+      @if (q.acceptedThisMonth.count) {
+      &middot; {{ totals(q.acceptedThisMonth.totals) }}
+      }
+    </p>
+    } @else {
+    <p class="muted" aria-busy="true">Loading…</p>
+    }
+  </article>
+  }
+
+  @if (showAdmissions()) {
+  <article class="card">
+    <header class="card-head">
+      <span class="card-icon is-coral" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg>
+      </span>
+      <div class="card-title">
+        <h3>Admissions</h3>
+        <p>{{ admissionsData() ? admissionsData()!.metrics.active.value + ' active students' : 'Students who need a push' }}</p>
+      </div>
+    </header>
+
+    @switch (admissionsState()) {
+    @case ('ready') {
+    @let d = admissionsData()!;
+    <div class="rows">
+      <button type="button" class="row" [class.is-warn]="d.metrics.stuck.value > 0" (click)="openStudents(d.metrics.stuck.query)">
+        <span class="row-text">
+          <strong>Stuck in stage</strong>
+          <span>Past the stage's time limit</span>
+        </span>
+        <span class="row-num">{{ d.metrics.stuck.value }}</span>
+      </button>
+      <button type="button" class="row" [class.is-warn]="d.metrics.overdueFollowUps.value > 0"
+        (click)="openStudents(d.metrics.overdueFollowUps.query)">
+        <span class="row-text">
+          <strong>Follow-ups overdue</strong>
+          <span>Student outreach past its date</span>
+        </span>
+        <span class="row-num">{{ d.metrics.overdueFollowUps.value }}</span>
+      </button>
+      <button type="button" class="row" [class.is-bad]="d.metrics.needsReview.value > 0"
+        (click)="openStudents(d.metrics.needsReview.query)">
+        <span class="row-text">
+          <strong>Flagged for review</strong>
+          <span>An exam or interview needs a decision</span>
+        </span>
+        <span class="row-num">{{ d.metrics.needsReview.value }}</span>
+      </button>
+      @if (canSeeFees()) {
+      <button type="button" class="row" [class.is-warn]="!!feesOverdue()" (click)="open('/admissions/payments')">
+        <span class="row-text">
+          <strong>Fees overdue</strong>
+          <span>{{ feesOutstanding() ? 'Outstanding in total: ' + feesOutstanding() : 'Nothing outstanding' }}</span>
+        </span>
+        <span class="row-num row-num--money">{{ feesOverdue() || 'None' }}</span>
+      </button>
+      }
+    </div>
+    }
+    @case ('error') {
+    <p class="muted">Admissions figures could not load.
+      <button type="button" class="link" (click)="loadAdmissions()">Try again</button>
+    </p>
+    }
+    @default {
+    <p class="muted" aria-busy="true">Loading…</p>
+    }
+    }
+  </article>
+  }
+</section>
+}
