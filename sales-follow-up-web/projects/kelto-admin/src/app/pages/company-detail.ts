@@ -3,10 +3,12 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AdminApi, CompanyDetail, CompanyUser, SupportMode } from '../core/admin-api';
+import { AdminApi, CompanyDetail, CompanyUser, SubscriptionStatus, SupportMode } from '../core/admin-api';
 import { AdminSession } from '../core/admin-session';
 import { SupportDialog } from './support-dialog';
 import { STATUS_LABEL, STATUS_TONE } from './companies';
+
+const SUBSCRIPTION_LABEL: Record<SubscriptionStatus, string> = { TRIALING: 'Trialing', ACTIVE: 'Active', PAST_DUE: 'Past due', CANCELLED: 'Cancelled', EXPIRED: 'Expired' };
 
 /** One company: status, modules, support access and its people. */
 @Component({
@@ -44,6 +46,20 @@ import { STATUS_LABEL, STATUS_TONE } from './companies';
         </dl>
 
         <div class="cards">
+          <div class="pf-card subscription-card">
+            <div class="pf-card-head"><h2>Subscription</h2>@if (session.can('subscriptions.manage')) { <a class="manage-link" routerLink="/subscriptions" [queryParams]="{ company: c.id }">Manage</a> }</div>
+            <div class="pf-card-body">
+              @if (c.subscription; as subscription) {
+                <div class="subscription-title"><div><strong>{{ subscription.planName }}</strong><small>{{ subscription.billingCycle === 'MONTHLY' ? 'Monthly billing' : 'Annual billing' }}</small></div><span [class]="'sub-chip sub-chip--' + subscription.status.toLowerCase()">{{ subscriptionLabel[subscription.status] }}</span></div>
+                <dl class="subscription-meta"><div><dt>Price</dt><dd>{{ money(subscription.amountMinor, subscription.currency) }}</dd></div><div><dt>{{ subscription.status === 'TRIALING' ? 'Trial ends' : 'Period ends' }}</dt><dd>{{ (subscription.status === 'TRIALING' ? subscription.trialEndsAt : subscription.currentPeriodEnd) | date: 'd MMM y' }}</dd></div></dl>
+                @if (subscription.cancelAtPeriodEnd) { <p class="pf-note pf-note--warn">Cancellation is scheduled at the end of this period.</p> }
+              } @else {
+                <p class="hint">No SaaS plan has been assigned to this company.</p>
+                @if (session.can('subscriptions.manage')) { <a class="pf-btn pf-btn--primary pf-btn--sm" routerLink="/subscriptions" [queryParams]="{ company: c.id }">Assign subscription</a> }
+              }
+            </div>
+          </div>
+
           <div class="pf-card">
             <div class="pf-card-head"><h2>Status</h2></div>
             <div class="pf-card-body">
@@ -151,6 +167,10 @@ import { STATUS_LABEL, STATUS_TONE } from './companies';
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
     .hint { margin: 0; color: #64748b; font-size: 13px; line-height: 1.5; }
     h1 .pf-chip { vertical-align: middle; margin-left: 6px; }
+    .manage-link { color: var(--kelto-brand-600); font-size: 12px; font-weight: 750; text-decoration: none; }
+    .subscription-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }.subscription-title > div { display: grid; gap: 2px; }.subscription-title strong { font-size: 17px; }.subscription-title small { color: #64748b; font-size: 11px; }
+    .sub-chip { display: inline-flex; padding: 4px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 800; }.sub-chip--active { background: #ecfdf5; color: #047857; }.sub-chip--trialing { background: #f5f3ff; color: #6d28d9; }.sub-chip--past_due { background: #fff7ed; color: #c2410c; }.sub-chip--cancelled { background: #fef2f2; color: #b91c1c; }
+    .subscription-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 2px 0 0; }.subscription-meta div { padding: 9px; border-radius: 9px; background: #f8fafc; }.subscription-meta dt { color: #94a3b8; font-size: 10px; font-weight: 700; text-transform: uppercase; }.subscription-meta dd { margin: 3px 0 0; font-size: 13px; font-weight: 750; }
   `,
 })
 export class CompanyDetailPage implements OnInit {
@@ -162,6 +182,7 @@ export class CompanyDetailPage implements OnInit {
 
   readonly tone = STATUS_TONE;
   readonly label = STATUS_LABEL;
+  readonly subscriptionLabel = SUBSCRIPTION_LABEL;
   readonly company = signal<CompanyDetail | null>(null);
   readonly error = signal<string | null>(null);
   readonly saving = signal(false);
@@ -224,5 +245,10 @@ export class CompanyDetailPage implements OnInit {
         this.lifecycleError.set(err.error?.message || 'The change could not be saved.');
       },
     });
+  }
+
+  money(minor: number, currency: string): string {
+    try { return new Intl.NumberFormat('en', { style: 'currency', currency }).format(minor / 100); }
+    catch { return `${currency} ${(minor / 100).toFixed(2)}`; }
   }
 }

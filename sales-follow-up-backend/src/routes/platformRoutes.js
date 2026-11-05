@@ -1,6 +1,7 @@
 const express = require('express');
 const platform = require('../controllers/platformController');
 const admins = require('../controllers/platformAdminController');
+const subscriptions = require('../controllers/platformSubscriptionController');
 const { requirePlatformAdmin, requirePlatformPermission: can } = require('../middleware/platformAuth');
 
 // Kelto admin app API. Every route checks the administrator's role on the
@@ -12,6 +13,14 @@ router.post('/auth/login', platform.login);
 router.use(requirePlatformAdmin);
 router.get('/auth/me', platform.me);
 router.post('/auth/change-password', platform.changePassword);
+
+// SaaS overview, plans and subscriptions
+router.get('/dashboard', can('dashboard.view'), subscriptions.getDashboard);
+router.get('/plans', can('plans.view'), subscriptions.listPlans);
+router.post('/plans', can('plans.manage'), subscriptions.createPlan);
+router.patch('/plans/:id', can('plans.manage'), subscriptions.updatePlan);
+router.get('/subscriptions', can('subscriptions.view'), subscriptions.listSubscriptions);
+router.put('/workspaces/:id/subscription', can('subscriptions.manage'), subscriptions.saveSubscription);
 
 // Companies
 router.get('/workspaces', can('companies.view'), platform.listWorkspaces);

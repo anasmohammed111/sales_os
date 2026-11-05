@@ -17,6 +17,24 @@ export const ADMIN_ROUTES: Routes = [
     children: [
       { path: '', pathMatch: 'full', component: AdminHome },
       {
+        path: 'dashboard',
+        title: 'Overview | Kelto admin',
+        canActivate: [allows('dashboard.view')],
+        loadComponent: () => import('./pages/dashboard').then((m) => m.DashboardPage),
+      },
+      {
+        path: 'subscriptions',
+        title: 'Subscriptions | Kelto admin',
+        canActivate: [allows('subscriptions.view')],
+        loadComponent: () => import('./pages/subscriptions').then((m) => m.SubscriptionsPage),
+      },
+      {
+        path: 'plans',
+        title: 'Plans | Kelto admin',
+        canActivate: [allows('plans.view')],
+        loadComponent: () => import('./pages/plans').then((m) => m.PlansPage),
+      },
+      {
         path: 'companies',
         title: 'Companies | Kelto admin',
         canActivate: [allows('companies.view')],

@@ -20,6 +20,10 @@ const PLATFORM_ACTIONS = [
     'ADMIN_UPDATED',
     'ADMIN_PASSWORD_RESET',
     'ADMIN_SESSIONS_REVOKED',
+    'PLAN_CREATED',
+    'PLAN_UPDATED',
+    'SUBSCRIPTION_CREATED',
+    'SUBSCRIPTION_UPDATED',
 ];
 
 // What Kelto staff did. Visible in the admin app only, never to workspaces.

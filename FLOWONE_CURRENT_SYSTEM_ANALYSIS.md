@@ -41,7 +41,7 @@ Legend used throughout: **Implemented** (works end to end, backed by API and tes
 
 Environment variable **names** used by the backend (values are not recorded here):
 `MONGO_URI, JWT_SECRET, JWT_EXPIRES_IN, PORT, NODE_ENV, APP_URL, CLIENT_URL, GOOGLE_CLIENT_ID, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM, MAIL_TRANSPORT, STORAGE_DRIVER, STORAGE_LOCAL_DIR, S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_FORCE_PATH_STYLE, UPLOAD_MAX_MB, ADMISSIONS_JOB_INTERVAL_SECONDS, PLATFORM_LOGIN_MAX`.
-Frontend environment (`sales-follow-up-web/src/environments/`): `apiUrl`, `googleClientId`, `production`. `environment.ts` (production) points to the Render API; `environment.development.ts` currently points to `http://localhost:5002/api` (the in-memory demo server).
+Frontend environment (`sales-follow-up-web/src/environments/`): `apiUrl`, `googleClientId`, `production`. `environment.ts` (production) points to the Render API; both development frontends point to `http://localhost:5001/api`, the normal API backed by `MONGO_URI`. The optional in-memory demo can also be started on port 5001 when the normal API is stopped.
 
 ---
 

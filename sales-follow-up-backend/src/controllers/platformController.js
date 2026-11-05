@@ -10,6 +10,7 @@ const AdmissionApplication = require('../models/AdmissionApplication');
 const PlatformAdmin = require('../models/PlatformAdmin');
 const PlatformAuditLog = require('../models/PlatformAuditLog');
 const SupportSession = require('../models/SupportSession');
+const Subscription = require('../models/Subscription');
 const { SUPPORT_MODES } = require('../models/SupportSession');
 const { DEFAULT_ROLES } = require('../services/access/catalog');
 const {
@@ -162,7 +163,7 @@ const changePassword = async (req, res, next) => {
 const workspaceStats = async (ids) => {
     const match = { businessId: { $in: ids } };
     const group = (extra = {}) => ({ $group: { _id: '$businessId', n: { $sum: 1 }, last: { $max: '$updatedAt' }, ...extra } });
-    const [users, leads, students, followUps] = await Promise.all([
+    const [users, leads, students, followUps, subscriptions] = await Promise.all([
         User.aggregate([{ $match: match }, group({ active: { $sum: { $cond: [{ $eq: ['$isActive', false] }, 0, 1] } } })]),
         Lead.aggregate([{ $match: { ...match, isArchived: { $ne: true } } }, group()]),
         AdmissionApplication.aggregate([
@@ -170,9 +171,18 @@ const workspaceStats = async (ids) => {
             group({ active: { $sum: { $cond: [{ $eq: ['$status', 'ACTIVE'] }, 1, 0] } } }),
         ]),
         FollowUp.aggregate([{ $match: match }, group()]),
+        Subscription.find({ businessId: { $in: ids } }).select(
+            'businessId planSnapshot status billingCycle amountMinor currency trialEndsAt currentPeriodEnd cancelAtPeriodEnd'
+        ),
     ]);
     const byId = (rows) => new Map(rows.map((r) => [String(r._id), r]));
-    return { users: byId(users), leads: byId(leads), students: byId(students), followUps: byId(followUps) };
+    return {
+        users: byId(users),
+        leads: byId(leads),
+        students: byId(students),
+        followUps: byId(followUps),
+        subscriptions: new Map(subscriptions.map((subscription) => [String(subscription.businessId), subscription])),
+    };
 };
 
 const describeWorkspace = (business, stats) => {
@@ -181,6 +191,7 @@ const describeWorkspace = (business, stats) => {
     const l = stats.leads.get(id);
     const s = stats.students.get(id);
     const f = stats.followUps.get(id);
+    const subscription = stats.subscriptions.get(id);
     const times = [u?.last, l?.last, s?.last, f?.last].filter(Boolean).map((d) => new Date(d).getTime());
     const editUntil = business.supportAccess?.editAllowedUntil;
     return {
@@ -194,6 +205,20 @@ const describeWorkspace = (business, stats) => {
         isActive: businessStatus(business) === 'ACTIVE',
         createdAt: business.createdAt,
         features: { admissions: business.features?.admissions === true },
+        subscription: subscription
+            ? {
+                  id: String(subscription._id),
+                  planKey: subscription.planSnapshot.key,
+                  planName: subscription.planSnapshot.name,
+                  status: subscription.status,
+                  billingCycle: subscription.billingCycle,
+                  amountMinor: subscription.amountMinor,
+                  currency: subscription.currency,
+                  trialEndsAt: subscription.trialEndsAt,
+                  currentPeriodEnd: subscription.currentPeriodEnd,
+                  cancelAtPeriodEnd: subscription.cancelAtPeriodEnd === true,
+              }
+            : null,
         // The owner's permission for support edits (null when not allowed now)
         supportEditAllowedUntil: editUntil && editUntil > new Date() ? editUntil : null,
         counts: {
@@ -224,8 +249,11 @@ const listWorkspaces = async (req, res, next) => {
                 leads: sum.leads + w.counts.leads,
                 students: sum.students + w.counts.students,
                 suspended: sum.suspended + (w.status === 'SUSPENDED' ? 1 : 0),
+                subscribed: sum.subscribed + (w.subscription ? 1 : 0),
+                trials: sum.trials + (w.subscription?.status === 'TRIALING' ? 1 : 0),
+                pastDue: sum.pastDue + (w.subscription?.status === 'PAST_DUE' ? 1 : 0),
             }),
-            { workspaces: 0, users: 0, leads: 0, students: 0, suspended: 0 }
+            { workspaces: 0, users: 0, leads: 0, students: 0, suspended: 0, subscribed: 0, trials: 0, pastDue: 0 }
         );
         return res.json({ success: true, data: { items, totals } });
     } catch (error) {

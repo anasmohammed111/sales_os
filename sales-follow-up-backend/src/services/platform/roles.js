@@ -1,12 +1,16 @@
 // Platform (Kelto staff) roles and permissions. Enforced on the server by
 // requirePlatformPermission; the admin app only uses them to hide what an
-// administrator cannot do. Later milestones add plans, billing and master
-// data permissions here.
+// administrator cannot do.
 
 const PLATFORM_PERMISSIONS = {
+    'dashboard.view': 'See platform health, subscription KPIs and recurring revenue',
     'companies.view': 'See companies, their people and usage',
     'companies.lifecycle': 'Suspend and reactivate companies',
     'modules.manage': 'Switch modules on or off for a company',
+    'plans.view': 'See SaaS plans and their prices',
+    'plans.manage': 'Create, edit and archive SaaS plans',
+    'subscriptions.view': 'See company subscriptions and recurring revenue',
+    'subscriptions.manage': 'Assign plans and change subscription lifecycle',
     'support.view': 'Open a company read-only, as its owner or as one of its people',
     'support.edit': "Start support-edit sessions (only with the company owner's permission)",
     'sessions.view': 'See support sessions',
@@ -23,9 +27,13 @@ const PLATFORM_ROLES = {
     PLATFORM_ADMIN: {
         name: 'Platform administrator',
         permissions: [
+            'dashboard.view',
             'companies.view',
             'companies.lifecycle',
             'modules.manage',
+            'plans.view',
+            'subscriptions.view',
+            'subscriptions.manage',
             'support.view',
             'sessions.view',
             'sessions.revoke',
@@ -33,10 +41,23 @@ const PLATFORM_ROLES = {
             'audit.view',
         ],
     },
-    // Billing permissions arrive with plans and invoices (milestones 4-5)
-    BILLING_ADMIN: { name: 'Billing administrator', permissions: ['companies.view', 'audit.view'] },
+    BILLING_ADMIN: {
+        name: 'Billing administrator',
+        permissions: [
+            'dashboard.view',
+            'companies.view',
+            'plans.view',
+            'plans.manage',
+            'subscriptions.view',
+            'subscriptions.manage',
+            'audit.view',
+        ],
+    },
     SUPPORT_ADMIN: { name: 'Support administrator', permissions: ['companies.view', 'support.view', 'sessions.view'] },
-    AUDITOR: { name: 'Read-only auditor', permissions: ['companies.view', 'sessions.view', 'admins.view', 'audit.view'] },
+    AUDITOR: {
+        name: 'Read-only auditor',
+        permissions: ['dashboard.view', 'companies.view', 'plans.view', 'subscriptions.view', 'sessions.view', 'admins.view', 'audit.view'],
+    },
 };
 
 const ROLE_KEYS = Object.keys(PLATFORM_ROLES);

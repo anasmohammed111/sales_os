@@ -14,11 +14,20 @@ export interface NavGroup {
 }
 
 /**
- * The sidebar. Only sections that exist are listed (later milestones add
- * plans, billing, modules and master data), and only those the
- * administrator's role allows.
+ * The permission-aware platform navigation.
  */
 export const NAV: NavGroup[] = [
+  {
+    label: 'Overview',
+    items: [{ label: 'SaaS dashboard', path: '/dashboard', permission: 'dashboard.view' }],
+  },
+  {
+    label: 'Revenue',
+    items: [
+      { label: 'Subscriptions', path: '/subscriptions', permission: 'subscriptions.view' },
+      { label: 'Plans & pricing', path: '/plans', permission: 'plans.view' },
+    ],
+  },
   {
     label: 'Companies',
     items: [
@@ -92,10 +101,24 @@ export function visibleNav(can: (permission: string) => boolean): NavGroup[] {
     .me-actions button { padding: 0; border: 0; background: none; color: #f6a68f; font: inherit; font-weight: 700; cursor: pointer; }
     .body { min-width: 0; padding: 28px 32px 60px; }
     @media (max-width: 860px) {
-      .layout { grid-template-columns: 1fr; }
-      .side { position: static; height: auto; }
+      .layout { grid-template-columns: minmax(0, 1fr); width: 100%; overflow-x: hidden; }
+      .side { position: sticky; top: 0; z-index: 50; flex-direction: row; align-items: center; gap: 10px; width: 100%; min-width: 0; height: auto; overflow: hidden; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
+      .brand { flex: 0 0 auto; }
+      .brand img { width: 29px; height: 29px; }
+      .brand span { font-size: 13px; }
+      .brand small { display: none; }
+      nav { display: flex; flex: 1; min-width: 0; gap: 3px; overflow-x: auto; scrollbar-width: none; }
+      nav::-webkit-scrollbar { display: none; }
+      .group { display: none; }
+      nav a { flex: 0 0 auto; padding: 7px 9px; font-size: 12px; white-space: nowrap; }
+      nav a.active { box-shadow: inset 0 -2px 0 #e5603e; }
+      .me { display: block; flex: 0 0 auto; padding: 0; border: 0; }
+      .me > strong, .me > small, .me-actions a { display: none; }
+      .me-actions { margin: 0; }
+      .me-actions button { padding: 7px 4px; font-size: 11px; white-space: nowrap; }
       .body { padding: 20px 16px 48px; }
     }
+    @media (max-width: 520px) { .brand span { display: none; } }
   `,
 })
 export class AdminShell {

@@ -24,6 +24,8 @@ const AdmissionFee = require('../src/models/AdmissionFee');
 const AdmissionDocument = require('../src/models/AdmissionDocument');
 const AdmissionActivity = require('../src/models/AdmissionActivity');
 const PlatformAdmin = require('../src/models/PlatformAdmin');
+const Plan = require('../src/models/Plan');
+const Subscription = require('../src/models/Subscription');
 const { runMigrations } = require('../src/migrations');
 const { ensureConfig, getActiveStages } = require('../src/services/admissions/configService');
 const { buildChecklist, setItemStatus, isApplicable, checkRule } = require('../src/services/admissions/checklist');
@@ -85,7 +87,59 @@ const seed = async () => {
     const counsellors = [anu, rahul, divya];
 
     // Demo-only platform super admin, to try the /platform console
-    await PlatformAdmin.create({ name: 'Demo Super Admin', email: 'superadmin@kelto.test', password });
+    const platformAdmin = await PlatformAdmin.create({ name: 'Demo Super Admin', email: 'superadmin@kelto.test', password });
+
+    // Commercial demo data for the Kelto SaaS dashboard.
+    const [starterPlan, growthPlan] = await Plan.insertMany([
+        {
+            key: 'STARTER',
+            name: 'Starter',
+            description: 'Core CRM for small teams',
+            currency: 'USD',
+            prices: { monthly: 4900, yearly: 49000 },
+            trialDays: 14,
+            limits: { users: 5, leads: 2500, students: 0, storageMb: 5120 },
+            modules: ['crm'],
+            createdBy: platformAdmin._id,
+            updatedBy: platformAdmin._id,
+        },
+        {
+            key: 'GROWTH',
+            name: 'Growth',
+            description: 'CRM and Admissions for growing agencies',
+            currency: 'USD',
+            prices: { monthly: 14900, yearly: 149000 },
+            trialDays: 14,
+            limits: { users: 25, leads: 25000, students: 5000, storageMb: 51200 },
+            modules: ['crm', 'admissions'],
+            createdBy: platformAdmin._id,
+            updatedBy: platformAdmin._id,
+        },
+    ]);
+    const periodStart = ago(9);
+    const periodEnd = new Date(periodStart);
+    periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
+    await Subscription.create({
+        businessId: business._id,
+        planId: growthPlan._id,
+        planSnapshot: {
+            key: growthPlan.key,
+            name: growthPlan.name,
+            currency: growthPlan.currency,
+            prices: growthPlan.prices,
+            trialDays: growthPlan.trialDays,
+            limits: growthPlan.limits,
+            modules: growthPlan.modules,
+        },
+        status: 'ACTIVE',
+        billingCycle: 'MONTHLY',
+        amountMinor: growthPlan.prices.monthly,
+        currency: growthPlan.currency,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        updatedBy: platformAdmin._id,
+        history: [{ action: 'CREATED', toStatus: 'ACTIVE', toPlanKey: growthPlan.key, reason: 'Demo subscription', by: platformAdmin._id }],
+    });
 
     const config = await ensureConfig(business._id);
     const stages = getActiveStages(config);

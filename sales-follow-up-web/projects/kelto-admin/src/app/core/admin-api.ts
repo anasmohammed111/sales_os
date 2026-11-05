@@ -6,6 +6,43 @@ import { AdminProfile } from './admin-session';
 
 export type CompanyStatus = 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
 export type SupportMode = 'VIEW_OWNER' | 'VIEW_USER' | 'SUPPORT_EDIT';
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+export type BillingCycle = 'MONTHLY' | 'YEARLY';
+
+export interface PlanLimits {
+  users: number;
+  leads: number;
+  students: number;
+  storageMb: number;
+}
+
+export interface Plan {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  currency: string;
+  prices: { monthly: number; yearly: number };
+  trialDays: number;
+  limits: PlanLimits;
+  modules: string[];
+  status: 'ACTIVE' | 'ARCHIVED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionSummary {
+  id: string;
+  planKey: string;
+  planName: string;
+  status: SubscriptionStatus;
+  billingCycle: BillingCycle;
+  amountMinor: number;
+  currency: string;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+}
 
 export interface Company {
   id: string;
@@ -17,6 +54,7 @@ export interface Company {
   statusChangedAt: string | null;
   createdAt: string;
   features: { admissions: boolean };
+  subscription: SubscriptionSummary | null;
   supportEditAllowedUntil: string | null;
   counts: { users: number; activeUsers: number; leads: number; students: number; activeStudents: number };
   lastActivityAt: string | null;
@@ -46,6 +84,70 @@ export interface Totals {
   leads: number;
   students: number;
   suspended: number;
+  subscribed: number;
+  trials: number;
+  pastDue: number;
+}
+
+export interface Subscription {
+  id: string;
+  workspace: { id: string; businessName: string; email: string; status: CompanyStatus };
+  planId: string;
+  plan: Omit<Plan, 'id' | 'description' | 'status' | 'createdAt' | 'updatedAt'>;
+  status: SubscriptionStatus;
+  billingCycle: BillingCycle;
+  amountMinor: number;
+  currency: string;
+  trialEndsAt: string | null;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  cancelledAt: string | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SaaSDashboard {
+  metrics: {
+    companies: number;
+    activeCompanies: number;
+    suspendedCompanies: number;
+    newCompanies30d: number;
+    subscriptions: number;
+    activeSubscriptions: number;
+    trialingSubscriptions: number;
+    pastDueSubscriptions: number;
+    scheduledCancellations: number;
+    mrrByCurrency: { currency: string; amountMinor: number }[];
+  };
+  statusDistribution: { status: SubscriptionStatus; count: number }[];
+  planDistribution: { key: string; name: string; count: number }[];
+  recentSubscriptions: Subscription[];
+}
+
+export interface PlanInput {
+  key?: string;
+  name?: string;
+  description?: string;
+  currency?: string;
+  prices?: { monthly: number; yearly: number };
+  trialDays?: number;
+  limits?: PlanLimits;
+  modules?: string[];
+  status?: 'ACTIVE' | 'ARCHIVED';
+}
+
+export interface SubscriptionInput {
+  planId?: string;
+  billingCycle?: BillingCycle;
+  status?: SubscriptionStatus;
+  trialEndsAt?: string | null;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
+  notes?: string;
+  reason: string;
 }
 
 export interface SupportSession {
@@ -129,6 +231,9 @@ export class AdminApi {
   private patch<T>(path: string, body: unknown = {}): Observable<T> {
     return this.http.patch<Envelope<T>>(`${this.base}${path}`, body).pipe(map((r) => r.data));
   }
+  private put<T>(path: string, body: unknown = {}): Observable<T> {
+    return this.http.put<Envelope<T>>(`${this.base}${path}`, body).pipe(map((r) => r.data));
+  }
 
   // Account
   login(email: string, password: string) {
@@ -139,6 +244,26 @@ export class AdminApi {
   }
   changePassword(currentPassword: string, newPassword: string) {
     return this.post<{ token: string; admin: AdminProfile }>('/auth/change-password', { currentPassword, newPassword });
+  }
+
+  // SaaS overview, plans and subscriptions
+  dashboard() {
+    return this.get<SaaSDashboard>('/dashboard');
+  }
+  plans(status = '') {
+    return this.get<{ items: Plan[] }>('/plans', { status });
+  }
+  createPlan(body: PlanInput) {
+    return this.post<{ plan: Plan }>('/plans', body);
+  }
+  updatePlan(id: string, body: PlanInput) {
+    return this.patch<{ plan: Plan }>(`/plans/${id}`, body);
+  }
+  subscriptions(query: { search?: string; status?: string; plan?: string; billingCycle?: string; businessId?: string; page?: number } = {}) {
+    return this.get<Paged<Subscription>>('/subscriptions', query);
+  }
+  saveSubscription(companyId: string, body: SubscriptionInput) {
+    return this.put<{ subscription: Subscription }>(`/workspaces/${companyId}/subscription`, body);
   }
 
   // Companies

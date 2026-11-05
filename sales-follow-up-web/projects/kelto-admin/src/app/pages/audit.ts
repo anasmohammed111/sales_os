@@ -22,6 +22,10 @@ const ACTIONS: Record<string, { label: string; tone: string }> = {
   ADMIN_UPDATED: { label: 'Changed administrator', tone: '' },
   ADMIN_PASSWORD_RESET: { label: 'Reset administrator password', tone: 'warn' },
   ADMIN_SESSIONS_REVOKED: { label: 'Signed administrator out', tone: 'warn' },
+  PLAN_CREATED: { label: 'Created SaaS plan', tone: 'on' },
+  PLAN_UPDATED: { label: 'Updated SaaS plan', tone: '' },
+  SUBSCRIPTION_CREATED: { label: 'Assigned subscription', tone: 'on' },
+  SUBSCRIPTION_UPDATED: { label: 'Updated subscription', tone: 'warn' },
 };
 
 /** Everything Kelto staff did. Companies never see this. */
@@ -146,6 +150,13 @@ export class AuditPage implements OnInit {
       case 'ADMIN_PASSWORD_RESET':
       case 'ADMIN_SESSIONS_REVOKED':
         return e.targetAdmin?.name ?? '';
+      case 'PLAN_CREATED':
+        return `${d['name']} (${d['key']})`;
+      case 'PLAN_UPDATED':
+        return String(d['key'] ?? '');
+      case 'SUBSCRIPTION_CREATED':
+      case 'SUBSCRIPTION_UPDATED':
+        return `${d['toPlanKey']} · ${d['toStatus']} · "${e.reason}"`;
       case 'VIEW_WORKSPACE':
         return `"${e.reason}"`;
       default:

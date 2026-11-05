@@ -185,8 +185,8 @@ Tenant side (CRM): POST `/api/support/exchange {code}` (public, single-use) → 
 - The CRM keeps only `/support/enter`, `/support/ended`, the support banner and the owner's "Kelto support access" card. `/platform/*` in the CRM points to the admin app (`environment.adminUrl`).
 
 **Verify locally** (in-memory demo data, nothing real touched):
-1. Start the demo API: `cd sales-follow-up-backend` and run `PORT=5002 node scripts/dev-memory.js` (PowerShell: `$env:PORT=5002; node scripts/dev-memory.js`).
-2. Start the CRM: `cd sales-follow-up-web` and run `npx ng serve` (http://localhost:4200; its development environment points to 5002).
+1. Stop the normal API, then start the optional demo API: `cd sales-follow-up-backend` and run `node scripts/dev-memory.js` (port 5001).
+2. Start the CRM: `cd sales-follow-up-web` and run `npx ng serve` (http://localhost:4200; its development environment points to 5001).
 3. Start the admin app: `npx ng serve kelto-admin` (http://localhost:4400). Sign in as `superadmin@kelto.test`; the password is printed by the demo server.
 4. Open a company → **Open as support…** → view as owner or as a person. A CRM tab opens with the support banner; **Exit** ends the session.
 5. For support edit, sign in to the CRM as the demo owner (`admin@syb.test`) → Settings → **Kelto support access** → Allow. Then start a **Support edit** session from the admin app.
@@ -206,4 +206,18 @@ Tenant side (CRM): POST `/api/support/exchange {code}` (public, single-use) → 
 - Support-edit sessions can't create records (by design for now, because new records would be assigned to the administrator).
 - The access cache means a suspension reaches other API instances within 15 seconds.
 - JWTs live in `localStorage` (S7).
-- No dashboard yet (M8).
+- Historical trend charts and monitoring remain in M8; the current dashboard reports live operational and subscription KPIs.
+
+---
+
+## SaaS dashboard, plans and subscriptions: delivered (2026-11-05)
+
+- **Plan catalog:** active/archive lifecycle, monthly and annual prices in minor units, currency, trial days, limits and included modules. Plan keys are immutable. A subscription stores a commercial snapshot, so later catalog edits do not rewrite an existing customer's contracted price.
+- **Subscriptions:** one per company with `TRIALING`, `ACTIVE`, `PAST_DUE`, `CANCELLED` and `EXPIRED` states; monthly/annual cycles; trial and period dates; cancellation at period end; internal notes and append-only change history.
+- **Dashboard:** company totals, active subscriptions, trials, past due, scheduled cancellations, plan mix, lifecycle distribution and MRR separated by currency (currencies are never added together).
+- **Admin access:** `dashboard.*`, `plans.*` and `subscriptions.*` permissions are enforced by the API and reflected in the separate Kelto admin app navigation. Billing administrators can manage the catalog and subscriptions; auditors remain read-only.
+- **Audit:** plan and subscription creation/updates appear in the platform audit log with the administrator, company, reason and commercial transition.
+- **API:** `GET /platform/dashboard`, `GET/POST/PATCH /platform/plans`, `GET /platform/subscriptions`, and `PUT /platform/workspaces/:id/subscription`.
+- **UI:** new SaaS dashboard, Plans & pricing, Subscriptions, company-directory subscription columns, and a subscription card on company details. The compact layout uses a scrollable mobile header instead of the desktop sidebar.
+
+**Boundary:** this delivery is internal subscription administration. It does not charge cards, connect to a payment provider, apply tax rules, generate invoices or run renewal/expiry jobs. Those require the provider and accounting decisions planned for M5.

@@ -24,8 +24,15 @@ describe('Kelto admin navigation and session', () => {
     expect(nav.map((g) => g.label)).toEqual(['Companies', 'Administration']);
     expect(nav[1].items.map((i) => i.label)).toEqual(['Platform administrators', 'Support sessions', 'Audit log']);
 
-    const billing = new Set(['companies.view', 'audit.view']);
-    expect(visibleNav((p) => billing.has(p)).flatMap((g) => g.items.map((i) => i.path))).toEqual(['/companies', '/people', '/audit']);
+    const billing = new Set(['dashboard.view', 'companies.view', 'plans.view', 'subscriptions.view', 'audit.view']);
+    expect(visibleNav((p) => billing.has(p)).flatMap((g) => g.items.map((i) => i.path))).toEqual([
+      '/dashboard',
+      '/subscriptions',
+      '/plans',
+      '/companies',
+      '/people',
+      '/audit',
+    ]);
 
     expect(visibleNav(() => false)).toEqual([]);
   });
