@@ -2480,6 +2480,14 @@ $kelto-lead-stages: (
 .leads-table {
   @include dt.table($min-width: 1240px, $sticky-first: true, $sticky-last: true);
 
+  .th-serial {
+    width: 1%;
+    min-width: 64px;
+    color: var(--kelto-text-subtle);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
   .th-customer {
     min-width: 260px;
   }

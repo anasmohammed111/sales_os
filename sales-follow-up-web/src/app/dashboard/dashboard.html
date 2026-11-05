@@ -39,8 +39,17 @@
     </div>
   </header>
 
+  <button type="button" class="sidebar-collapse-btn" (click)="toggleSidebar()" aria-controls="primary-sidebar"
+    [attr.aria-label]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+    [title]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+
   <!-- Desktop Sidebar -->
-  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed()" aria-label="Primary navigation">
+  <aside id="primary-sidebar" class="sidebar" [class.collapsed]="isSidebarCollapsed()" aria-label="Primary navigation">
     <div class="brand-row">
       <button type="button" class="brand-lockup" (click)="navigateTo('dashboard')"
         [title]="businessName() + ' (go to dashboard)'">
@@ -60,14 +69,6 @@
         </div>
       </button>
       <app-notification-bell class="sidebar-bell" />
-      <button type="button" class="sidebar-collapse-btn" (click)="toggleSidebar()"
-        [attr.aria-label]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-        [title]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline [attr.points]="isSidebarCollapsed() ? '9 18 15 12 9 6' : '15 18 9 12 15 6'"></polyline>
-        </svg>
-      </button>
     </div>
 
     <nav class="nav-list" aria-label="Workspace">
@@ -175,7 +176,7 @@
             stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </span>
       </button>
-      @if (admissionsOpen()) {
+      <div class="nav-sublist-wrap" [class.is-open]="admissionsOpen()" [attr.inert]="admissionsOpen() ? null : ''">
       <div class="nav-sublist" id="admissions-pages" role="group" aria-label="Admissions pages">
         @for (link of admissionsLinks(); track link.path) {
         <button type="button" class="nav-subitem" [class.active]="isAdmissionsPath(link.path)"
@@ -210,7 +211,7 @@
         </button>
         }
       </div>
-      }
+      </div>
       }
 
       <div class="nav-section-title"><span>Manage</span></div>
@@ -762,7 +763,7 @@
        MOBILE MORE SHEET OVERLAY (Glassmorphic Slide-up Drawer)
        ========================================================================= -->
   @if (isMobileMoreOpen()) {
-  <div class="mobile-more-backdrop" (click)="closeMobileMore()" role="presentation">
+  <div class="mobile-more-backdrop" animate.leave="is-leaving" (click)="closeMobileMore()" role="presentation">
     <div id="mobile-workspace-menu" class="mobile-more-sheet" (click)="$event.stopPropagation()"
       (keydown)="trapMobileMenuFocus($event)" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title">
       <div class="sheet-drag-handle"></div>

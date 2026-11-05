@@ -416,6 +416,7 @@
         <table class="leads-table">
           <thead>
             <tr>
+              <th scope="col" class="th-serial" title="Serial number">S/N</th>
               <th scope="col" class="th-sortable th-customer" [class.is-sorted]="sortBy() === 'customerName'"
                 (click)="sortByField('customerName')" title="Sort by Customer Name">
                 <div class="th-content">
@@ -552,6 +553,7 @@
             @if (isLoading() && leads().length === 0) {
             @for (row of skeletonRows; track row) {
             <tr class="dt-skeleton-row" aria-hidden="true">
+              <td class="th-serial"><span class="dt-skel" style="--w: 55%"></span></td>
               <td><span class="dt-skel" style="--w: 80%"></span></td>
               <td><span class="dt-skel" style="--w: 60%"></span></td>
               <td><span class="dt-skel" style="--w: 70%"></span></td>
@@ -607,6 +609,7 @@
             <tr class="dt-row-link" tabindex="0" (click)="openDetails(lead)"
               (keydown.enter)="$event.target === $event.currentTarget && openDetails(lead)"
               [attr.aria-label]="'Open ' + lead.customerName">
+              <td class="th-serial">{{ (currentPage() - 1) * pageSize() + $index + 1 }}</td>
               <td class="th-customer">
                 <div class="dt-person">
                 <span class="dt-avatar tone-{{ avatarTone(lead.customerName) }}" aria-hidden="true">{{ initials(lead.customerName) }}</span>
