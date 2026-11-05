@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -71,18 +72,62 @@ describe('AdmissionsService context', () => {
 
     let result: unknown;
     service.loadContext(true).subscribe((ctx) => (result = ctx));
-    http.expectOne((r) => r.url.endsWith('/admissions/context')).flush({ message: 'down' }, { status: 503, statusText: 'Unavailable' });
+    http.expectOne((r) => r.url.endsWith('/admissions/context')).flush({ message: 'bad' }, { status: 400, statusText: 'Bad Request' });
 
     expect(service.contextState()).toBe('ready');
     expect(version()).toBe(1);
     expect((result as { v: number }).v).toBe(1);
   });
 
-  it('still shows loading, then an error, on a first load that fails', () => {
+  it('shows loading, then an error, on a first load the server rejects', () => {
     signIn('user-a');
     service.loadContext().subscribe();
     expect(service.contextState()).toBe('loading');
-    http.expectOne((r) => r.url.endsWith('/admissions/context')).flush({ message: 'down' }, { status: 503, statusText: 'Unavailable' });
+    http.expectOne((r) => r.url.endsWith('/admissions/context')).flush({ message: 'bad' }, { status: 400, statusText: 'Bad Request' });
     expect(service.contextState()).toBe('error');
+  });
+
+  // The server or database being briefly down (e.g. reconnecting after the
+  // computer slept) must not make Admissions disappear until a reload.
+  describe('when the server is briefly unreachable', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const down = () =>
+      http.expectOne((r) => r.url.endsWith('/admissions/context')).flush({ message: 'write ECONNRESET' }, { status: 500, statusText: 'Server Error' });
+
+    it('retries the first load and recovers', () => {
+      signIn('user-a');
+      service.loadContext().subscribe();
+      down();
+      expect(service.contextState()).toBe('loading');
+
+      vi.advanceTimersByTime(2000);
+      http.expectOne((r) => r.url.endsWith('/admissions/context')).flush({ success: true, data: { userId: 'user-a', v: 1 } });
+      expect(service.contextState()).toBe('ready');
+      expect(version()).toBe(1);
+    });
+
+    it('gives up after a few tries and reports the error', () => {
+      signIn('user-a');
+      service.loadContext().subscribe();
+      down();
+      for (const wait of [2000, 4000, 6000]) {
+        vi.advanceTimersByTime(wait);
+        down();
+      }
+      expect(service.contextState()).toBe('error');
+      vi.advanceTimersByTime(60_000);
+      http.expectNone((r) => r.url.endsWith('/admissions/context'));
+    });
+
+    it('does not retry when admissions is switched off for the business', () => {
+      signIn('user-a');
+      service.loadContext().subscribe();
+      http.expectOne((r) => r.url.endsWith('/admissions/context')).flush({ message: 'off' }, { status: 404, statusText: 'Not Found' });
+      expect(service.contextState()).toBe('disabled');
+      vi.advanceTimersByTime(60_000);
+      http.expectNone((r) => r.url.endsWith('/admissions/context'));
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { catchError, map, Observable, of, shareReplay, tap } from 'rxjs';
+import { catchError, map, Observable, of, retry, shareReplay, tap, throwError, timer } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 import {
@@ -24,6 +24,15 @@ import {
   University,
 } from '../../admissions/admissions.models';
 
+/** Waits before each new try of a context load that failed for a passing reason */
+const CONTEXT_RETRIES = [2000, 4000, 6000];
+
+/** No connection, or the server failed: worth trying again. 4xx answers are final. */
+const isTransient = (err: unknown) => {
+  const status = (err as { status?: number })?.status ?? 0;
+  return status === 0 || status >= 500;
+};
+
 const toParams = (query: Query = {}) =>
   Object.entries(query).reduce(
     (params, [key, value]) => (value === '' || value === undefined || value === null ? params : params.set(key, value)),
@@ -42,12 +51,27 @@ export class AdmissionsService {
   private context$: Observable<AdmissionsContext | null> | null = null;
   /** Who the cached context belongs to; a different sign-in must never see it. */
   private contextUserId: string | null = null;
+  /**
+   * Whether admissions was switched on the last time it loaded for this person,
+   * so the menu can show it while it loads (or retries) instead of flickering.
+   */
+  readonly wasEnabled = signal(false);
+
+  private rememberKey(userId: string | null): string {
+    return `kelto_admissions_on_${userId ?? ''}`;
+  }
+
+  private remember(userId: string | null, on: boolean): void {
+    this.wasEnabled.set(on);
+    if (typeof localStorage !== 'undefined') localStorage.setItem(this.rememberKey(userId), on ? '1' : '0');
+  }
 
   loadContext(force = false): Observable<AdmissionsContext | null> {
     const userId = this.auth.getUser()?.id ?? null;
     if (userId !== this.contextUserId) {
       this.resetContext();
       this.contextUserId = userId;
+      this.wasEnabled.set(typeof localStorage !== 'undefined' && localStorage.getItem(this.rememberKey(userId)) === '1');
     }
     if (force || !this.context$) {
       // Refreshing a context that is already loaded happens in the background.
@@ -57,10 +81,18 @@ export class AdmissionsService {
       const refreshing = this.contextState() === 'ready' && this.context() !== null;
       if (!refreshing) this.contextState.set('loading');
       this.context$ = this.http.get<ApiResponse<AdmissionsContext>>(`${this.base}/context`).pipe(
+        // The server or its database can be briefly unreachable (e.g. reconnecting
+        // after the computer slept). Try again a few times before giving up, so
+        // Admissions does not vanish from the menu until a reload.
+        retry({
+          count: CONTEXT_RETRIES.length,
+          delay: (err, attempt) => (isTransient(err) ? timer(CONTEXT_RETRIES[attempt - 1]) : throwError(() => err)),
+        }),
         map((res) => res.data),
         tap((ctx) => {
           this.context.set(ctx);
           this.contextState.set('ready');
+          this.remember(userId, true);
         }),
         catchError((err) => {
           this.context$ = null;
@@ -68,6 +100,7 @@ export class AdmissionsService {
           if (refreshing) return of(this.context());
           this.context.set(null);
           this.contextState.set(err?.status === 404 ? 'disabled' : 'error');
+          if (err?.status === 404) this.remember(userId, false);
           return of(null);
         }),
         shareReplay(1)

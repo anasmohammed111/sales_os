@@ -83,8 +83,17 @@ export class Dashboard {
   private settingsService = inject(SettingsService);
   /** What the signed-in person may do; the sidebar and pages follow it */
   readonly permissions = inject(PermissionService);
-  // Admissions entries only show for businesses with the module switched on
-  admissionsEnabled = computed(() => !!this.admissions.context());
+  // Admissions shows for people who may see it, unless the business has the module
+  // switched off. If it could not load (server briefly down), the entry stays and its
+  // page offers "Try again" rather than the module vanishing until a reload.
+  admissionsEnabled = computed(
+    () =>
+      this.permissions.can('admissions.view') &&
+      (this.admissions.context() !== null ||
+        this.admissions.contextState() === 'error' ||
+        // Still loading or retrying: show it if it was on last time
+        (this.admissions.contextState() === 'loading' && this.admissions.wasEnabled()))
+  );
   readonly admissionsLinks = [
     { path: 'overview', label: 'Overview' },
     { path: 'pipeline', label: 'Admissions pipeline' },
@@ -141,6 +150,10 @@ export class Dashboard {
   @HostListener('window:focus')
   onWindowFocus(): void {
     this.permissions.refresh();
+    // Admissions failed to load earlier: try again now that the person is back
+    if (this.admissions.contextState() === 'error' && this.permissions.can('admissions.view')) {
+      this.admissions.loadContext(true).subscribe();
+    }
   }
 
   isMobileMoreOpen = signal(false);
